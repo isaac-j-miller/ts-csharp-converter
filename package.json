@@ -1,0 +1,27 @@
+{
+  "name": "csharp-converter",
+  "version": "1.0.0",
+  "description": "Convert typescript to C# data classes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run-test": "node -r ts-node/register -r tsconfig-paths/register ./src/test.ts",
+    "run-test-inspect": "node -r ts-node/register -r tsconfig-paths/register --inspect ./src/test.ts",
+    "prettier": "prettier --write .",
+    "check-ts": "tsc --noEmit"
+  },
+  "author": "Isaac Miller",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "ts-morph": "^15.1.0",
+    "typescript": "^4.7.4",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.6.1",
+    "@types/uuid": "^8.3.4",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.0.0"
+  }
+}
