@@ -1,6 +1,11 @@
+import { Symbol } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
-import { PrimitiveTypeName } from "./types";
+import {
+  isSyntheticSymbol,
+  ISyntheticSymbol,
+  PrimitiveTypeName,
+} from "./types";
 
 export function toCSharpPrimitive(
   primitive: PrimitiveTypeName
@@ -27,4 +32,10 @@ export function toCSharpPrimitive(
       assertNever(primitive);
   }
   throw new Error("Somehow this fell through");
+}
+export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
+  if (!isSyntheticSymbol(sym) && sym.isAlias()) {
+    return getFinalSymbol(sym.getAliasedSymbolOrThrow()) as T;
+  }
+  return sym;
 }
