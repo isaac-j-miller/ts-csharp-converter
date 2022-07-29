@@ -16,7 +16,7 @@ export function toCSharpPrimitive(
       return "bool";
     case "Number":
     case "number":
-      // TODO: somehow determine or guess whether should be int or double
+      // TODO: somehow guess whether should be int or double
       return "int";
     case "String":
     case "string":
@@ -46,4 +46,11 @@ export function getFinalSymbolOfType(type: Type): Symbol | undefined {
     return getFinalSymbol(sym);
   }
   return;
+}
+
+export function getGenericTypeName(name: string, typeArgs?: string[]) {
+  if (!typeArgs || typeArgs.length === 0) {
+    return name;
+  }
+  return `${name}<${typeArgs.join(", ")}>`;
 }

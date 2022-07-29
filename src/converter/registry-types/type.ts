@@ -13,7 +13,7 @@ import {
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { getFinalSymbolOfType } from "../util";
+import { getFinalSymbolOfType, getGenericTypeName } from "../util";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -68,10 +68,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     const argsList = aliasArgs
       .map((a) => this.getArgString(a))
       .filter((a) => a !== undefined) as string[];
-    if (argsList.length === 0) {
-      return name;
-    }
-    return `${name}<${argsList.join(", ")}>`;
+    return getGenericTypeName(name, argsList);
   }
   private getGenericParametersOfProperty(
     propName: string
@@ -122,17 +119,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       const genericParameters = this.getGenericParametersOfProperty(propName);
       return fromRegistry.getPropertyString(genericParameters);
     }
-    // const nonPrimitive = baseType as Symbol | ISyntheticSymbol;
-    // const name = nonPrimitive.getDeclaredType().getSymbol()?.getName();
-
     return this.resolveTypeName(baseType);
-    // if (name) {
-    //   return name;
-    // }
-    // console.warn(
-    //   `Could not find type name for property ${this.structure.name}.${propName}`
-    // );
-    // return "object";
   }
   private generateCSharpProperty(
     propName: string,
@@ -140,7 +127,6 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   ): CSharpProperty {
     const { baseType } = struct;
     const kindType = this.symbolToString(propName, baseType);
-
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
@@ -185,9 +171,6 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   }
   getPropertyString(genericParameterValues?: string[]): string {
     const { name } = this.structure;
-    if (genericParameterValues && genericParameterValues.length > 0) {
-      return `${name}<${genericParameterValues.join(", ")}>`;
-    }
-    return name;
+    return getGenericTypeName(name, genericParameterValues);
   }
 }

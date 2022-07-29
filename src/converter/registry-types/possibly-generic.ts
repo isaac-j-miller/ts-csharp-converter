@@ -9,7 +9,7 @@ import {
   TypeReference,
   TypeStructure,
 } from "../types";
-import { toCSharpPrimitive } from "../util";
+import { getGenericTypeName, toCSharpPrimitive } from "../util";
 import { RegistryType } from "./base";
 
 export abstract class TypeRegistryPossiblyGenericType<
@@ -57,7 +57,6 @@ export abstract class TypeRegistryPossiblyGenericType<
     return params;
   }
   protected resolveTypeName(ref: TypeReference): string {
-    const baseGenericParams = this.structure.genericParameters ?? [];
     if (isGenericReference(ref)) {
       return ref.genericParamName;
     }
@@ -65,6 +64,7 @@ export abstract class TypeRegistryPossiblyGenericType<
       return toCSharpPrimitive(ref.primitiveType);
     }
     const registryType = this.registry.getType(ref);
+    let genericParameterNames: string[] = [];
     if (registryType) {
       const { name, genericParameters } = registryType.getStructure();
       if (genericParameters && genericParameters.length > 0) {
@@ -76,12 +76,9 @@ export abstract class TypeRegistryPossiblyGenericType<
             typeToUse = ref.getTypeAtLocation(this.node);
           }
         }
-        const names = this.getGenericParameters(typeToUse);
-        if (names.length > 0) {
-          return `${name}<${names.join(", ")}>`;
-        }
+        genericParameterNames = this.getGenericParameters(typeToUse);
       }
-      return name;
+      return getGenericTypeName(name, genericParameterNames);
     }
 
     console.error("Type not found in registry", ref);

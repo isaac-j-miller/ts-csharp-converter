@@ -6,9 +6,11 @@ import {
 import { Symbol, Node, Type } from "ts-morph";
 import { TypeRegistry } from "../registry";
 import { ISyntheticSymbol, TypeReference } from "../types";
+import { getGenericTypeName } from "../util";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
 export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dictionary"> {
+  private baseName: string;
   constructor(
     registry: TypeRegistry,
     name: string,
@@ -22,21 +24,19 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
   ) {
     super(registry, "Dictionary", name, sym, internal, !internal, node, type);
     this.structure.genericParameters = genericParameters;
+    this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
     const indexTypeName = this.resolveTypeName(this.indexType);
     const valueTypeName = this.resolveTypeName(this.valueType);
-    return `System.Collections.Generic.Dictionary<${indexTypeName}, ${valueTypeName}>`;
+    return getGenericTypeName(this.baseName, [indexTypeName, valueTypeName]);
   }
   getPropertyString(genericParameterValues?: string[]): string {
     if (this.internal) {
       return this.getBaseClassName();
     }
     const { name } = this.structure;
-    if (genericParameterValues && genericParameterValues.length > 0) {
-      return `${name}<${genericParameterValues.join(", ")}>`;
-    }
-    return name;
+    return getGenericTypeName(name, genericParameterValues);
   }
   getCSharpElement(): CSharpClass {
     if (!this.shouldBeRendered) {

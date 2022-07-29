@@ -1,3 +1,4 @@
+import { getGenericTypeName } from "src/converter/util";
 import { CSharpClass } from "./class";
 import { CSharpProperty, GenericParam, TAB_WIDTH } from "./types";
 
@@ -22,9 +23,10 @@ export class CSharpGenericClass extends CSharpClass {
     if (this.isPartial) {
       serialized += "partial ";
     }
-    serialized += `class ${this.name}<${Object.keys(this.genericOptions).join(
-      ", "
-    )}> ${this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""}{\n`;
+    const genericArgs = Object.keys(this.genericOptions);
+    serialized += `class ${getGenericTypeName(this.name, genericArgs)} ${
+      this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""
+    }{\n`;
     return serialized;
   }
   serialize(indentation?: number): string {
