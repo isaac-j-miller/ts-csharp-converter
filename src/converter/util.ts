@@ -1,4 +1,4 @@
-import { Symbol } from "ts-morph";
+import { Symbol, Type } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
@@ -38,4 +38,12 @@ export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
     return getFinalSymbol(sym.getAliasedSymbolOrThrow()) as T;
   }
   return sym;
+}
+
+export function getFinalSymbolOfType(type: Type): Symbol | undefined {
+  const sym = type.getSymbol() ?? type.getAliasSymbol();
+  if (sym) {
+    return getFinalSymbol(sym);
+  }
+  return;
 }

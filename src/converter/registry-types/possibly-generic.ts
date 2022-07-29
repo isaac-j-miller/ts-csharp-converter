@@ -16,7 +16,7 @@ export abstract class TypeRegistryPossiblyGenericType<
   T extends TokenType
 > extends RegistryType<T> {
   constructor(
-    protected registry: TypeRegistry,
+    registry: TypeRegistry,
     tokenType: T,
     name: string,
     sym: Symbol | ISyntheticSymbol,
@@ -31,7 +31,7 @@ export abstract class TypeRegistryPossiblyGenericType<
       properties: {},
       genericParameters: [],
     };
-    super(structure, sym, shouldBeRendered, internal, type);
+    super(registry, structure, sym, shouldBeRendered, internal, type);
   }
   addGenericParameters(t: Type) {
     const genericParameters = this.getGenericParameters(t);
@@ -78,10 +78,6 @@ export abstract class TypeRegistryPossiblyGenericType<
         }
         const names = this.getGenericParameters(typeToUse);
         if (names.length > 0) {
-          // // TODO: use the generic type args
-          // console.debug(
-          //   `Found generic type args for ${this.structure.name} (${name}) but I don't know what to do`
-          // );
           return `${name}<${names.join(", ")}>`;
         }
       }

@@ -58,6 +58,7 @@ export interface ISyntheticSymbol {
   getDeclaredType(): Type;
   getName(): string;
   isAlias(): false;
+  getUnderlyingSymbol(): Symbol | undefined;
   id: string;
   isSynthetic: true;
 }

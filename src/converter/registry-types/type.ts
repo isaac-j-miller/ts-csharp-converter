@@ -13,6 +13,7 @@ import {
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
+import { getFinalSymbolOfType } from "../util";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -58,23 +59,80 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       }
     }
   }
+  private getArgString(t: Type): string | undefined {
+    const name = (t.getAliasSymbol() ?? t.getSymbol())?.getName();
+    if (!name) {
+      return;
+    }
+    const aliasArgs = t.getAliasTypeArguments();
+    const argsList = aliasArgs
+      .map((a) => this.getArgString(a))
+      .filter((a) => a !== undefined) as string[];
+    if (argsList.length === 0) {
+      return name;
+    }
+    return `${name}<${argsList.join(", ")}>`;
+  }
+  private getGenericParametersOfProperty(
+    propName: string
+  ): string[] | undefined {
+    const property = (this.structure.properties ?? {})[propName];
+    if (!property) {
+      return;
+    }
+    const thisType = this.getType();
+    if (!thisType) {
+      return;
+    }
+    const matchingProperty = thisType.getApparentProperty(propName);
+    if (!matchingProperty) {
+      throw new Error(
+        `Property ${propName} declared but not found on type ${this.structure.name}`
+      );
+    }
+    const valueDec = matchingProperty.getValueDeclaration();
+    if (!valueDec) {
+      console.warn(
+        `Property ${propName} declared on type ${this.structure.name} but no value declaration found`
+      );
+      return;
+    }
+    const valueDecType = valueDec.getType();
+    let elemToUse = valueDecType;
+    if (property.isArray) {
+      elemToUse = valueDecType.getArrayElementType()!;
+      if (!elemToUse) {
+        throw new Error(
+          `Property ${propName} on type ${this.structure.name} is supposed to be an array but the underlying declaration contradicts`
+        );
+      }
+    }
+    const args = elemToUse
+      .getAliasTypeArguments()
+      .map((a) => this.getArgString(a))
+      .filter((arg) => arg !== undefined) as string[];
+    return args;
+  }
   private symbolToString(propName: string, baseType: TypeReference): string {
     if (isGenericReference(baseType)) {
       return baseType.genericParamName;
     }
     const fromRegistry = this.registry.getType(baseType);
     if (fromRegistry) {
-      return fromRegistry.getPropertyString();
+      const genericParameters = this.getGenericParametersOfProperty(propName);
+      return fromRegistry.getPropertyString(genericParameters);
     }
-    const nonPrimitive = baseType as Symbol | ISyntheticSymbol;
-    const name = nonPrimitive.getDeclaredType().getSymbol()?.getName();
-    if (name) {
-      return name;
-    }
-    console.warn(
-      `Could not find type name for property ${this.structure.name}.${propName}`
-    );
-    return "object";
+    // const nonPrimitive = baseType as Symbol | ISyntheticSymbol;
+    // const name = nonPrimitive.getDeclaredType().getSymbol()?.getName();
+
+    return this.resolveTypeName(baseType);
+    // if (name) {
+    //   return name;
+    // }
+    // console.warn(
+    //   `Could not find type name for property ${this.structure.name}.${propName}`
+    // );
+    // return "object";
   }
   private generateCSharpProperty(
     propName: string,

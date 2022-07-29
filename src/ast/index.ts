@@ -20,7 +20,7 @@ import {
   PrimitiveTypeName,
 } from "src/converter/types";
 import { SyntheticSymbol } from "src/converter/synthetic/symbol";
-import { getFinalSymbol } from "src/converter/util";
+import { getFinalSymbol, getFinalSymbolOfType } from "src/converter/util";
 
 export class AstTraverser {
   private project: Project;
@@ -40,11 +40,8 @@ export class AstTraverser {
   }
   private processInterfaceDeclaration(node: InterfaceDeclaration) {}
   private createSymbol(name: string, asType: Type): Symbol | ISyntheticSymbol {
-    // let symbolToUse = asType.getSymbol() ?? asType.getAliasSymbol();
-    // if (!symbolToUse || !(symbolToUse.compilerSymbol as any).id) {
-    return new SyntheticSymbol(name, asType);
-    // }
-    // return getFinalSymbol(symbolToUse);
+    const symbolFromType = getFinalSymbolOfType(asType);
+    return new SyntheticSymbol(name, asType, symbolFromType);
   }
   private asPrimitiveTypeName(type: Type): PrimitiveTypeName | undefined {
     const apparentType = type.getApparentType();
@@ -98,6 +95,7 @@ export class AstTraverser {
           member.getLiteralValueOrThrow()
         );
         const unionRegType = new TypeRegistryUnionType(
+          this.registry,
           name,
           symbolToUse,
           members as string[],
@@ -183,8 +181,12 @@ export class AstTraverser {
         });
       } else if (propertyTypeSymbol) {
         if (isArray) {
-          const arrayElemTypeSymbol = arrayElemType!.getSymbol();
-          if (arrayElemTypeSymbol) {
+          const arrayElemTypeSymbol = getFinalSymbolOfType(
+            arrayElemType!.getApparentType()
+          );
+          const inRegistry =
+            arrayElemTypeSymbol && this.registry.getType(arrayElemTypeSymbol);
+          if (inRegistry) {
             regType.addProperty(propertyName, arrayElemTypeSymbol, {
               isArray,
               isOptional,

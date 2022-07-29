@@ -15,11 +15,15 @@ import { getFinalSymbol } from "./util";
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
+  private textCache: Record<string, string | undefined>;
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
+    this.textCache = {};
   }
-  private symbolToIndex<T extends Symbol | ISyntheticSymbol>(sym: T): string {
+  private symbolToIndex<T extends Symbol | ISyntheticSymbol>(
+    sym: T
+  ): string | undefined {
     const finalSym = getFinalSymbol(sym);
     const name = sym.getName();
     if (isSyntheticSymbol(finalSym)) {
@@ -27,37 +31,66 @@ export class TypeRegistry {
     } else {
       let id = (finalSym.compilerSymbol as any)?.id;
       if (!id) {
-        console.warn(`No id found for symbol ${name}`);
+        return;
       }
       return name + id;
     }
+  }
+  private getWithKey(key: string): IRegistryType | undefined {
+    const redirect = this.redirects[key];
+    if (redirect) {
+      return this.symbolMap[redirect];
+    }
+    return this.symbolMap[key];
   }
   addType(type: IRegistryType) {
     const sym = type.getSymbol();
     const idx = isPrimitiveType(sym)
       ? sym.primitiveType
       : this.symbolToIndex(sym);
+
+    if (!idx) {
+      throw new Error(
+        `Unable to construct unique identifier for type ${
+          type.getStructure().name
+        }`
+      );
+    }
     if (this.symbolMap[idx]) {
       return;
     }
     this.symbolMap[idx] = type;
+    const underlyingSym = isSyntheticSymbol(sym)
+      ? sym.getUnderlyingSymbol()
+      : undefined;
+    if (underlyingSym) {
+      const symIdx = this.symbolToIndex(underlyingSym);
+      if (symIdx) {
+        this.redirects[symIdx] = idx;
+      }
+    }
   }
   has(sym: RegistryKey): boolean {
     return !!this.getType(sym);
   }
   findTypeBySymbolText(text: string): IRegistryType | undefined {
-    if (text === "__type" || text === "__typeundefined") {
+    if (text === "__type") {
       console.warn("Not returning __type");
       return;
     }
+    const keyFromCache = this.textCache[text];
+    if (keyFromCache) {
+      return this.getWithKey(keyFromCache);
+    }
     console.debug(`Attempting to find type by symbol text: ${text}`);
-    for (const value of Object.values(this.symbolMap)) {
+    for (const [key, value] of Object.entries(this.symbolMap)) {
       if (!value) {
         continue;
       }
       const sym = value.getSymbol();
       if (isPrimitiveType(sym)) {
         if (text === sym.primitiveType) {
+          this.textCache[text] = key;
           return value;
         }
         continue;
@@ -65,6 +98,7 @@ export class TypeRegistry {
       const final = getFinalSymbol(sym);
       const symText = final.getDeclaredType().getText();
       if (symText === text) {
+        this.textCache[text] = key;
         return value;
       }
     }
@@ -77,17 +111,26 @@ export class TypeRegistry {
       const primIdx = typeof sym === "string" ? sym : sym.primitiveType;
       const prim = this.symbolMap[primIdx];
       if (!prim) {
-        const primitiveType = new TypeRegistryPrimitiveType(primIdx);
+        const primitiveType = new TypeRegistryPrimitiveType(this, primIdx);
         this.addType(primitiveType);
       }
       return this.symbolMap[primIdx];
     }
     const idx = this.symbolToIndex(sym);
-    const redirect = this.redirects[idx];
-    if (redirect) {
-      return this.symbolMap[redirect];
+    if (!idx) {
+      return;
     }
-    return this.symbolMap[idx];
+    const fromMap = this.getWithKey(idx);
+    if (fromMap) {
+      return fromMap;
+    }
+    const underlyingSym = isSyntheticSymbol(sym)
+      ? sym.getUnderlyingSymbol()
+      : undefined;
+    if (underlyingSym) {
+      return this.getType(underlyingSym);
+    }
+    return;
   }
   private consolidate() {
     const hashMap: Record<string, string[]> = {};
@@ -123,7 +166,7 @@ export class TypeRegistry {
       console.debug(
         `Stripped ${Object.keys(replacementMap).length} duplicate types`
       );
-      this.redirects = replacementMap;
+      this.redirects = { ...this.redirects, ...replacementMap };
     });
   }
   private getElements(): CSharpElement[] {

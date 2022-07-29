@@ -2,9 +2,11 @@ import { Symbol, Type } from "ts-morph";
 import { CSharpEnum } from "src/csharp/elements";
 import { ISyntheticSymbol, TypeStructure } from "../types";
 import { RegistryType } from "./base";
+import { TypeRegistry } from "../registry";
 
 export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
   constructor(
+    registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
     members: string[],
@@ -16,7 +18,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
       name,
       unionMembers: members,
     };
-    super(structure, symbol, true, internal, type);
+    super(registry, structure, symbol, true, internal, type);
   }
   getPropertyString(): string {
     return this.structure.name;
