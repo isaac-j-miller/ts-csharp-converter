@@ -4,6 +4,7 @@ import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import {
   IRegistryType,
   isPrimitiveType,
+  isPrimitiveTypeName,
   isSyntheticSymbol,
   ISyntheticSymbol,
   PrimitiveType,
@@ -12,6 +13,10 @@ import {
 } from "./types";
 import { getFinalSymbol } from "./util";
 
+type GetTypeReturn<T extends RegistryKey | PrimitiveTypeName | PrimitiveType> =
+  T extends PrimitiveType | PrimitiveTypeName
+    ? IRegistryType
+    : IRegistryType | undefined;
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
@@ -104,21 +109,27 @@ export class TypeRegistry {
     }
     return;
   }
-  getType(
-    sym: RegistryKey | PrimitiveTypeName | PrimitiveType
-  ): IRegistryType | undefined {
-    if (typeof sym === "string" || isPrimitiveType(sym)) {
-      const primIdx = typeof sym === "string" ? sym : sym.primitiveType;
+  getType<T extends RegistryKey | PrimitiveTypeName | PrimitiveType>(
+    sym: T
+  ): GetTypeReturn<T> {
+    const symIsPrimitiveName = isPrimitiveTypeName(sym);
+    const symIsPrimitiveType = isPrimitiveType(sym);
+    if (symIsPrimitiveName || symIsPrimitiveType) {
+      const primIdx: PrimitiveTypeName = symIsPrimitiveName
+        ? sym
+        : sym.primitiveType;
       const prim = this.symbolMap[primIdx];
       if (!prim) {
         const primitiveType = new TypeRegistryPrimitiveType(this, primIdx);
         this.addType(primitiveType);
       }
-      return this.symbolMap[primIdx];
+      return this.symbolMap[primIdx]!;
     }
+    // need this really dumb type guard because typescript can't tell that sym does not extend PrimitiveType | PrimitiveTypeName at this point
+    const emptyReturnValue = undefined as GetTypeReturn<T>;
     const idx = this.symbolToIndex(sym);
     if (!idx) {
-      return;
+      return emptyReturnValue;
     }
     const fromMap = this.getWithKey(idx);
     if (fromMap) {
@@ -128,9 +139,9 @@ export class TypeRegistry {
       ? sym.getUnderlyingSymbol()
       : undefined;
     if (underlyingSym) {
-      return this.getType(underlyingSym);
+      return this.getType(underlyingSym) as GetTypeReturn<T>;
     }
-    return;
+    return emptyReturnValue;
   }
   private consolidate() {
     const hashMap: Record<string, string[]> = {};
@@ -163,9 +174,7 @@ export class TypeRegistry {
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      console.debug(
-        `Stripped ${Object.keys(replacementMap).length} duplicate types`
-      );
+      console.debug(`Stripped ${rest.length} duplicate types`);
       this.redirects = { ...this.redirects, ...replacementMap };
     });
   }

@@ -6,7 +6,7 @@ import {
   TypeRegistryType,
   TypeRegistryUnionType,
 } from "./registry-types";
-import { IRegistryType, PrimitiveTypeName } from "./types";
+import { IRegistryType, PrimitiveTypeName, UnionMember } from "./types";
 import {
   asPrimitiveTypeName,
   createSymbol,
@@ -28,39 +28,40 @@ type PropertyInfo = {
   options: PropertyOptions;
 };
 
+function getPropertyOptions(
+  parentNode: Node,
+  propertySymbol: Symbol
+): PropertyInfo {
+  const propertyName = propertySymbol.getName();
+  const isOptional = propertySymbol.isOptional();
+  const type = propertySymbol.getTypeAtLocation(parentNode);
+  const isArray = type.isArray();
+  const typeArgs = type.getAliasTypeArguments();
+  const genericParameters = typeArgs.map(
+    (t) =>
+      t.getAliasSymbol()?.getName() ?? t.getSymbol()?.getName() ?? t.getText()
+  );
+  const symbol = type.getSymbol();
+  const arrayElemType = type.getArrayElementType();
+  const primitiveType = asPrimitiveTypeName(type);
+  const options = { isArray, isOptional, genericParameters };
+  return {
+    propertyName,
+    type,
+    symbol,
+    arrayElemType,
+    primitiveType,
+    options,
+  };
+}
+
 export class TypeFactory {
   constructor(private registry: TypeRegistry) {}
-  private getPropertyOptions(
-    parentNode: Node,
-    propertySymbol: Symbol
-  ): PropertyInfo {
-    const propertyName = propertySymbol.getName();
-    const isOptional = propertySymbol.isOptional();
-    const type = propertySymbol.getTypeAtLocation(parentNode);
-    const isArray = type.isArray();
-    const typeArgs = type.getAliasTypeArguments();
-    const genericParameters = typeArgs.map(
-      (t) =>
-        t.getAliasSymbol()?.getName() ?? t.getSymbol()?.getName() ?? t.getText()
-    );
-    const symbol = type.getSymbol();
-    const arrayElemType = type.getArrayElementType();
-    const primitiveType = asPrimitiveTypeName(type);
-    const options = { isArray, isOptional, genericParameters };
-    return {
-      propertyName,
-      type,
-      symbol,
-      arrayElemType,
-      primitiveType,
-      options,
-    };
-  }
   private createPrimitiveType(options: TypeOptions): IRegistryType | undefined {
     const { type } = options;
     const typeAsPrimitive = asPrimitiveTypeName(type);
     if (typeAsPrimitive) {
-      return this.registry.getType(typeAsPrimitive)!;
+      return this.registry.getType(typeAsPrimitive);
     }
     return;
   }
@@ -68,12 +69,14 @@ export class TypeFactory {
     options: TypeOptions
   ): IRegistryType | undefined {
     const { name, node, type, internal } = options;
-    if (!type.isUnion()) {
+    if (type.isEnum() || !type.isUnion()) {
       return;
     }
     const symbolToUse = createSymbol(name, type);
     const unionTypes = type.getUnionTypes();
-    const nonUndefinedUnionTypes = unionTypes.filter((u) => !u.isUndefined());
+    const nonUndefinedUnionTypes = unionTypes.filter(
+      (u) => !u.isUndefined() && !u.isNull()
+    );
     if (
       nonUndefinedUnionTypes.every((unionType) => unionType.isStringLiteral())
     ) {
@@ -84,7 +87,7 @@ export class TypeFactory {
         this.registry,
         name,
         symbolToUse,
-        members as string[],
+        members.map((member) => ({ name: member.toString() })),
         internal,
         type
       );
@@ -98,49 +101,93 @@ export class TypeFactory {
         internal,
       });
     }
-    // TODO: handle other cases
-    return;
+    if (
+      nonUndefinedUnionTypes.every((unionType) => unionType.isEnumLiteral())
+    ) {
+      return this.createUnionTypeFromEnum(options, true);
+    }
+    if (
+      nonUndefinedUnionTypes.every(
+        (unionType) => unionType.isNumberLiteral() || unionType.isNumber()
+      )
+    ) {
+      return this.registry.getType("number");
+    }
+    if (nonUndefinedUnionTypes.every((unionType) => unionType.isString())) {
+      return this.registry.getType("string");
+    }
+    return this.registry.getType("object");
   }
   private createUnionTypeFromEnum(
-    options: TypeOptions
+    options: TypeOptions,
+    overrideEnumCheck: boolean = false
   ): IRegistryType | undefined {
-    const { name, node, type, internal } = options;
-    if (type.isEnum()) {
-      console.debug("enum detected");
+    const { name, type, internal } = options;
+    const symbolToUse = createSymbol(name, type);
+    if (!overrideEnumCheck && !type.isEnum()) {
+      return;
     }
-    return;
+    const unionTypes = type.getUnionTypes();
+    let previousValue = -1;
+    const members = unionTypes
+      .map((u): UnionMember | undefined => {
+        const memberName =
+          u.getSymbol()?.getName() ?? u.getAliasSymbol()?.getName();
+        if (!memberName) {
+          previousValue++;
+          return;
+        }
+        const value = u.getLiteralValue() as number | undefined;
+        const valueToUse = value === previousValue + 1 ? undefined : value;
+        if (value !== undefined && Number.isFinite(value)) {
+          previousValue = value;
+        }
+        return {
+          name: memberName,
+          value: valueToUse,
+        };
+      })
+      .filter((u) => u !== undefined) as UnionMember[];
+    return new TypeRegistryUnionType(
+      this.registry,
+      name,
+      symbolToUse,
+      members,
+      internal,
+      type
+    );
   }
   private createMappedType(options: TypeOptions): IRegistryType | undefined {
     const { name, node, type, internal } = options;
     const symbolToUse = createSymbol(name, type);
     const stringIndexType = type.getStringIndexType();
-    if (stringIndexType) {
-      const valueType = stringIndexType.getApparentType();
-      const indexType = this.registry.getType("string")!.getSymbol();
-      const valueTypeName = `${name}Value`;
-      console.debug(`Creating internal type ${valueTypeName}`);
-      const vType = this.createType({
-        name: valueTypeName,
-        node,
-        type: valueType,
-        internal: true,
-      });
-
-      const mappedType = new TypeRegistryDictType(
-        this.registry,
-        name,
-        symbolToUse,
-        indexType,
-        vType.getSymbol(),
-        internal,
-        node,
-        type
-      );
-      mappedType.addGenericParameters(type);
-      console.debug(`Adding mapped type ${name} to registry`);
-      return mappedType;
+    if (!stringIndexType) {
+      return;
     }
-    return;
+    const valueType = stringIndexType.getApparentType();
+    const indexType = this.registry.getType("string").getSymbol();
+    const valueTypeName = `${name}Value`;
+    console.debug(`Creating internal type ${valueTypeName}`);
+    const vType = this.createType({
+      name: valueTypeName,
+      node,
+      type: valueType,
+      internal: true,
+    });
+
+    const mappedType = new TypeRegistryDictType(
+      this.registry,
+      name,
+      symbolToUse,
+      indexType,
+      vType.getSymbol(),
+      internal,
+      node,
+      type
+    );
+    mappedType.addGenericParameters(type);
+    console.debug(`Adding mapped type ${name} to registry`);
+    return mappedType;
   }
   private getFromRegistryOrCreateAnon(
     node: Node,
@@ -204,7 +251,7 @@ export class TypeFactory {
     property: Symbol
   ) {
     const { node } = parentOptions;
-    const propertyOptions = this.getPropertyOptions(node, property);
+    const propertyOptions = getPropertyOptions(node, property);
     const {
       propertyName,
       options,
@@ -223,7 +270,7 @@ export class TypeFactory {
       );
     }
     if (primitiveType) {
-      const primitiveSymbol = this.registry.getType(primitiveType)!.getSymbol();
+      const primitiveSymbol = this.registry.getType(primitiveType).getSymbol();
       return registryType.addProperty(propertyName, primitiveSymbol, options);
     }
     const propertyTypeFromRegistry = this.getPropertyTypeFromRegistry(
@@ -248,6 +295,9 @@ export class TypeFactory {
       node,
       type
     );
+    if (name === "IndexTypeaClass") {
+      console.debug("here");
+    }
     regType.addGenericParameters(type);
     const propertySignatures = type.getApparentProperties();
     propertySignatures.forEach((property) =>

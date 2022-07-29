@@ -9,18 +9,25 @@ export type TokenType =
   | "Enum"
   | "Primitive"
   | "Dictionary";
-export type PrimitiveTypeName =
-  | "string"
-  | "String"
-  | "number"
-  | "Number"
-  | "boolean"
-  | "Boolean"
-  | "object"
-  | "any"
-  | "undefined"
-  | "null"
-  | "unknown";
+const primitiveTypeNames = [
+  "string",
+  "String",
+  "number",
+  "Number",
+  "boolean",
+  "Boolean",
+  "object",
+  "any",
+  "undefined",
+  "null",
+  "unknown",
+] as const;
+export type PrimitiveTypeName = typeof primitiveTypeNames[number];
+
+export type UnionMember = {
+  name: string;
+  value?: number;
+};
 
 export type GenericReference = {
   isGenericReference: true;
@@ -42,7 +49,7 @@ export type PropertyStructure = {
 export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
-  unionMembers?: string[];
+  unionMembers?: UnionMember[];
   properties?: Record<string, PropertyStructure>;
   genericParameters?: string[];
   mappedIndexType?: string;
@@ -79,7 +86,12 @@ export type RegistryKey = Symbol | ISyntheticSymbol;
 export function isPrimitiveType(t: unknown): t is PrimitiveType {
   return !!(t as PrimitiveType).isPrimitiveType;
 }
-
+export function isPrimitiveTypeName(str: unknown): str is PrimitiveTypeName {
+  if (typeof str !== "string") {
+    return false;
+  }
+  return primitiveTypeNames.includes(str as PrimitiveTypeName);
+}
 export function isGenericReference(t: unknown): t is GenericReference {
   return !!(t as GenericReference).isGenericReference;
 }

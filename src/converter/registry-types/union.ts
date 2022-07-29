@@ -1,6 +1,6 @@
 import { Symbol, Type } from "ts-morph";
 import { CSharpEnum } from "src/csharp/elements";
-import { ISyntheticSymbol, TypeStructure } from "../types";
+import { ISyntheticSymbol, TypeStructure, UnionMember } from "../types";
 import { RegistryType } from "./base";
 import { TypeRegistry } from "../registry";
 
@@ -9,7 +9,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
-    members: string[],
+    members: UnionMember[],
     internal: boolean,
     type: Type
   ) {

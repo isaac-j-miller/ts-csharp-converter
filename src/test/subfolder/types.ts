@@ -1,4 +1,5 @@
 import { NominalString } from "./more";
+import { TestEnum1, TestEnum2 } from "./more-types";
 
 export type Foo = {
   x: number;
@@ -36,3 +37,29 @@ export type ZZZ = {
   x: Record<string, SomeGenericType<Abc>>;
 };
 export type Bs<T> = Record<string, DefaultGeneric<T>>;
+
+export type SomeStupidSubEnum = TestEnum1.Baz | TestEnum1.FooBar;
+
+export type SomeStupidSubEnum2 = TestEnum1.Fooooo | TestEnum2.Value2;
+
+export type NumericalUnion = 1 | 3 | 4;
+
+export type DumbType = {
+  num: NumericalUnion;
+  dumber: TestEnum1 | 1;
+  un: SomeUnion;
+  absurd: AbsurdUnion;
+};
+export type AbsurdUnion = "foo" | 1 | null;
+
+export type SomeUnion = "foo" | "bar" | string;
+
+export type IndexType = {
+  abc: ZZZ["v"];
+  a: SomeLargerType<Abc>["x"];
+};
+
+export type GenericIndexType<T extends Bs<any>> = {
+  i: IndexType;
+  v: SomeGenericType<T>["foo"];
+};

@@ -87,6 +87,9 @@ export function asPrimitiveTypeName(t: Type): PrimitiveTypeName | undefined {
   ) {
     return "boolean";
   }
+  if (baseTypeName === "object" || apparentTypeName === "object") {
+    return "object";
+  }
   if (apparentType.isAny()) {
     return "any";
   }
