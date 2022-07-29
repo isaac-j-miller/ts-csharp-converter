@@ -13,7 +13,7 @@ import {
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { getFinalSymbolOfType, getGenericTypeName } from "../util";
+import { getGenericTypeName } from "../util";
 
 export type PropertyOptions = Omit<
   PropertyStructure,

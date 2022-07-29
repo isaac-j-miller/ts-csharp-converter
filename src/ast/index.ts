@@ -1,8 +1,8 @@
 import {
+  EnumDeclaration,
   InterfaceDeclaration,
   Node,
   Project,
-  Symbol,
   SourceFile,
   SyntaxKind,
   Type,
@@ -14,14 +14,17 @@ import {
   TypeRegistryType,
   TypeRegistryUnionType,
 } from "src/converter/registry-types";
+import { IRegistryType } from "src/converter/types";
 import {
-  IRegistryType,
-  ISyntheticSymbol,
-  PrimitiveTypeName,
-} from "src/converter/types";
-import { SyntheticSymbol } from "src/converter/synthetic/symbol";
-import { getFinalSymbol, getFinalSymbolOfType } from "src/converter/util";
+  asPrimitiveTypeName,
+  createSymbol,
+  getFinalSymbolOfType,
+} from "src/converter/util";
 
+type DeclarationType =
+  | EnumDeclaration
+  | InterfaceDeclaration
+  | TypeAliasDeclaration;
 export class AstTraverser {
   private project: Project;
   private entrySourceFile: SourceFile;
@@ -33,49 +36,10 @@ export class AstTraverser {
     this.entrySourceFile = this.project.getSourceFileOrThrow(entrypoint);
     this.registry = new TypeRegistry();
   }
-  private processNode<T extends SyntaxKind>(kind: T, node: Node) {
-    console.debug(`Got kind: ${SyntaxKind[kind]}`);
-    // TODO: do something here
-    return;
-  }
-  private processInterfaceDeclaration(node: InterfaceDeclaration) {}
-  private createSymbol(name: string, asType: Type): Symbol | ISyntheticSymbol {
-    const symbolFromType = getFinalSymbolOfType(asType);
-    return new SyntheticSymbol(name, asType, symbolFromType);
-  }
-  private asPrimitiveTypeName(type: Type): PrimitiveTypeName | undefined {
-    const apparentType = type.getApparentType();
-    const baseTypeName = apparentType
-      .getBaseTypes()[0]
-      ?.getText()
-      ?.toLowerCase();
-    const apparentTypeName = apparentType.getSymbol()?.getName()?.toLowerCase();
-
-    if (
-      apparentType.isString() ||
-      baseTypeName === "string" ||
-      apparentTypeName === "string"
-    ) {
-      return "string";
-    }
-    if (
-      apparentType.isNumber() ||
-      baseTypeName === "number" ||
-      apparentTypeName === "number"
-    ) {
-      return "number";
-    }
-    if (
-      apparentType.isBoolean() ||
-      baseTypeName === "boolean" ||
-      apparentTypeName === "boolean"
-    ) {
-      return "boolean";
-    }
-    if (apparentType.isAny()) {
-      return "any";
-    }
-    return;
+  private processDeclaration<T extends DeclarationType>(node: T) {
+    const name = node.getName();
+    const asType = node.getType();
+    return this.createType(name, node, asType);
   }
   private createType(
     name: string,
@@ -83,14 +47,17 @@ export class AstTraverser {
     asType: Type,
     internal: boolean = false
   ): IRegistryType {
-    const asPrimitiveTypeName = this.asPrimitiveTypeName(asType);
-    if (asPrimitiveTypeName) {
-      return this.registry.getType(asPrimitiveTypeName)!;
+    const typeAsPrimitive = asPrimitiveTypeName(asType);
+    if (typeAsPrimitive) {
+      return this.registry.getType(typeAsPrimitive)!;
     }
-    const symbolToUse = this.createSymbol(name, asType);
+    const symbolToUse = createSymbol(name, asType);
     if (asType.isUnion()) {
       const unionTypes = asType.getUnionTypes();
-      if (unionTypes.every((unionType) => unionType.isStringLiteral())) {
+      const nonUndefinedUnionTypes = unionTypes.filter((u) => !u.isUndefined());
+      if (
+        nonUndefinedUnionTypes.every((unionType) => unionType.isStringLiteral())
+      ) {
         const members = unionTypes.map((member) =>
           member.getLiteralValueOrThrow()
         );
@@ -105,6 +72,9 @@ export class AstTraverser {
         console.debug(`Adding union type ${name} to registry`);
         this.registry.addType(unionRegType);
         return unionRegType;
+      }
+      if (nonUndefinedUnionTypes.length === 1) {
+        return this.createType(name, node, nonUndefinedUnionTypes[0], internal);
       }
     }
     const stringIndexType = asType.getStringIndexType();
@@ -155,7 +125,7 @@ export class AstTraverser {
       const propertyText = propertyType.getText();
       const propertyTypeSymbol = propertyType.getSymbol();
       const arrayElemType = propertyType.getArrayElementType();
-      const primitiveType = this.asPrimitiveTypeName(propertyType);
+      const primitiveType = asPrimitiveTypeName(propertyType);
       if (propertyType.isTypeParameter()) {
         const genericParamName = propertyType.getSymbolOrThrow().getName();
         regType.addProperty(
@@ -240,15 +210,32 @@ export class AstTraverser {
             genericParameters,
           });
         } else {
-          console.warn(
-            `No symbol for property ${propertyName} on type ${name}!`
-          );
-          const primitiveSymbol = this.registry.getType("object")!.getSymbol();
-          regType.addProperty(propertyName, primitiveSymbol, {
-            isArray,
-            isOptional,
-            genericParameters,
-          });
+          if (propertyType) {
+            console.debug(`Creating internal type ${name}${propertyName}Class`);
+            const anon = this.createType(
+              `${name}${propertyName}Class`,
+              node,
+              propertyType,
+              true
+            );
+            regType.addProperty(propertyName, anon.getSymbol(), {
+              isArray,
+              isOptional,
+              genericParameters,
+            });
+          } else {
+            console.warn(
+              `No symbol for property ${propertyName} on type ${name}!`
+            );
+            const primitiveSymbol = this.registry
+              .getType("object")!
+              .getSymbol();
+            regType.addProperty(propertyName, primitiveSymbol, {
+              isArray,
+              isOptional,
+              genericParameters,
+            });
+          }
         }
       }
     });
@@ -256,36 +243,15 @@ export class AstTraverser {
     this.registry.addType(regType);
     return regType;
   }
-  private processTypeAliasDeclaration(node: TypeAliasDeclaration) {
-    const name = node.getName();
-    const asType = node.getType();
-    return this.createType(name, node, asType);
-  }
   private traverseNode(node: Node) {
-    node.forEachDescendant((node, traversal) => {
+    node.forEachDescendant((node) => {
       const kind = node.getKind();
-      // console.debug(`Traversing node with kind ${SyntaxKind[kind]}`);
       switch (kind) {
-        // case SyntaxKind.ConditionalType:
         case SyntaxKind.TypeAliasDeclaration:
-          this.processTypeAliasDeclaration(node.asKindOrThrow(kind));
-          break;
         case SyntaxKind.InterfaceDeclaration:
-          this.processInterfaceDeclaration(node.asKindOrThrow(kind));
-          break;
-        // case SyntaxKind.LiteralType:
-        case SyntaxKind.MappedType:
         case SyntaxKind.EnumDeclaration:
-          // case SyntaxKind.NumericLiteral:
-          // case SyntaxKind.PropertySignature:
-          // case SyntaxKind.TupleType:
-          // case SyntaxKind.TypeLiteral:
-          // case SyntaxKind.TypeParameter:
-          // case SyntaxKind.TypeReference:
-          this.processNode(kind, node);
+          this.processDeclaration(node.asKindOrThrow(kind));
           break;
-        // case SyntaxKind.UnionType:
-        //     break;
         case SyntaxKind.ImportDeclaration:
         case SyntaxKind.ExportDeclaration: {
           const sourceFile = node

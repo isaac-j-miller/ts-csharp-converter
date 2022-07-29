@@ -6,6 +6,7 @@ import {
   ISyntheticSymbol,
   PrimitiveTypeName,
 } from "./types";
+import { SyntheticSymbol } from "./synthetic/symbol";
 
 export function toCSharpPrimitive(
   primitive: PrimitiveTypeName
@@ -53,4 +54,41 @@ export function getGenericTypeName(name: string, typeArgs?: string[]) {
     return name;
   }
   return `${name}<${typeArgs.join(", ")}>`;
+}
+
+export function createSymbol(name: string, t: Type): ISyntheticSymbol {
+  const symbolFromType = getFinalSymbolOfType(t);
+  return new SyntheticSymbol(name, t, symbolFromType);
+}
+
+export function asPrimitiveTypeName(t: Type): PrimitiveTypeName | undefined {
+  const apparentType = t.getApparentType();
+  const baseTypeName = apparentType.getBaseTypes()[0]?.getText()?.toLowerCase();
+  const apparentTypeName = apparentType.getSymbol()?.getName()?.toLowerCase();
+
+  if (
+    apparentType.isString() ||
+    baseTypeName === "string" ||
+    apparentTypeName === "string"
+  ) {
+    return "string";
+  }
+  if (
+    apparentType.isNumber() ||
+    baseTypeName === "number" ||
+    apparentTypeName === "number"
+  ) {
+    return "number";
+  }
+  if (
+    apparentType.isBoolean() ||
+    baseTypeName === "boolean" ||
+    apparentTypeName === "boolean"
+  ) {
+    return "boolean";
+  }
+  if (apparentType.isAny()) {
+    return "any";
+  }
+  return;
 }
