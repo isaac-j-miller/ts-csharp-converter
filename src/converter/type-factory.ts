@@ -201,13 +201,13 @@ export class TypeFactory {
     const indexType = this.registry.getType("string").getSymbol();
     const valueTypeName = `${name}Value`;
     console.debug(`Creating internal type ${valueTypeName}`);
-    const vType = this.createType({
-      name: valueTypeName,
+    const vType = this.getFromRegistryOrCreateAnon(
       node,
-      type: valueType,
-      internal: true,
-      level: level + 1,
-    });
+      valueType,
+      valueTypeName,
+      level,
+      valueType.getSymbol()
+    );
 
     const mappedType = new TypeRegistryDictType(
       this.registry,
@@ -328,7 +328,7 @@ export class TypeFactory {
       node,
       baseType,
       internalClassName,
-      level + 1,
+      level,
       symbol
     );
   }

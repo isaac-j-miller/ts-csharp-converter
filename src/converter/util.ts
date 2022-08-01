@@ -3,6 +3,7 @@ import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
   GenericParameter,
+  IRegistryType,
   isSyntheticSymbol,
   ISyntheticSymbol,
   LiteralValue,
@@ -137,10 +138,35 @@ export function getGenericParameters(
   const params: GenericParameter[] = [];
   const genericParameters = t.getAliasTypeArguments();
   genericParameters.forEach((param) => {
-    const v = (param.getSymbol() ?? param.getAliasSymbol())?.getName();
+    const apparentType = param.getApparentType();
+    const defaultValue = param.getDefault();
+    let v = (
+      apparentType.getSymbol() ?? apparentType.getAliasSymbol()
+    )?.getName();
+
+    if (defaultValue && !v) {
+      const defaultSymbol = getFinalSymbolOfType(defaultValue);
+      const asPrimitive = asPrimitiveTypeName(defaultValue);
+      let defaultParam: IRegistryType | undefined = asPrimitive
+        ? registry.getType(asPrimitive)
+        : undefined;
+      if (defaultSymbol && !defaultParam) {
+        defaultParam = registry.getType(defaultSymbol);
+      }
+      if (defaultParam) {
+        const defaultParamGenericParams = getGenericParameters(
+          registry,
+          defaultValue
+        );
+        v = defaultParam.getPropertyString(
+          defaultParamGenericParams.map((v) => v.name)
+        );
+      }
+    }
     if (!v) {
       return;
     }
+
     const typeConstraint = param.getConstraint();
     const constraintSymbol = typeConstraint
       ? getFinalSymbolOfType(typeConstraint)
@@ -148,11 +174,11 @@ export function getGenericParameters(
     const constraint = (
       constraintSymbol ? registry.getType(constraintSymbol) : undefined
     )?.getSymbol();
-
     const p: GenericParameter = {
       name: v,
       constraint,
     };
+
     params.push(p);
   });
   return params;

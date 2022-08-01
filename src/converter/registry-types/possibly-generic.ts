@@ -11,12 +11,7 @@ import {
   TypeReference,
   TypeStructure,
 } from "../types";
-import {
-  getFinalSymbolOfType,
-  getGenericParameters,
-  getGenericTypeName,
-  toCSharpPrimitive,
-} from "../util";
+import { getGenericParameters, toCSharpPrimitive } from "../util";
 import { RegistryType } from "./base";
 
 export abstract class TypeRegistryPossiblyGenericType<
@@ -62,7 +57,15 @@ export abstract class TypeRegistryPossiblyGenericType<
         let typeToUse = registryType.getType()?.getApparentType();
         if (!typeToUse) {
           if (isSyntheticSymbol(ref)) {
+            const underlyingSymbol = ref.getUnderlyingSymbol();
             typeToUse = ref.getDeclaredType();
+            if (underlyingSymbol) {
+              const typeFromUnderlyingSymbol =
+                underlyingSymbol.getTypeAtLocation(this.node);
+              if (typeFromUnderlyingSymbol) {
+                typeToUse = typeFromUnderlyingSymbol;
+              }
+            }
           } else if (!isConstType(ref)) {
             typeToUse = ref.getTypeAtLocation(this.node);
           }
