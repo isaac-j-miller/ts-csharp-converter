@@ -2,7 +2,9 @@ import { Symbol } from "ts-morph";
 import { CSharpElement, CSharpNamespace } from "src/csharp/elements";
 import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import {
+  ConstType,
   IRegistryType,
+  isConstType,
   isPrimitiveType,
   isPrimitiveTypeName,
   isSyntheticSymbol,
@@ -12,11 +14,23 @@ import {
   RegistryKey,
 } from "./types";
 import { getFinalSymbol } from "./util";
+import { TypeRegistryConstType } from "./registry-types/consts";
 
-type GetTypeReturn<T extends RegistryKey | PrimitiveTypeName | PrimitiveType> =
-  T extends PrimitiveType | PrimitiveTypeName
-    ? IRegistryType
-    : IRegistryType | undefined;
+export const CONSTS_KEYWORD = "__consts__" as const;
+export type ConstKeyword = typeof CONSTS_KEYWORD;
+
+type GetTypeReturn<
+  T extends
+    | RegistryKey
+    | PrimitiveTypeName
+    | PrimitiveType
+    | ConstKeyword
+    | ConstType
+> = T extends PrimitiveType | PrimitiveTypeName
+  ? TypeRegistryPrimitiveType
+  : T extends ConstType | ConstKeyword
+  ? TypeRegistryConstType
+  : IRegistryType | undefined;
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
@@ -48,12 +62,27 @@ export class TypeRegistry {
     }
     return this.symbolMap[key];
   }
+  getConstValueType(): TypeRegistryConstType {
+    const v = this.symbolMap[CONSTS_KEYWORD];
+    if (!v) {
+      const constType = new TypeRegistryConstType(this);
+      this.symbolMap[CONSTS_KEYWORD] = constType;
+    }
+    return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
+  }
+
   addType(type: IRegistryType) {
     const sym = type.getSymbol();
-    const idx = isPrimitiveType(sym)
-      ? sym.primitiveType
-      : this.symbolToIndex(sym);
-
+    const typeIsPrimitive = isPrimitiveType(sym);
+    const typeIsConst = isConstType(sym);
+    let idx: string | undefined;
+    if (typeIsConst) {
+      idx = "consts";
+    } else if (typeIsPrimitive) {
+      idx = sym.primitiveType;
+    } else {
+      idx = this.symbolToIndex(sym);
+    }
     if (!idx) {
       throw new Error(
         `Unable to construct unique identifier for type ${
@@ -64,6 +93,9 @@ export class TypeRegistry {
     if (this.symbolMap[idx]) {
       return;
     }
+    console.debug(
+      `Adding ${type.tokenType} type ${type.getStructure().name} to registry`
+    );
     this.symbolMap[idx] = type;
     const underlyingSym = isSyntheticSymbol(sym)
       ? sym.getUnderlyingSymbol()
@@ -87,7 +119,6 @@ export class TypeRegistry {
     if (keyFromCache) {
       return this.getWithKey(keyFromCache);
     }
-    console.debug(`Attempting to find type by symbol text: ${text}`);
     for (const [key, value] of Object.entries(this.symbolMap)) {
       if (!value) {
         continue;
@@ -100,6 +131,9 @@ export class TypeRegistry {
         }
         continue;
       }
+      if (isConstType(sym)) {
+        continue;
+      }
       const final = getFinalSymbol(sym);
       const symText = final.getDeclaredType().getText();
       if (symText === text) {
@@ -109,9 +143,14 @@ export class TypeRegistry {
     }
     return;
   }
-  getType<T extends RegistryKey | PrimitiveTypeName | PrimitiveType>(
-    sym: T
-  ): GetTypeReturn<T> {
+  getType<
+    T extends
+      | RegistryKey
+      | PrimitiveTypeName
+      | PrimitiveType
+      | ConstType
+      | ConstKeyword
+  >(sym: T): GetTypeReturn<T> {
     const symIsPrimitiveName = isPrimitiveTypeName(sym);
     const symIsPrimitiveType = isPrimitiveType(sym);
     if (symIsPrimitiveName || symIsPrimitiveType) {
@@ -123,7 +162,12 @@ export class TypeRegistry {
         const primitiveType = new TypeRegistryPrimitiveType(this, primIdx);
         this.addType(primitiveType);
       }
-      return this.symbolMap[primIdx]!;
+      return this.symbolMap[primIdx] as GetTypeReturn<T>;
+    }
+    const symIsConstKeyword = sym === "__consts__";
+    const symIsConstType = isConstType(sym);
+    if (symIsConstKeyword || symIsConstType) {
+      return this.getConstValueType() as GetTypeReturn<T>;
     }
     // need this really dumb type guard because typescript can't tell that sym does not extend PrimitiveType | PrimitiveTypeName at this point
     const emptyReturnValue = undefined as GetTypeReturn<T>;
@@ -133,7 +177,7 @@ export class TypeRegistry {
     }
     const fromMap = this.getWithKey(idx);
     if (fromMap) {
-      return fromMap;
+      return fromMap as GetTypeReturn<T>;
     }
     const underlyingSym = isSyntheticSymbol(sym)
       ? sym.getUnderlyingSymbol()
@@ -166,15 +210,14 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      console.debug(
-        `Found ${indices.length} renderable types with same hash: ${hash}`
-      );
       const [firstIdx, ...rest] = indices;
       rest.forEach((idx) => {
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      console.debug(`Stripped ${rest.length} duplicate types`);
+      console.debug(
+        `Stripped ${rest.length} duplicate types with hash ${hash}...`
+      );
       this.redirects = { ...this.redirects, ...replacementMap };
     });
   }
@@ -189,6 +232,6 @@ export class TypeRegistry {
   }
   toNamespace(name: string): CSharpNamespace {
     this.consolidate();
-    return new CSharpNamespace(name, this.getElements(), true);
+    return new CSharpNamespace(name, this.getElements());
   }
 }

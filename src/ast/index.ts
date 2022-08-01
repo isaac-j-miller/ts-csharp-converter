@@ -7,10 +7,16 @@ import {
   SyntaxKind,
   Type,
   TypeAliasDeclaration,
+  VariableDeclaration,
 } from "ts-morph";
 import { TypeRegistry } from "src/converter/registry";
-import { IRegistryType } from "src/converter/types";
+import { IRegistryType, LiteralValue } from "src/converter/types";
 import { TypeFactory } from "src/converter/type-factory";
+import {
+  asPrimitiveTypeName,
+  getArrayDepth,
+  getFinalArrayType,
+} from "src/converter/util";
 
 type DeclarationType =
   | EnumDeclaration
@@ -34,6 +40,36 @@ export class AstTraverser {
     const asType = node.getType();
     return this.createType(name, node, asType);
   }
+  private processVariableDeclaration(node: VariableDeclaration) {
+    const name = node.getName();
+    const asType = node.getType();
+    const isArray = asType.isArray();
+
+    const constType = this.registry.getConstValueType();
+    const typeToUse = getFinalArrayType(asType);
+    const literalType = asPrimitiveTypeName(typeToUse);
+    let literal = typeToUse.getLiteralValue();
+    const structure = node.getStructure();
+    if (isArray && structure.initializer) {
+      literal = eval(structure.initializer.toString());
+    }
+    if (!node.isExported() || !literalType) {
+      return;
+    }
+    if (!literalType) {
+      console.warn(`Invalid literal type (${name})`);
+      return;
+    }
+    const arrayDepth = getArrayDepth(asType);
+    constType.addConst(
+      name,
+      literalType,
+      isArray,
+      arrayDepth,
+      literal as LiteralValue
+    );
+    console.debug(`Found declaration: ${name} = ${JSON.stringify(literal)}`);
+  }
   private createType(
     name: string,
     node: Node,
@@ -52,6 +88,9 @@ export class AstTraverser {
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration:
           this.processDeclaration(node.asKindOrThrow(kind));
+          break;
+        case SyntaxKind.VariableDeclaration:
+          this.processVariableDeclaration(node.asKindOrThrow(kind));
           break;
         case SyntaxKind.ImportDeclaration:
         case SyntaxKind.ExportDeclaration: {

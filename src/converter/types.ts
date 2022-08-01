@@ -8,7 +8,8 @@ export type TokenType =
   | "Interface"
   | "Enum"
   | "Primitive"
-  | "Dictionary";
+  | "Dictionary"
+  | "Const";
 const primitiveTypeNames = [
   "string",
   "String",
@@ -22,6 +23,13 @@ const primitiveTypeNames = [
   "null",
   "unknown",
 ] as const;
+export type LiteralValue =
+  | string
+  | boolean
+  | number
+  | undefined
+  | null
+  | LiteralValue[];
 export type PrimitiveTypeName = typeof primitiveTypeNames[number];
 
 export type UnionMember = {
@@ -37,13 +45,16 @@ export type TypeReference =
   | Symbol
   | PrimitiveType
   | GenericReference
-  | ISyntheticSymbol;
+  | ISyntheticSymbol
+  | ConstType;
 export type PropertyStructure = {
   propertyName: string;
-  baseType: TypeReference; // TODO: change this or make it reference a specific type
+  baseType: TypeReference;
   isArray: boolean;
+  arrayDepth?: number;
   isOptional: boolean;
   genericParameters?: string[];
+  defaultLiteralValue?: LiteralValue;
 };
 
 export type TypeStructure<T extends TokenType> = {
@@ -61,6 +72,10 @@ export type PrimitiveType = {
   primitiveType: PrimitiveTypeName;
 };
 
+export type ConstType = {
+  isConstType: true;
+};
+
 export interface ISyntheticSymbol {
   getDeclaredType(): Type;
   getName(): string;
@@ -76,7 +91,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   getStructure(): TypeStructure<T>;
   getHash(): string;
   getPropertyString(genericParameterValues?: string[]): string;
-  getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol;
+  getSymbol(): Exclude<TypeReference, GenericReference>;
   getCSharpElement(): CSharpElement;
   getType(): Type | undefined;
 }
@@ -98,4 +113,8 @@ export function isGenericReference(t: unknown): t is GenericReference {
 
 export function isSyntheticSymbol(t: unknown): t is ISyntheticSymbol {
   return !!(t as ISyntheticSymbol).isSynthetic;
+}
+
+export function isConstType(t: unknown): t is ConstType {
+  return !!(t as ConstType).isConstType;
 }

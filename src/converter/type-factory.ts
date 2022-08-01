@@ -10,6 +10,8 @@ import { IRegistryType, PrimitiveTypeName, UnionMember } from "./types";
 import {
   asPrimitiveTypeName,
   createSymbol,
+  getArrayDepth,
+  getFinalArrayType,
   getFinalSymbolOfType,
 } from "./util";
 
@@ -21,9 +23,8 @@ type TypeOptions = {
 };
 type PropertyInfo = {
   propertyName: string;
-  type: Type;
+  baseType: Type;
   symbol?: Symbol;
-  arrayElemType?: Type;
   primitiveType?: PrimitiveTypeName;
   options: PropertyOptions;
 };
@@ -36,20 +37,20 @@ function getPropertyOptions(
   const isOptional = propertySymbol.isOptional();
   const type = propertySymbol.getTypeAtLocation(parentNode);
   const isArray = type.isArray();
-  const typeArgs = type.getAliasTypeArguments();
+  const baseType = getFinalArrayType(type);
+  const typeArgs = baseType.getAliasTypeArguments();
   const genericParameters = typeArgs.map(
     (t) =>
       t.getAliasSymbol()?.getName() ?? t.getSymbol()?.getName() ?? t.getText()
   );
-  const symbol = type.getSymbol();
-  const arrayElemType = type.getArrayElementType();
-  const primitiveType = asPrimitiveTypeName(type);
-  const options = { isArray, isOptional, genericParameters };
+  const symbol = baseType.getSymbol();
+  const arrayDepth = isArray ? getArrayDepth(type) : 0;
+  const primitiveType = asPrimitiveTypeName(baseType);
+  const options = { isArray, isOptional, genericParameters, arrayDepth };
   return {
     propertyName,
-    type,
+    baseType,
     symbol,
-    arrayElemType,
     primitiveType,
     options,
   };
@@ -186,7 +187,6 @@ export class TypeFactory {
       type
     );
     mappedType.addGenericParameters(type);
-    console.debug(`Adding mapped type ${name} to registry`);
     return mappedType;
   }
   private getFromRegistryOrCreateAnon(
@@ -221,26 +221,24 @@ export class TypeFactory {
     const {
       propertyName,
       options,
-      type: propertyType,
+      baseType,
       symbol: propertyTypeSymbol,
-      arrayElemType,
     } = propertyInfo;
     const { isArray } = options;
     const internalClassName = `${name}${propertyName}Class`;
+    const apparentType = baseType.getApparentType();
     if (isArray) {
-      const arrayElemTypeSymbol = getFinalSymbolOfType(
-        arrayElemType!.getApparentType()
-      )!;
+      const arrayElemTypeSymbol = getFinalSymbolOfType(apparentType)!;
       return this.getFromRegistryOrCreateAnon(
         node,
-        arrayElemType!,
+        baseType,
         internalClassName,
         arrayElemTypeSymbol
       );
     }
     return this.getFromRegistryOrCreateAnon(
       node,
-      propertyType,
+      baseType,
       internalClassName,
       propertyTypeSymbol
     );
@@ -252,14 +250,9 @@ export class TypeFactory {
   ) {
     const { node } = parentOptions;
     const propertyOptions = getPropertyOptions(node, property);
-    const {
-      propertyName,
-      options,
-      type: propertyType,
-      primitiveType,
-    } = propertyOptions;
-    if (propertyType.isTypeParameter()) {
-      const genericParamName = propertyType.getSymbolOrThrow().getName();
+    const { propertyName, options, baseType, primitiveType } = propertyOptions;
+    if (baseType.isTypeParameter()) {
+      const genericParamName = baseType.getSymbolOrThrow().getName();
       return registryType.addProperty(
         propertyName,
         {
@@ -295,9 +288,6 @@ export class TypeFactory {
       node,
       type
     );
-    if (name === "IndexTypeaClass") {
-      console.debug("here");
-    }
     regType.addGenericParameters(type);
     const propertySignatures = type.getApparentProperties();
     propertySignatures.forEach((property) =>
@@ -327,8 +317,6 @@ export class TypeFactory {
   }
   createType(options: TypeOptions): IRegistryType {
     const regType = this.createTypeInternal(options);
-    const { tokenType, name } = regType.getStructure();
-    console.debug(`Adding ${tokenType} type ${name} to registry`);
     this.registry.addType(regType);
     return regType;
   }

@@ -26,6 +26,8 @@ export type CSharpProperty = {
   getter: boolean;
   setter: boolean;
   optional: boolean;
+  isConst: boolean;
+  defaultValue?: string;
   kind: CSharpPrimitiveType | string;
 };
 export const TAB_WIDTH = 4;

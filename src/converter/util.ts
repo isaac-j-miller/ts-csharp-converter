@@ -4,6 +4,7 @@ import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
   isSyntheticSymbol,
   ISyntheticSymbol,
+  LiteralValue,
   PrimitiveTypeName,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
@@ -40,7 +41,18 @@ export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
   }
   return sym;
 }
-
+export function getFinalArrayType(type: Type): Type {
+  if (type.isArray()) {
+    return getFinalArrayType(type.getArrayElementTypeOrThrow());
+  }
+  return type;
+}
+export function getArrayDepth(type: Type, depth: number = 0): number {
+  if (type.isArray()) {
+    return getArrayDepth(type.getArrayElementTypeOrThrow(), depth + 1);
+  }
+  return depth;
+}
 export function getFinalSymbolOfType(type: Type): Symbol | undefined {
   const sym = type.getSymbol() ?? type.getAliasSymbol();
   if (sym) {
@@ -94,4 +106,12 @@ export function asPrimitiveTypeName(t: Type): PrimitiveTypeName | undefined {
     return "any";
   }
   return;
+}
+
+export function literalValueToCSharpLiteralValue(v: LiteralValue): string {
+  if (Array.isArray(v)) {
+    const values = v.map((val) => literalValueToCSharpLiteralValue(val));
+    return `{ ${values.join(", ")} }`;
+  }
+  return JSON.stringify(v);
 }

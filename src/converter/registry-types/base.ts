@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { Symbol, Type } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
 import {
+  ConstType,
   IRegistryType,
   isGenericReference,
   ISyntheticSymbol,
@@ -19,7 +20,11 @@ export abstract class RegistryType<T extends TokenType>
   constructor(
     protected registry: TypeRegistry,
     protected structure: TypeStructure<T>,
-    private readonly symbol: Symbol | PrimitiveType | ISyntheticSymbol,
+    private readonly symbol:
+      | Symbol
+      | PrimitiveType
+      | ISyntheticSymbol
+      | ConstType,
     public readonly shouldBeRendered: boolean,
     protected readonly internal: boolean,
     protected readonly type: Type | undefined
@@ -73,6 +78,7 @@ export abstract class RegistryType<T extends TokenType>
   }
   getHash() {
     const {
+      name,
       tokenType,
       unionMembers,
       properties,
@@ -83,10 +89,10 @@ export abstract class RegistryType<T extends TokenType>
     const propertiesHash = properties
       ? this.hashProperties(properties)
       : "undefined";
-    const hash = `${tokenType}#${unionHash}#${propertiesHash}#${mappedIndexType}#${mappedValueType}`;
+    const hash = `${tokenType}#${name}#${unionHash}#${propertiesHash}#${mappedIndexType}#${mappedValueType}`;
     return hash;
   }
-  getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol {
+  getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol | ConstType {
     return this.symbol;
   }
   abstract getPropertyString(genericParameterValues?: string[]): string;

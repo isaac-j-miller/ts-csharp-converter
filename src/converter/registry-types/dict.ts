@@ -60,6 +60,12 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
         this.internal
       );
     }
-    return new CSharpClass(this.structure.name, false, [], baseClassName);
+    return new CSharpClass(
+      this.structure.name,
+      false,
+      [],
+      false,
+      baseClassName
+    );
   }
 }

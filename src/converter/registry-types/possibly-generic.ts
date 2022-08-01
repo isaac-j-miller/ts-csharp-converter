@@ -1,6 +1,7 @@
 import { Symbol, Type, Node } from "ts-morph";
 import { TypeRegistry } from "../registry";
 import {
+  isConstType,
   isGenericReference,
   isPrimitiveType,
   isSyntheticSymbol,
@@ -72,7 +73,7 @@ export abstract class TypeRegistryPossiblyGenericType<
         if (!typeToUse) {
           if (isSyntheticSymbol(ref)) {
             typeToUse = ref.getDeclaredType();
-          } else {
+          } else if (!isConstType(ref)) {
             typeToUse = ref.getTypeAtLocation(this.node);
           }
         }

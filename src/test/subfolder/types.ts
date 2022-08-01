@@ -63,3 +63,18 @@ export type GenericIndexType<T extends Bs<any>> = {
   i: IndexType;
   v: SomeGenericType<T>["foo"];
 };
+
+export type AnotherType = {
+  x: string[][][];
+  n: number[][][][][];
+};
+
+export type GenericArrayType = {
+  j: SomeGenericType<Composite>[];
+  k: Array<Array<AnotherType>>;
+};
+
+export type GenericArrayType2<V> = {
+  someProperty: V[][];
+  anotherProperty: DefaultGeneric<V>[];
+};

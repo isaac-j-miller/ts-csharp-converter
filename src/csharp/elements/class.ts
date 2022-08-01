@@ -6,6 +6,7 @@ export class CSharpClass extends CSharpElement {
     name: string,
     private _isPartial: boolean,
     public readonly properties: CSharpProperty[],
+    private _isStatic: boolean,
     protected inheritsFrom?: string,
     isInternal?: boolean
   ) {
@@ -14,9 +15,28 @@ export class CSharpClass extends CSharpElement {
   public get isPartial() {
     return !!this._isPartial;
   }
-  protected serializeProperty(property: CSharpProperty): string {
-    const { name, accessLevel, getter, setter, optional, kind } = property;
-    let serialized = `    ${accessLevel} ${kind}`;
+  public get isStatic() {
+    return !!this._isStatic;
+  }
+  protected serializeProperty(
+    property: CSharpProperty,
+    indent: number
+  ): string {
+    const {
+      name,
+      accessLevel,
+      getter,
+      setter,
+      optional,
+      kind,
+      isConst,
+      defaultValue,
+    } = property;
+    let serialized = `${" ".repeat(indent * TAB_WIDTH)}${accessLevel} `;
+    if (isConst) {
+      serialized += "const ";
+    }
+    serialized += `${kind}`;
     if (optional) {
       serialized += "?";
     }
@@ -31,6 +51,9 @@ export class CSharpClass extends CSharpElement {
       }
       serialized += " }";
     }
+    if (defaultValue) {
+      serialized += ` = ${defaultValue};`;
+    }
     return serialized;
   }
   protected serializeDeclaration() {
@@ -39,6 +62,9 @@ export class CSharpClass extends CSharpElement {
       serialized += "public ";
     } else {
       serialized += "internal ";
+    }
+    if (this.isStatic) {
+      serialized += "static ";
     }
     if (this.isPartial) {
       serialized += "partial ";
@@ -49,15 +75,15 @@ export class CSharpClass extends CSharpElement {
     return serialized;
   }
   protected serializeBody(indentation?: number) {
-    const indentString = " ".repeat((indentation ?? 0) * TAB_WIDTH);
+    const propertyIndent = indentation ?? 0;
     return this.properties
-      .map((property) => indentString + this.serializeProperty(property))
+      .map((property) => this.serializeProperty(property, propertyIndent))
       .join("\n");
   }
   serialize(indentation?: number): string {
     const indentString = " ".repeat((indentation ?? 0) * TAB_WIDTH);
     let serialized = indentString + this.serializeDeclaration();
-    serialized += this.serializeBody(indentation ?? 0 + 1);
+    serialized += this.serializeBody((indentation ?? 0) + 1);
     serialized += "\n" + indentString + "}";
     return serialized;
   }

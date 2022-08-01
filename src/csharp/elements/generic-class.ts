@@ -11,9 +11,9 @@ export class CSharpGenericClass extends CSharpClass {
     inheritsFrom?: string,
     isInternal?: boolean
   ) {
-    super(name, isPartial, properties, inheritsFrom, isInternal);
+    super(name, isPartial, properties, false, inheritsFrom, isInternal);
   }
-  protected serializeDeclaration(): string {
+  protected override serializeDeclaration(): string {
     let serialized = "";
     if (this.isPublic) {
       serialized += "public ";
@@ -27,13 +27,6 @@ export class CSharpGenericClass extends CSharpClass {
     serialized += `class ${getGenericTypeName(this.name, genericArgs)} ${
       this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""
     }{\n`;
-    return serialized;
-  }
-  serialize(indentation?: number): string {
-    const indentString = " ".repeat((indentation ?? 0) * TAB_WIDTH);
-    let serialized = indentString + this.serializeDeclaration();
-    serialized += this.serializeBody(indentation ?? 0 + 1);
-    serialized += "\n" + indentString + "}";
     return serialized;
   }
 }

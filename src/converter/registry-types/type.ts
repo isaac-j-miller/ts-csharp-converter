@@ -59,24 +59,41 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       }
     }
   }
-  private getArgString(t: Type): string | undefined {
+  private getArgString(
+    t: Type,
+    cb?: (str: string[]) => void
+  ): string | undefined {
     const name = (t.getAliasSymbol() ?? t.getSymbol())?.getName();
     if (!name) {
       return;
     }
     const aliasArgs = t.getAliasTypeArguments();
     const argsList = aliasArgs
-      .map((a) => this.getArgString(a))
+      .map((a) => this.getArgString(a, cb))
       .filter((a) => a !== undefined) as string[];
+    cb && cb(argsList);
     return getGenericTypeName(name, argsList);
   }
   private getGenericParametersOfProperty(
-    propName: string
+    propName: string,
+    onFoundArgCb?: (args: string[]) => void
   ): string[] | undefined {
     const property = (this.structure.properties ?? {})[propName];
     if (!property) {
       return;
     }
+    const { baseType } = property;
+    let numGenericArgs = 0;
+    let restrictLength = false;
+    if (!isGenericReference(baseType)) {
+      const fromRegistry = this.registry.getType(baseType);
+      if (fromRegistry && fromRegistry.tokenType === "Type") {
+        const asRegistryType = fromRegistry as TypeRegistryType;
+        numGenericArgs = asRegistryType.getUsedGenericParams().length;
+        restrictLength = true;
+      }
+    }
+
     const thisType = this.getType();
     if (!thisType) {
       return;
@@ -106,8 +123,11 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     }
     const args = elemToUse
       .getAliasTypeArguments()
-      .map((a) => this.getArgString(a))
+      .map((a) => this.getArgString(a, onFoundArgCb))
       .filter((arg) => arg !== undefined) as string[];
+    if (restrictLength) {
+      return args.slice(0, numGenericArgs);
+    }
     return args;
   }
   private symbolToString(propName: string, baseType: TypeReference): string {
@@ -125,15 +145,18 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     propName: string,
     struct: PropertyStructure
   ): CSharpProperty {
-    const { baseType } = struct;
+    const { baseType, isOptional, isArray, arrayDepth } = struct;
     const kindType = this.symbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
       getter: true,
       setter: true,
-      optional: struct.isOptional,
-      kind: struct.isArray ? kindType + "[]" : kindType,
+      isConst: false,
+      optional: isOptional,
+      kind: isArray
+        ? kindType + `[${",".repeat(arrayDepth ? arrayDepth - 1 : 0)}]`
+        : kindType,
     };
     return prop;
   }
@@ -143,20 +166,48 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       ([propName, struct]) => this.generateCSharpProperty(propName, struct)
     );
   }
-  private generateCSharpGenericParams(): Record<string, GenericParam> {
-    return this.structure.genericParameters!.reduce((acc, curr) => {
+  private generateCSharpGenericParams(
+    paramsToInclude: string[]
+  ): Record<string, GenericParam> {
+    return paramsToInclude.reduce((acc, curr) => {
       acc[curr] = {};
       return acc;
     }, {} as Record<string, GenericParam>);
   }
+  private getUsedGenericParams(): string[] {
+    const { properties, genericParameters } = this.structure;
+    if (!genericParameters || !properties) {
+      return [];
+    }
+    const usedGenericParamsSet = new Set<string>();
+    const cb = (params: string[]) => {
+      params.forEach((p) => {
+        usedGenericParamsSet.add(p);
+      });
+    };
+    Object.keys(properties).forEach((name) => {
+      const params = this.getGenericParametersOfProperty(name, cb);
+      const { baseType } = properties[name];
+      if (isGenericReference(baseType)) {
+        usedGenericParamsSet.add(baseType.genericParamName);
+      }
+      if (params) {
+        params.forEach((p) => {
+          usedGenericParamsSet.add(p);
+        });
+      }
+    });
+    return genericParameters.filter((g) => usedGenericParamsSet.has(g));
+  }
   getCSharpElement(): CSharpClass {
     const props = this.generateCSharpProperties();
+    const genericParams = this.getUsedGenericParams();
     if ((this.structure.genericParameters ?? []).length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
         false,
         props,
-        this.generateCSharpGenericParams(),
+        this.generateCSharpGenericParams(genericParams),
         undefined,
         this.internal
       );
@@ -165,6 +216,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       this.structure.name,
       false,
       props,
+      false,
       undefined,
       this.internal
     );
