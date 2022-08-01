@@ -29,3 +29,10 @@ export type TypeWithEnums = {
   enum1: TestEnum1;
   enum2: TestEnum2;
 };
+
+export function someFn() {
+  return "blah blah";
+}
+export const anotherFn = () => {
+  console.debug("jjjjjjjjj");
+};

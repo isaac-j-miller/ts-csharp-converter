@@ -81,6 +81,7 @@ export interface ISyntheticSymbol {
   getName(): string;
   isAlias(): false;
   getUnderlyingSymbol(): Symbol | undefined;
+  getSourceFilePath(): string | undefined;
   id: string;
   isSynthetic: true;
 }
@@ -94,6 +95,8 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   getSymbol(): Exclude<TypeReference, GenericReference>;
   getCSharpElement(): CSharpElement;
   getType(): Type | undefined;
+  rename(name: string): void;
+  getOriginalName(): string;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;

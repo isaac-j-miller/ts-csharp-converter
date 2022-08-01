@@ -106,9 +106,6 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     }
     const valueDec = matchingProperty.getValueDeclaration();
     if (!valueDec) {
-      console.warn(
-        `Property ${propName} declared on type ${this.structure.name} but no value declaration found`
-      );
       return;
     }
     const valueDecType = valueDec.getType();

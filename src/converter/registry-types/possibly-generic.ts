@@ -50,7 +50,6 @@ export abstract class TypeRegistryPossiblyGenericType<
     genericParameters.forEach((param) => {
       const v = (param.getSymbol() ?? param.getAliasSymbol())?.getName();
       if (!v) {
-        console.debug(`Unable to find generic param name`);
         return;
       }
       params.push(v);

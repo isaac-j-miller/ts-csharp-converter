@@ -1,6 +1,5 @@
 TODO:
 
-- properly ignore function declarations
 - convert names to PascalCase in output
 - serialization/deserialization code
 - generic type constraints and defaults

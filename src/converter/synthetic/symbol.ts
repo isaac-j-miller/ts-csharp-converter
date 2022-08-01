@@ -24,4 +24,15 @@ export class SyntheticSymbol implements ISyntheticSymbol {
   getDeclaredType() {
     return this.type;
   }
+  getSourceFilePath(): string | undefined {
+    if (!this.underlyingSymbol) {
+      return;
+    }
+    const declarations = this.underlyingSymbol.getDeclarations();
+    const declaration = declarations[0];
+    if (!declaration) {
+      return;
+    }
+    return declaration.getSourceFile().getFilePath();
+  }
 }

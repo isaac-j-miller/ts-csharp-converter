@@ -1,3 +1,6 @@
+import { TypeWithEnums } from "./subfolder/more";
+import { TestEnum1, TestEnum2 } from "./subfolder/more-types";
+
 export const FOO = "some string";
 export const BAR = "some string as const" as const;
 
@@ -9,3 +12,8 @@ export const a2dArray = [
   [2, 3, 4],
   [4, 5, 6],
 ];
+
+export const typeInstance: TypeWithEnums = {
+  enum1: TestEnum1.Baz,
+  enum2: TestEnum2.Value2,
+};

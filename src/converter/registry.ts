@@ -13,7 +13,7 @@ import {
   PrimitiveTypeName,
   RegistryKey,
 } from "./types";
-import { getFinalSymbol } from "./util";
+import { getFinalSymbol, getRefactorName } from "./util";
 import { TypeRegistryConstType } from "./registry-types/consts";
 
 export const CONSTS_KEYWORD = "__consts__" as const;
@@ -35,10 +35,14 @@ export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
   private textCache: Record<string, string | undefined>;
+  private declarations: Set<string>;
+  private hashes: Set<string>;
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
+    this.declarations = new Set<string>();
+    this.hashes = new Set<string>();
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(
     sym: T
@@ -71,7 +75,7 @@ export class TypeRegistry {
     return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
   }
 
-  addType(type: IRegistryType) {
+  addType(type: IRegistryType): void {
     const sym = type.getSymbol();
     const typeIsPrimitive = isPrimitiveType(sym);
     const typeIsConst = isConstType(sym);
@@ -90,13 +94,29 @@ export class TypeRegistry {
         }`
       );
     }
-    if (this.symbolMap[idx]) {
+    const hash = type.getHash();
+    if (this.symbolMap[idx] || this.hashes.has(hash)) {
       return;
     }
-    console.debug(
-      `Adding ${type.tokenType} type ${type.getStructure().name} to registry`
-    );
+    const { name } = type.getStructure();
+    const namespaceAlreadyHasTypeWithName = this.declarations.has(name);
+    if (namespaceAlreadyHasTypeWithName) {
+      const refactoredName = getRefactorName(name);
+      const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
+      if (!this.declarations.has(refactoredName)) {
+        console.warn(
+          `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
+            fpath ? ` (${fpath})` : ""
+          }, refactoring output to rename new type as ${refactoredName}`
+        );
+      }
+      type.rename(refactoredName);
+      return this.addType(type);
+    }
+    console.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    this.declarations.add(name);
     this.symbolMap[idx] = type;
+    this.hashes.add(hash);
     const underlyingSym = isSyntheticSymbol(sym)
       ? sym.getUnderlyingSymbol()
       : undefined;
@@ -142,6 +162,26 @@ export class TypeRegistry {
       }
     }
     return;
+  }
+  findTypeByName<T extends string>(
+    name: T
+  ): T extends PrimitiveTypeName
+    ? TypeRegistryPrimitiveType
+    : IRegistryType | undefined {
+    if (isPrimitiveTypeName(name)) {
+      return this.getType(name);
+    }
+    for (const [key, value] of Object.entries(this.symbolMap)) {
+      const { name: typeName } = value!.getStructure();
+      if (name === typeName) {
+        return this.getWithKey(key) as T extends PrimitiveTypeName
+          ? TypeRegistryPrimitiveType
+          : IRegistryType | undefined;
+      }
+    }
+    return undefined as T extends PrimitiveTypeName
+      ? TypeRegistryPrimitiveType
+      : IRegistryType | undefined;
   }
   getType<
     T extends

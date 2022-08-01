@@ -16,6 +16,7 @@ import { TypeRegistry } from "../registry";
 export abstract class RegistryType<T extends TokenType>
   implements IRegistryType<T>
 {
+  private readonly originalName: string;
   public readonly tokenType: T;
   constructor(
     protected registry: TypeRegistry,
@@ -30,6 +31,13 @@ export abstract class RegistryType<T extends TokenType>
     protected readonly type: Type | undefined
   ) {
     this.tokenType = structure.tokenType;
+    this.originalName = structure.name;
+  }
+  rename(newName: string) {
+    this.structure.name = newName;
+  }
+  getOriginalName(): string {
+    return this.originalName;
   }
   getType() {
     return this.type;

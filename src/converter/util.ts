@@ -115,3 +115,13 @@ export function literalValueToCSharpLiteralValue(v: LiteralValue): string {
   }
   return JSON.stringify(v);
 }
+
+export function getRefactorName(name: string): string {
+  const match = name.match(/\d+$/);
+  if (match) {
+    const num = match[0];
+    const newNum = Number.parseInt(num) + 1;
+    return name.replace(num, newNum.toString());
+  }
+  return name + "2";
+}
