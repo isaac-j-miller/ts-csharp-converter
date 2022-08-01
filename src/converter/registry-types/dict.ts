@@ -20,10 +20,23 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     internal: boolean,
     node: Node,
     type: Type,
+    level: number,
     genericParameters?: string[]
   ) {
-    super(registry, "Dictionary", name, sym, internal, !internal, node, type);
-    this.structure.genericParameters = genericParameters;
+    super(
+      registry,
+      "Dictionary",
+      name,
+      sym,
+      internal,
+      !internal,
+      node,
+      type,
+      level
+    );
+    this.structure.genericParameters = genericParameters?.map((g) => ({
+      name: g,
+    }));
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
@@ -44,7 +57,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     }
     const genericParams = (this.structure.genericParameters ?? []).reduce(
       (acc, curr) => {
-        acc[curr] = { apparent: curr };
+        acc[curr.name] = {};
         return acc;
       },
       {} as Record<string, GenericParam>

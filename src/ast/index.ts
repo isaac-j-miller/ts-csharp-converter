@@ -76,7 +76,7 @@ export class AstTraverser {
     asType: Type,
     internal: boolean = false
   ): IRegistryType {
-    const options = { name, node, type: asType, internal };
+    const options = { name, node, type: asType, internal, level: 0 };
     const regType = this.typeFactory.createType(options);
     return regType;
   }

@@ -1,7 +1,5 @@
 export type GenericParam = {
-  apparent?: string;
   constraint?: string;
-  default?: string;
 };
 
 export type PropertyValue = {

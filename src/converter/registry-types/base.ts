@@ -28,10 +28,17 @@ export abstract class RegistryType<T extends TokenType>
       | ConstType,
     public readonly shouldBeRendered: boolean,
     protected readonly internal: boolean,
-    protected readonly type: Type | undefined
+    protected readonly type: Type | undefined,
+    private readonly level: number
   ) {
     this.tokenType = structure.tokenType;
     this.originalName = structure.name;
+  }
+  getLevel(): number {
+    return this.level;
+  }
+  isPublic(): boolean {
+    return !this.internal;
   }
   rename(newName: string) {
     this.structure.name = newName;
@@ -63,6 +70,16 @@ export abstract class RegistryType<T extends TokenType>
     cache = null;
     return createHash("md5").update(stringified).digest().toString("hex");
   }
+  private hashGenericParameters(property: PropertyStructure): string {
+    const hashes: string[] = [];
+    property.genericParameters?.forEach((g) => {
+      const foundGenericParam = this.structure.genericParameters?.find(
+        (p) => p.name === g
+      );
+      hashes.push(g + "." + this.hash(foundGenericParam));
+    });
+    return hashes.join(":");
+  }
   private hashProperty(property: PropertyStructure): string {
     const { baseType, isArray, isOptional, genericParameters } = property;
     let baseTypeHash: string;
@@ -72,8 +89,8 @@ export abstract class RegistryType<T extends TokenType>
       const fromRegistry = this.registry.getType(baseType);
       baseTypeHash = fromRegistry?.getHash() ?? "undefined";
     }
-    return `${baseTypeHash}#${isOptional}#${isArray}#${genericParameters?.join(
-      ","
+    return `${baseTypeHash}#${isOptional}#${isArray}#${this.hashGenericParameters(
+      property
     )}`;
   }
   private hashProperties(
@@ -97,7 +114,9 @@ export abstract class RegistryType<T extends TokenType>
     const propertiesHash = properties
       ? this.hashProperties(properties)
       : "undefined";
-    const hash = `${tokenType}#${name}#${unionHash}#${propertiesHash}#${mappedIndexType}#${mappedValueType}`;
+    const hash = `${tokenType}#${
+      tokenType === "Primitive" ? `${name}#` : ""
+    }${unionHash}#${propertiesHash}#${mappedIndexType}#${mappedValueType}`;
     return hash;
   }
   getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol | ConstType {

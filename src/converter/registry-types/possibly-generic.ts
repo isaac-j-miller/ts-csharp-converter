@@ -1,6 +1,7 @@
 import { Symbol, Type, Node } from "ts-morph";
 import { TypeRegistry } from "../registry";
 import {
+  GenericParameter,
   isConstType,
   isGenericReference,
   isPrimitiveType,
@@ -10,7 +11,12 @@ import {
   TypeReference,
   TypeStructure,
 } from "../types";
-import { getGenericTypeName, toCSharpPrimitive } from "../util";
+import {
+  getFinalSymbolOfType,
+  getGenericParameters,
+  getGenericTypeName,
+  toCSharpPrimitive,
+} from "../util";
 import { RegistryType } from "./base";
 
 export abstract class TypeRegistryPossiblyGenericType<
@@ -24,7 +30,8 @@ export abstract class TypeRegistryPossiblyGenericType<
     internal: boolean,
     shouldBeRendered: boolean,
     protected readonly node: Node,
-    type: Type
+    type: Type,
+    level: number
   ) {
     const structure: TypeStructure<T> = {
       tokenType,
@@ -32,29 +39,13 @@ export abstract class TypeRegistryPossiblyGenericType<
       properties: {},
       genericParameters: [],
     };
-    super(registry, structure, sym, shouldBeRendered, internal, type);
+    super(registry, structure, sym, shouldBeRendered, internal, type, level);
   }
-  addGenericParameters(t: Type) {
-    const genericParameters = this.getGenericParameters(t);
-    this.structure.genericParameters = [
-      ...(this.structure.genericParameters ?? []),
-      ...genericParameters,
-    ];
-  }
-  private getGenericParameters(t: Type | undefined): string[] {
-    if (!t) {
-      return [];
+  addGenericParameter(p: GenericParameter) {
+    if (!this.structure.genericParameters) {
+      this.structure.genericParameters = [];
     }
-    const params: string[] = [];
-    const genericParameters = t.getAliasTypeArguments();
-    genericParameters.forEach((param) => {
-      const v = (param.getSymbol() ?? param.getAliasSymbol())?.getName();
-      if (!v) {
-        return;
-      }
-      params.push(v);
-    });
-    return params;
+    this.structure.genericParameters!.push(p);
   }
   protected resolveTypeName(ref: TypeReference): string {
     if (isGenericReference(ref)) {
@@ -66,7 +57,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     const registryType = this.registry.getType(ref);
     let genericParameterNames: string[] = [];
     if (registryType) {
-      const { name, genericParameters } = registryType.getStructure();
+      const { genericParameters } = registryType.getStructure();
       if (genericParameters && genericParameters.length > 0) {
         let typeToUse = registryType.getType()?.getApparentType();
         if (!typeToUse) {
@@ -76,9 +67,12 @@ export abstract class TypeRegistryPossiblyGenericType<
             typeToUse = ref.getTypeAtLocation(this.node);
           }
         }
-        genericParameterNames = this.getGenericParameters(typeToUse);
+        genericParameterNames = getGenericParameters(
+          this.registry,
+          typeToUse
+        ).map((t) => t.name);
       }
-      return getGenericTypeName(name, genericParameterNames);
+      return registryType.getPropertyString(genericParameterNames);
     }
 
     console.error("Type not found in registry", ref);

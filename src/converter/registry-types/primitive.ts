@@ -19,7 +19,8 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
       },
       false,
       true,
-      undefined
+      undefined,
+      0
     );
   }
   getPropertyString(): string {

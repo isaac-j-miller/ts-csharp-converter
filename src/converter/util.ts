@@ -2,12 +2,14 @@ import { Symbol, Type } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
+  GenericParameter,
   isSyntheticSymbol,
   ISyntheticSymbol,
   LiteralValue,
   PrimitiveTypeName,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
+import { TypeRegistry } from "./registry";
 
 export function toCSharpPrimitive(
   primitive: PrimitiveTypeName
@@ -124,4 +126,34 @@ export function getRefactorName(name: string): string {
     return name.replace(num, newNum.toString());
   }
   return name + "2";
+}
+export function getGenericParameters(
+  registry: TypeRegistry,
+  t: Type | undefined
+): GenericParameter[] {
+  if (!t) {
+    return [];
+  }
+  const params: GenericParameter[] = [];
+  const genericParameters = t.getAliasTypeArguments();
+  genericParameters.forEach((param) => {
+    const v = (param.getSymbol() ?? param.getAliasSymbol())?.getName();
+    if (!v) {
+      return;
+    }
+    const typeConstraint = param.getConstraint();
+    const constraintSymbol = typeConstraint
+      ? getFinalSymbolOfType(typeConstraint)
+      : undefined;
+    const constraint = (
+      constraintSymbol ? registry.getType(constraintSymbol) : undefined
+    )?.getSymbol();
+
+    const p: GenericParameter = {
+      name: v,
+      constraint,
+    };
+    params.push(p);
+  });
+  return params;
 }

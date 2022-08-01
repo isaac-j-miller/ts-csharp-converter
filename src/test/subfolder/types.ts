@@ -8,6 +8,22 @@ export type Foo = {
 const arrayValues = ["a", "b", "c"] as const;
 export type Abc = typeof arrayValues[number];
 
+export type GenericWithConstraints<T extends string> = {
+  str: T;
+};
+
+export type GenericWithConstraints2<T extends Foo> = {
+  foo: T;
+};
+
+export type GenericWithConstraints3<
+  T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+> = {
+  digit: T;
+};
+export type GenericWithConstraints4<T extends ZZZ> = {
+  z: T;
+};
 export type SomeGenericType<T> = {
   foo: T;
   bar: Abc;

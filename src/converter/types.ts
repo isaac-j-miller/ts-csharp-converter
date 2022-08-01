@@ -57,12 +57,17 @@ export type PropertyStructure = {
   defaultLiteralValue?: LiteralValue;
 };
 
+export type GenericParameter = {
+  name: string;
+  constraint?: TypeReference;
+};
+
 export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
   unionMembers?: UnionMember[];
   properties?: Record<string, PropertyStructure>;
-  genericParameters?: string[];
+  genericParameters?: GenericParameter[];
   mappedIndexType?: string;
   mappedValueType?: string;
 };
@@ -89,6 +94,8 @@ export interface ISyntheticSymbol {
 export interface IRegistryType<T extends TokenType = TokenType> {
   readonly tokenType: T;
   readonly shouldBeRendered: boolean;
+  isPublic(): boolean;
+  getLevel(): number;
   getStructure(): TypeStructure<T>;
   getHash(): string;
   getPropertyString(genericParameterValues?: string[]): string;

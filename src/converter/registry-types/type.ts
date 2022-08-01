@@ -27,9 +27,10 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     symbol: Symbol | ISyntheticSymbol,
     internal: boolean,
     node: Node,
-    type: Type
+    type: Type,
+    level: number
   ) {
-    super(registry, "Type", name, symbol, internal, true, node, type);
+    super(registry, "Type", name, symbol, internal, true, node, type, level);
     this.structure.properties = {};
     this.structure.genericParameters = [];
   }
@@ -47,14 +48,24 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     if (isGenericReference(baseType)) {
       const paramName = baseType.genericParamName;
       const { genericParameters } = this.structure;
-      if (!genericParameters?.find((p) => p === paramName)) {
+      const genericParameterNames = (genericParameters ?? []).map(
+        (g) => g.name
+      );
+      if (!genericParameters?.find((p) => p.name === paramName)) {
         if (!genericParameters || genericParameters.length === 0) {
-          this.structure.genericParameters = [paramName];
-        } else if (genericParameters.includes("__type")) {
-          const idx = genericParameters.findIndex((item) => item === "__type");
-          this.structure.genericParameters![idx] = paramName;
+          this.structure.genericParameters = [{ name: paramName }];
+        } else if (genericParameterNames.includes("__type")) {
+          const idx = genericParameters.findIndex(
+            (item) => item.name === "__type"
+          );
+          this.structure.genericParameters![idx] = {
+            ...(this.structure.genericParameters![idx] ?? {}),
+            name: paramName,
+          };
         } else {
-          this.structure.genericParameters!.push(paramName);
+          this.structure.genericParameters!.push({
+            name: paramName,
+          });
         }
       }
     }
@@ -167,7 +178,14 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     paramsToInclude: string[]
   ): Record<string, GenericParam> {
     return paramsToInclude.reduce((acc, curr) => {
-      acc[curr] = {};
+      const param = (this.structure.genericParameters ?? []).find(
+        (g) => g.name === curr
+      );
+      acc[curr] = {
+        constraint: param?.constraint
+          ? this.resolveTypeName(param.constraint)
+          : undefined,
+      };
       return acc;
     }, {} as Record<string, GenericParam>);
   }
@@ -176,6 +194,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     if (!genericParameters || !properties) {
       return [];
     }
+    const genericParamNames = genericParameters.map((g) => g.name);
     const usedGenericParamsSet = new Set<string>();
     const cb = (params: string[]) => {
       params.forEach((p) => {
@@ -194,7 +213,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         });
       }
     });
-    return genericParameters.filter((g) => usedGenericParamsSet.has(g));
+    return genericParamNames.filter((g) => usedGenericParamsSet.has(g));
   }
   getCSharpElement(): CSharpClass {
     const props = this.generateCSharpProperties();

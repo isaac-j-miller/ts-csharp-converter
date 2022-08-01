@@ -36,13 +36,13 @@ export class TypeRegistry {
   private redirects: Record<string, string | undefined>;
   private textCache: Record<string, string | undefined>;
   private declarations: Set<string>;
-  private hashes: Set<string>;
+  private hashes: Record<string, string | undefined>;
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
     this.declarations = new Set<string>();
-    this.hashes = new Set<string>();
+    this.hashes = {};
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(
     sym: T
@@ -95,7 +95,12 @@ export class TypeRegistry {
       );
     }
     const hash = type.getHash();
-    if (this.symbolMap[idx] || this.hashes.has(hash)) {
+    const fromHashCache = this.hashes[hash];
+    const symbolRegistered = this.declarations.has(type.getOriginalName());
+    if (this.symbolMap[idx] || (fromHashCache && symbolRegistered)) {
+      if (fromHashCache) {
+        this.redirects[idx] = fromHashCache;
+      }
       return;
     }
     const { name } = type.getStructure();
@@ -116,7 +121,7 @@ export class TypeRegistry {
     console.debug(`Adding ${type.tokenType} type ${name} to registry`);
     this.declarations.add(name);
     this.symbolMap[idx] = type;
-    this.hashes.add(hash);
+    this.hashes[hash] = idx;
     const underlyingSym = isSyntheticSymbol(sym)
       ? sym.getUnderlyingSymbol()
       : undefined;
@@ -223,7 +228,14 @@ export class TypeRegistry {
       ? sym.getUnderlyingSymbol()
       : undefined;
     if (underlyingSym) {
-      return this.getType(underlyingSym) as GetTypeReturn<T>;
+      const fromSym = this.getType(underlyingSym) as GetTypeReturn<T>;
+      if (fromSym) {
+        return fromSym;
+      }
+    }
+    const redirectedIdx = this.redirects[idx];
+    if (redirectedIdx) {
+      return this.getWithKey(redirectedIdx) as GetTypeReturn<T>;
     }
     return emptyReturnValue;
   }
@@ -250,7 +262,18 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      const [firstIdx, ...rest] = indices;
+      const [firstIdx, ...rest] = indices
+        .filter((v) => {
+          const entry = this.getWithKey(v);
+          return !!entry?.shouldBeRendered;
+        })
+        .sort((a, b) => {
+          const aEntry = this.getWithKey(a);
+          const bEntry = this.getWithKey(b);
+          const aValue = calculateValue(aEntry);
+          const bValue = calculateValue(bEntry);
+          return bValue - aValue;
+        });
       rest.forEach((idx) => {
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
@@ -274,4 +297,16 @@ export class TypeRegistry {
     this.consolidate();
     return new CSharpNamespace(name, this.getElements());
   }
+}
+
+function calculateValue(t: IRegistryType | undefined): number {
+  if (!t) {
+    return -1000;
+  }
+  let v = 0;
+  if (t.isPublic()) {
+    v += 1;
+  }
+  v -= t.getLevel();
+  return v;
 }

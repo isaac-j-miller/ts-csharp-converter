@@ -11,14 +11,15 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     symbol: Symbol | ISyntheticSymbol,
     members: UnionMember[],
     internal: boolean,
-    type: Type
+    type: Type,
+    level: number
   ) {
     const structure: TypeStructure<"StringUnion"> = {
       tokenType: "StringUnion",
       name,
       unionMembers: members,
     };
-    super(registry, structure, symbol, true, internal, type);
+    super(registry, structure, symbol, true, internal, type, level);
   }
   getPropertyString(): string {
     return this.structure.name;

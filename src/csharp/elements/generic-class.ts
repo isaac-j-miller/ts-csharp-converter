@@ -1,6 +1,6 @@
 import { getGenericTypeName } from "src/converter/util";
 import { CSharpClass } from "./class";
-import { CSharpProperty, GenericParam, TAB_WIDTH } from "./types";
+import { CSharpProperty, GenericParam } from "./types";
 
 export class CSharpGenericClass extends CSharpClass {
   constructor(
@@ -13,6 +13,16 @@ export class CSharpGenericClass extends CSharpClass {
   ) {
     super(name, isPartial, properties, false, inheritsFrom, isInternal);
   }
+  private getConstraints(): string {
+    let constraintsString = "";
+    Object.entries(this.genericOptions).forEach(([key, value]) => {
+      const { constraint } = value;
+      if (constraint) {
+        constraintsString += `where ${key}: ${constraint} `;
+      }
+    });
+    return constraintsString;
+  }
   protected override serializeDeclaration(): string {
     let serialized = "";
     if (this.isPublic) {
@@ -24,9 +34,11 @@ export class CSharpGenericClass extends CSharpClass {
       serialized += "partial ";
     }
     const genericArgs = Object.keys(this.genericOptions);
-    serialized += `class ${getGenericTypeName(this.name, genericArgs)} ${
-      this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""
-    }{\n`;
+    const constraints = this.getConstraints();
+    serialized += `class ${getGenericTypeName(
+      this.name,
+      genericArgs
+    )} ${constraints}${this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""}{\n`;
     return serialized;
   }
 }
