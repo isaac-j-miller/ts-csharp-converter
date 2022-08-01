@@ -206,7 +206,7 @@ export class TypeFactory {
       node,
       type: valueType,
       internal: true,
-      level,
+      level: level+1,
     });
 
     const mappedType = new TypeRegistryDictType(
