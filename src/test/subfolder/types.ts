@@ -58,7 +58,10 @@ export type SomeStupidSubEnum = TestEnum1.Baz | TestEnum1.FooBar;
 
 export type SomeStupidSubEnum2 = TestEnum1.Fooooo | TestEnum2.Value2;
 
-export type NumericalUnion = 1 | 3 | 4;
+/**
+ * @type {float}
+ */
+export type NumericalUnion = 1.2 | 3.8 | 4;
 
 export type DumbType = {
   num: NumericalUnion;
@@ -93,4 +96,33 @@ export type GenericArrayType = {
 export type GenericArrayType2<V> = {
   someProperty: V[][];
   anotherProperty: DefaultGeneric<V>[];
+};
+
+export type NumbersWithJsDoc = {
+  /**
+   * @type {int}
+   */
+  intProperty: number;
+  /**
+   * @type {float}
+   */
+  floatProperty: number;
+};
+
+/**
+ * @type {int}
+ */
+export interface Integer extends Number {
+  _nominal: "Integer";
+}
+/**
+ * @type {float}
+ */
+export interface Float extends Number {
+  _nominal: "Integer";
+}
+
+export type ConsumesInterface = {
+  integer: Integer;
+  float: Float;
 };

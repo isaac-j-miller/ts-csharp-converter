@@ -20,6 +20,7 @@ import {
   getArrayDepth,
   getFinalArrayType,
   getFinalSymbolOfType,
+  getJsDocNumberType,
 } from "./util";
 
 type TypeOptions = {
@@ -59,7 +60,8 @@ function getPropertyOptions(
   );
   const symbol = baseType.getSymbol();
   const arrayDepth = isArray ? getArrayDepth(type) : 0;
-  const primitiveType = asPrimitiveTypeName(baseType);
+  const tags = propertySymbol.getJsDocTags();
+  const primitiveType = asPrimitiveTypeName(baseType, tags);
   const options = { isArray, isOptional, genericParameters, arrayDepth };
   return {
     propertyName,
@@ -143,7 +145,9 @@ export class TypeFactory {
         (unionType) => unionType.isNumberLiteral() || unionType.isNumber()
       )
     ) {
-      return this.registry.getType("number");
+      const tags = symbolToUse.getUnderlyingSymbol()?.getJsDocTags();
+      const apparentNumberType = getJsDocNumberType(tags);
+      return this.registry.getType(apparentNumberType ?? "number");
     }
     if (nonUndefinedUnionTypes.every((unionType) => unionType.isString())) {
       return this.registry.getType("string");

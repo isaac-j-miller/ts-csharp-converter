@@ -10,11 +10,14 @@ export type TokenType =
   | "Primitive"
   | "Dictionary"
   | "Const";
+
 const primitiveTypeNames = [
   "string",
   "String",
   "number",
   "Number",
+  "float",
+  "int",
   "boolean",
   "Boolean",
   "object",
@@ -23,6 +26,8 @@ const primitiveTypeNames = [
   "null",
   "unknown",
 ] as const;
+export type PrimitiveTypeName = typeof primitiveTypeNames[number];
+
 export type LiteralValue =
   | string
   | boolean
@@ -30,7 +35,9 @@ export type LiteralValue =
   | undefined
   | null
   | LiteralValue[];
-export type PrimitiveTypeName = typeof primitiveTypeNames[number];
+
+export const jsDocNumberTypes = ["int", "float"] as const;
+export type JsDocNumberType = typeof jsDocNumberTypes[number];
 
 export type UnionMember = {
   name: string;
@@ -55,6 +62,8 @@ export type PropertyStructure = {
   isOptional: boolean;
   genericParameters?: string[];
   defaultLiteralValue?: LiteralValue;
+  jsDocNumberType?: JsDocNumberType;
+  docString?: string;
 };
 
 export type GenericParameter = {

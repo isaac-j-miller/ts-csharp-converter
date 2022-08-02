@@ -1,4 +1,4 @@
-import { Symbol, Type } from "ts-morph";
+import { JSDocTagInfo, Symbol, Type } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
@@ -6,11 +6,15 @@ import {
   IRegistryType,
   isSyntheticSymbol,
   ISyntheticSymbol,
+  JsDocNumberType,
   LiteralValue,
   PrimitiveTypeName,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
 import { TypeRegistry } from "./registry";
+
+// TODO: make this config-driven
+const DEFAULT_NUMBER_TYPE = "int" as const;
 
 export function toCSharpPrimitive(
   primitive: PrimitiveTypeName
@@ -21,8 +25,7 @@ export function toCSharpPrimitive(
       return "bool";
     case "Number":
     case "number":
-      // TODO: somehow guess whether should be int or double
-      return "int";
+      return DEFAULT_NUMBER_TYPE;
     case "String":
     case "string":
       return "string";
@@ -33,11 +36,16 @@ export function toCSharpPrimitive(
     case "null":
     case "undefined":
       return "null";
+    case "float":
+      return "double";
+    case "int":
+      return "int";
     default:
       assertNever(primitive);
   }
   throw new Error("Somehow this fell through");
 }
+
 export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
   if (!isSyntheticSymbol(sym) && sym.isAlias()) {
     return getFinalSymbol(sym.getAliasedSymbolOrThrow()) as T;
@@ -75,12 +83,40 @@ export function createSymbol(name: string, t: Type): ISyntheticSymbol {
   const symbolFromType = getFinalSymbolOfType(t);
   return new SyntheticSymbol(name, t, symbolFromType);
 }
-
-export function asPrimitiveTypeName(t: Type): PrimitiveTypeName | undefined {
+export function getJsDocNumberType(
+  tags?: JSDocTagInfo[]
+): JsDocNumberType | undefined {
+  if (!tags) {
+    return;
+  }
+  for (const tag of tags) {
+    const name = tag.getName();
+    if (name !== "type") {
+      continue;
+    }
+    const textInfos = tag.getText();
+    for (const textInfo of textInfos) {
+      const { text } = textInfo;
+      if (text === "{float}") {
+        return "float";
+      }
+      if (text === "{int}") {
+        return "int";
+      }
+    }
+  }
+  return;
+}
+export function asPrimitiveTypeName(
+  t: Type,
+  tags?: JSDocTagInfo[]
+): PrimitiveTypeName | undefined {
   const apparentType = t.getApparentType();
   const baseTypeName = apparentType.getBaseTypes()[0]?.getText()?.toLowerCase();
   const apparentTypeName = apparentType.getSymbol()?.getName()?.toLowerCase();
-
+  const tagsToUse =
+    tags ?? (t.getSymbol() ?? t.getAliasSymbol())?.getJsDocTags();
+  const apparentNumberType = getJsDocNumberType(tagsToUse);
   if (
     apparentType.isString() ||
     baseTypeName === "string" ||
@@ -93,6 +129,9 @@ export function asPrimitiveTypeName(t: Type): PrimitiveTypeName | undefined {
     baseTypeName === "number" ||
     apparentTypeName === "number"
   ) {
+    if (apparentNumberType) {
+      return apparentNumberType;
+    }
     return "number";
   }
   if (

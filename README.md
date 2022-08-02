@@ -2,5 +2,5 @@ TODO:
 
 - convert names to PascalCase in output
 - serialization/deserialization code
-- read jsdoc for interpreting int/double from number
+- index types other than plain strings (enum, string union, number) for mapped type
 - transfer comments and jsdocs
