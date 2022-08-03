@@ -8,10 +8,26 @@ export function formatCommentString(
     return "";
   }
   const indentString = getIndentString(indent);
+  let inComment =false;
   return (
     commentString
       .split("\n")
-      .map((line) => indentString + line.trim())
+      .map((line) => {
+        let trimmed = line.trim();
+        if(inComment) {
+            if(trimmed.startsWith("/*") && !trimmed.endsWith("*/")) {
+                inComment = true;
+            }
+        } else {
+            if(trimmed.startsWith("*/")) {
+                inComment = false;
+            }
+            if(!trimmed.startsWith("//")) {
+                trimmed = "// " + trimmed;
+            }
+        }
+        return indentString + trimmed
+      })
       .join("\n") + "\n"
   );
 }
