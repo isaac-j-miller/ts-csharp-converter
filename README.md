@@ -2,4 +2,4 @@ TODO:
 
 - convert names to PascalCase in output
 - serialization/deserialization code
-- add warning comments to possibly messed up types ?
+- make sure that types with default parameters always specify the default if that parameter wasn't specified when a default generic is used as a property
