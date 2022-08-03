@@ -22,11 +22,13 @@ export function formatCommentString(
           if (startsWithEndMultilineComment) {
             inComment = false;
           }
-        } else {
-          if (startsWithBeginMultilineComment && !endsWithEndMultilineComment) {
-            inComment = true;
-          }
+        } else if (
+          startsWithBeginMultilineComment &&
+          !endsWithEndMultilineComment
+        ) {
+          inComment = true;
         }
+
         if (
           !inComment &&
           !startsWithSingleLineComment &&

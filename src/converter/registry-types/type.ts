@@ -98,6 +98,17 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     const props = this.generateCSharpProperties();
     const genericParams = this.getUsedGenericParams();
     const partial = this.isMappedType;
+    if (
+      (!this.structure.properties ||
+        Object.keys(this.structure.properties).length === 0) &&
+      !partial
+    ) {
+      const src = this.node.getSourceFile().getFilePath();
+      const startLine = this.node.getStartLineNumber(false);
+      this.addCommentString(
+        `Warning: This class might not have been generated correctly. Source to check ${src}:${startLine}\nSource code: ${this.node.getFullText()}`
+      );
+    }
     if ((this.structure.genericParameters ?? []).length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
