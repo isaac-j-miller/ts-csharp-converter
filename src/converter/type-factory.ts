@@ -23,6 +23,7 @@ import {
   asPrimitiveTypeName,
   createSymbol,
   getArrayDepth,
+  getComments,
   getFinalArrayType,
   getFinalSymbolOfType,
   getJsDocNumberType,
@@ -103,13 +104,6 @@ function getGenericConstraintOptions(type: Type): GenericConstraintOptions {
   };
 }
 
-function getComments(node: Node): string | undefined {
-  const commentString = node
-    ?.getLeadingCommentRanges()
-    .map((c) => c.getText())
-    .join("\n");
-  return commentString;
-}
 export class TypeFactory {
   constructor(private registry: TypeRegistry) {}
   private createPrimitiveType(options: TypeOptions): IRegistryType | undefined {

@@ -1,4 +1,4 @@
-import { JSDocTagInfo, Symbol, Type, TypeParameter } from "ts-morph";
+import { JSDocTagInfo, Symbol, Type, TypeParameter, Node } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
@@ -274,4 +274,12 @@ function getConstraint(
     constraint,
   };
   return p;
+}
+
+export function getComments(node: Node): string | undefined {
+  const commentString = node
+    ?.getLeadingCommentRanges()
+    .map((c) => c.getText())
+    .join("\n");
+  return commentString;
 }

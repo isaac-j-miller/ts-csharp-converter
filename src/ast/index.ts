@@ -15,6 +15,7 @@ import { TypeFactory } from "src/converter/type-factory";
 import {
   asPrimitiveTypeName,
   getArrayDepth,
+  getComments,
   getFinalArrayType,
 } from "src/converter/util";
 
@@ -63,14 +64,21 @@ export class AstTraverser {
       return;
     }
     const arrayDepth = getArrayDepth(asType);
+    const varStatement = node.getVariableStatement();
+    const comments = varStatement ? getComments(varStatement) : undefined;
     constType.addConst(
       name,
       literalType,
       isArray,
       arrayDepth,
-      literal as LiteralValue
+      literal as LiteralValue,
+      comments
     );
-    console.debug(`Found declaration: ${name} = ${JSON.stringify(literal)}`);
+    console.debug(
+      `Found declaration: ${name} = ${JSON.stringify(
+        literal
+      )}, with comments ${comments}`
+    );
   }
   private createType(
     name: string,

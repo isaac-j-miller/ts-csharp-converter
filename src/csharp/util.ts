@@ -8,25 +8,33 @@ export function formatCommentString(
     return "";
   }
   const indentString = getIndentString(indent);
-  let inComment =false;
+  let inComment = false;
   return (
     commentString
       .split("\n")
       .map((line) => {
         let trimmed = line.trim();
-        if(inComment) {
-            if(trimmed.startsWith("/*") && !trimmed.endsWith("*/")) {
-                inComment = true;
-            }
+        const startsWithBeginMultilineComment = trimmed.startsWith("/*");
+        const startsWithEndMultilineComment = trimmed.match(/^\*+\//);
+        const endsWithEndMultilineComment = trimmed.endsWith("*/");
+        const startsWithSingleLineComment = trimmed.startsWith("//");
+        if (inComment) {
+          if (startsWithEndMultilineComment) {
+            inComment = false;
+          }
         } else {
-            if(trimmed.startsWith("*/")) {
-                inComment = false;
-            }
-            if(!trimmed.startsWith("//")) {
-                trimmed = "// " + trimmed;
-            }
+          if (startsWithBeginMultilineComment && !endsWithEndMultilineComment) {
+            inComment = true;
+          }
         }
-        return indentString + trimmed
+        if (
+          !inComment &&
+          !startsWithSingleLineComment &&
+          !startsWithEndMultilineComment
+        ) {
+          trimmed = "// " + trimmed;
+        }
+        return indentString + trimmed;
       })
       .join("\n") + "\n"
   );
