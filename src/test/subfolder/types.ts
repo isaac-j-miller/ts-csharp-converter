@@ -2,7 +2,9 @@ import { NominalString } from "./more";
 import { TestEnum1, TestEnum2 } from "./more-types";
 
 export type Foo = {
+  // x is a number
   x: number;
+  // comment comment comment
   y: string;
 };
 const arrayValues = ["a", "b", "c"] as const;

@@ -10,7 +10,6 @@ import {
   isGenericReference,
   ISyntheticSymbol,
   PropertyStructure,
-  TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { formatCsharpArrayString, getGenericTypeName } from "../util";
@@ -28,11 +27,11 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     internal: boolean,
     node: Node,
     type: Type,
-    level: number
+    level: number,
+    commentString?: string
   ) {
     super(registry, "Type", name, symbol, internal, true, node, type, level);
-    this.structure.properties = {};
-    this.structure.genericParameters = [];
+    this.structure.commentString = commentString;
   }
   addProperty(
     propertyName: string,
@@ -74,7 +73,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     propName: string,
     struct: PropertyStructure
   ): CSharpProperty {
-    const { baseType, isOptional, isArray, arrayDepth } = struct;
+    const { baseType, isOptional, isArray, arrayDepth, commentString } = struct;
     const kindType = this.propertySymbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
@@ -83,6 +82,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       setter: true,
       isConst: false,
       optional: isOptional,
+      commentString,
       kind: formatCsharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
@@ -105,7 +105,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         props,
         this.generateCSharpGenericParams(genericParams),
         undefined,
-        this.internal
+        this.internal,
+        this.structure.commentString
       );
     }
     return new CSharpClass(
@@ -114,7 +115,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       props,
       false,
       undefined,
-      this.internal
+      this.internal,
+      this.structure.commentString
     );
   }
   getPropertyString(genericParameterValues?: string[]): string {

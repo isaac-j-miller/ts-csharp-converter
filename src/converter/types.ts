@@ -71,7 +71,7 @@ export type PropertyStructure = {
   genericParameters?: string[];
   defaultLiteralValue?: LiteralValue;
   jsDocNumberType?: JsDocNumberType;
-  docString?: string;
+  commentString?: string;
 };
 
 export type GenericParameter = {
@@ -88,6 +88,7 @@ export type TypeStructure<T extends TokenType> = {
   genericParameters?: GenericParameter[];
   mappedIndexType?: TypeReference;
   mappedValueType?: TypeReference;
+  commentString?: string;
 };
 
 export type PrimitiveType = {
@@ -112,6 +113,7 @@ export interface ISyntheticSymbol {
 export interface IRegistryType<T extends TokenType = TokenType> {
   readonly tokenType: T;
   readonly shouldBeRendered: boolean;
+  addCommentString(commentString: string): void;
   isPublic(): boolean;
   getLevel(): number;
   getStructure(): TypeStructure<T>;

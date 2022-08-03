@@ -37,6 +37,9 @@ export abstract class RegistryType<T extends TokenType>
     this.tokenType = structure.tokenType;
     this.originalName = structure.name;
   }
+  addCommentString(commentString: string) {
+    this.structure.commentString = commentString;
+  }
   markAsMappedType(mappedTypeNode: MappedTypeNode): void {
     this.isMappedType = true;
     this.mappedTypeNode = mappedTypeNode;

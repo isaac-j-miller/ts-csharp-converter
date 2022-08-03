@@ -27,5 +27,6 @@ export type CSharpProperty = {
   isConst: boolean;
   defaultValue?: string;
   kind: CSharpPrimitiveType | string;
+  commentString?: string;
 };
 export const TAB_WIDTH = 4;

@@ -1,5 +1,6 @@
+import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
-import { CSharpProperty, TAB_WIDTH } from "./types";
+import { CSharpProperty } from "./types";
 
 export class CSharpClass extends CSharpElement {
   constructor(
@@ -8,9 +9,10 @@ export class CSharpClass extends CSharpElement {
     public readonly properties: CSharpProperty[],
     private _isStatic: boolean,
     protected inheritsFrom?: string,
-    isInternal?: boolean
+    isInternal?: boolean,
+    commentString?: string
   ) {
-    super("class", name, isInternal);
+    super("class", name, commentString, isInternal);
   }
   public get isPartial() {
     return !!this._isPartial;
@@ -31,8 +33,10 @@ export class CSharpClass extends CSharpElement {
       kind,
       isConst,
       defaultValue,
+      commentString,
     } = property;
-    let serialized = `${" ".repeat(indent * TAB_WIDTH)}${accessLevel} `;
+    let serialized = formatCommentString(commentString, indent);
+    serialized += `${getIndentString(indent)}${accessLevel} `;
     if (isConst) {
       serialized += "const ";
     }
@@ -56,8 +60,9 @@ export class CSharpClass extends CSharpElement {
     }
     return serialized;
   }
-  protected serializeDeclaration() {
-    let serialized = "";
+  protected serializeDeclaration(indentation: number) {
+    const indentString = getIndentString(indentation);
+    let serialized = indentString;
     if (this.isPublic) {
       serialized += "public ";
     } else {
@@ -80,10 +85,11 @@ export class CSharpClass extends CSharpElement {
       .map((property) => this.serializeProperty(property, propertyIndent))
       .join("\n");
   }
-  serialize(indentation?: number): string {
-    const indentString = " ".repeat((indentation ?? 0) * TAB_WIDTH);
-    let serialized = indentString + this.serializeDeclaration();
-    serialized += this.serializeBody((indentation ?? 0) + 1);
+  serialize(indentation: number = 0): string {
+    const indentString = getIndentString(indentation);
+    let serialized = formatCommentString(this.commentString, indentation);
+    serialized += this.serializeDeclaration(indentation);
+    serialized += this.serializeBody(indentation + 1);
     serialized += "\n" + indentString + "}";
     return serialized;
   }

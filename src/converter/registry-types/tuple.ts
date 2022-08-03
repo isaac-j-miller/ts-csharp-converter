@@ -15,12 +15,14 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     internal: boolean,
     type: Type,
     level: number,
-    node: Node
+    node: Node,
+    commentString?: string
   ) {
     const structure: TypeStructure<"Tuple"> = {
       tokenType: "Tuple",
       name,
       tupleMembers: members,
+      commentString,
     };
     super(
       registry,
@@ -60,7 +62,8 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
         [],
         this.generateCSharpGenericParams(genericParams),
         baseClass,
-        this.internal
+        this.internal,
+        this.structure.commentString
       );
     }
     return new CSharpClass(
@@ -69,7 +72,8 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       [],
       false,
       baseClass,
-      this.internal
+      this.internal,
+      this.structure.commentString
     );
   }
 }

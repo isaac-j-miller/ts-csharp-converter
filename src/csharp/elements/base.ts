@@ -5,6 +5,7 @@ export abstract class CSharpElement {
   constructor(
     public readonly kind: CSharpElementKind,
     public readonly name: string,
+    public readonly commentString?: string,
     isInternal?: boolean
   ) {
     this._isInternal = !!isInternal;

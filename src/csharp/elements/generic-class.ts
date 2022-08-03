@@ -1,4 +1,5 @@
 import { getGenericTypeName } from "src/converter/util";
+import { getIndentString } from "../util";
 import { CSharpClass } from "./class";
 import { CSharpProperty, GenericParam } from "./types";
 
@@ -9,9 +10,18 @@ export class CSharpGenericClass extends CSharpClass {
     properties: CSharpProperty[],
     public readonly genericOptions: Record<string, GenericParam>,
     inheritsFrom?: string,
-    isInternal?: boolean
+    isInternal?: boolean,
+    commentString?: string
   ) {
-    super(name, isPartial, properties, false, inheritsFrom, isInternal);
+    super(
+      name,
+      isPartial,
+      properties,
+      false,
+      inheritsFrom,
+      isInternal,
+      commentString
+    );
   }
   private getConstraints(): string {
     let constraintsString = "";
@@ -23,8 +33,9 @@ export class CSharpGenericClass extends CSharpClass {
     });
     return constraintsString;
   }
-  protected override serializeDeclaration(): string {
-    let serialized = "";
+  protected override serializeDeclaration(indentation: number): string {
+    const indentString = getIndentString(indentation);
+    let serialized = indentString;
     if (this.isPublic) {
       serialized += "public ";
     } else {

@@ -14,6 +14,7 @@ export interface NominalObj extends Object {
 }
 
 type X = {
+  // whatever is a number property on X
   whatever: number;
 };
 export interface SomeInterface {

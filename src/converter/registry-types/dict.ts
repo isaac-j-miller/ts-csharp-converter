@@ -21,6 +21,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     node: Node,
     type: Type,
     level: number,
+    commentString?: string,
     genericParameters?: string[]
   ) {
     super(
@@ -40,6 +41,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     }));
     this.structure.mappedIndexType = indexType;
     this.structure.mappedValueType = valueType;
+    this.structure.commentString = commentString;
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
@@ -73,7 +75,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
         [],
         genericParams,
         baseClassName,
-        this.internal
+        this.internal,
+        this.structure.commentString
       );
     }
     return new CSharpClass(
@@ -81,7 +84,9 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
       false,
       [],
       false,
-      baseClassName
+      baseClassName,
+      this.internal,
+      this.structure.commentString
     );
   }
 }

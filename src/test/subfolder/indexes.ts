@@ -30,6 +30,8 @@ export type GenericUnionIndex4<T extends string | number> = {
 };
 export type GenericConsumer = GenericUnionIndex<string, number>;
 
+// this is a comment that should show up on the GenericConsumerConsumer class
 export type GenericConsumerConsumer = {
+  // g comment
   g: GenericConsumer;
 };

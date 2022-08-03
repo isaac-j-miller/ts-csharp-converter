@@ -12,12 +12,14 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     members: UnionMember[],
     internal: boolean,
     type: Type,
-    level: number
+    level: number,
+    commentString?: string
   ) {
     const structure: TypeStructure<"StringUnion"> = {
       tokenType: "StringUnion",
       name,
       unionMembers: members,
+      commentString,
     };
     super(registry, structure, symbol, true, internal, type, level, false);
   }

@@ -57,6 +57,8 @@ function getPropertyOptions(
 ): PropertyInfo {
   const propertyName = propertySymbol.getName();
   const isOptional = propertySymbol.isOptional();
+  const dec = propertySymbol.getDeclarations()[0];
+  const commentString = getComments(dec);
   const type = propertySymbol.getTypeAtLocation(parentNode);
   const isArray = type.isArray();
   const baseType = getFinalArrayType(type);
@@ -69,7 +71,13 @@ function getPropertyOptions(
   const arrayDepth = isArray ? getArrayDepth(type) : 0;
   const tags = propertySymbol.getJsDocTags();
   const primitiveType = asPrimitiveTypeName(baseType, tags);
-  const options = { isArray, isOptional, genericParameters, arrayDepth };
+  const options = {
+    isArray,
+    isOptional,
+    genericParameters,
+    arrayDepth,
+    commentString,
+  };
   return {
     propertyName,
     baseType,
@@ -93,6 +101,14 @@ function getGenericConstraintOptions(type: Type): GenericConstraintOptions {
     primitiveType,
     genericParameters,
   };
+}
+
+function getComments(node: Node): string | undefined {
+  const commentString = node
+    ?.getLeadingCommentRanges()
+    .map((c) => c.getText())
+    .join("\n");
+  return commentString;
 }
 export class TypeFactory {
   constructor(private registry: TypeRegistry) {}
@@ -129,7 +145,8 @@ export class TypeFactory {
         members.map((member) => ({ name: member.toString() })),
         internal,
         type,
-        options.level
+        options.level,
+        getComments(node)
       );
       return unionRegType;
     }
@@ -165,7 +182,7 @@ export class TypeFactory {
     options: TypeOptions,
     overrideEnumCheck: boolean = false
   ): IRegistryType | undefined {
-    const { name, type, internal, level } = options;
+    const { name, type, node, internal, level } = options;
     const symbolToUse = createSymbol(name, type);
     if (!overrideEnumCheck && !type.isEnum()) {
       return;
@@ -198,7 +215,8 @@ export class TypeFactory {
       members,
       internal,
       type,
-      level
+      level,
+      getComments(node)
     );
   }
   private createTupleType(options: TypeOptions): IRegistryType | undefined {
@@ -219,7 +237,8 @@ export class TypeFactory {
       internal,
       type,
       level,
-      node
+      node,
+      getComments(node)
     );
 
     type.getAliasTypeArguments().forEach((alias) => {
@@ -361,7 +380,8 @@ export class TypeFactory {
       internal,
       node,
       type,
-      level
+      level,
+      getComments(node)
     );
     type.getAliasTypeArguments().forEach((alias) => {
       this.addGenericParameter(mappedType, options, alias);
@@ -524,7 +544,8 @@ export class TypeFactory {
       internal,
       node,
       type,
-      level
+      level,
+      getComments(node)
     );
     type.getAliasTypeArguments().forEach((alias) => {
       this.addGenericParameter(regType, options, alias);

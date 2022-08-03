@@ -1,14 +1,15 @@
 import { UnionMember } from "src/converter/types";
+import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
-import { TAB_WIDTH } from "./types";
 
 export class CSharpEnum extends CSharpElement {
   constructor(
     name: string,
     public readonly items: UnionMember[],
-    isInternal?: boolean
+    isInternal?: boolean,
+    commentString?: string
   ) {
-    super("enum", name, isInternal);
+    super("enum", name, commentString, isInternal);
   }
   private serializeUnionMembers(): string[] {
     return this.items.map(({ name, value }) => {
@@ -20,10 +21,14 @@ export class CSharpEnum extends CSharpElement {
       return str;
     });
   }
-  serialize(indentation?: number): string {
-    const indentString = " ".repeat((indentation ?? 0) * TAB_WIDTH);
-    const bodyIndent = " ".repeat(((indentation ?? 0) + 1) * TAB_WIDTH);
-    let serialized = indentString;
+  serialize(indentation: number = 0): string {
+    const indentString = getIndentString(indentation);
+    const bodyIndent = getIndentString(indentation + 1);
+    const formattedCommentString = formatCommentString(
+      this.commentString,
+      indentation
+    );
+    let serialized = formattedCommentString + indentString;
     if (this.isPublic) {
       serialized += "public ";
     } else {

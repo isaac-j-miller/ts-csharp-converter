@@ -2,8 +2,12 @@ import { CSharpElement } from "./base";
 import { TAB_WIDTH } from "./types";
 
 export class CSharpNamespace extends CSharpElement {
-  constructor(name: string, public readonly elements: CSharpElement[]) {
-    super("namespace", name, false);
+  constructor(
+    name: string,
+    public readonly elements: CSharpElement[],
+    commentString?: string
+  ) {
+    super("namespace", name, commentString, false);
   }
   serialize(): string {
     const indent = " ".repeat(TAB_WIDTH);

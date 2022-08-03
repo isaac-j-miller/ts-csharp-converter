@@ -8,7 +8,11 @@ import {
   PropertyStructure,
   TypeStructure,
 } from "../types";
-import { literalValueToCSharpLiteralValue, toCSharpPrimitive } from "../util";
+import {
+  formatCsharpArrayString,
+  literalValueToCSharpLiteralValue,
+  toCSharpPrimitive,
+} from "../util";
 import { RegistryType } from "./base";
 
 export class TypeRegistryConstType extends RegistryType<"Const"> {
@@ -35,8 +39,14 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     propName: string,
     struct: PropertyStructure
   ): CSharpProperty {
-    const { baseType, defaultLiteralValue, isArray, arrayDepth, isOptional } =
-      struct;
+    const {
+      baseType,
+      defaultLiteralValue,
+      isArray,
+      arrayDepth,
+      isOptional,
+      commentString,
+    } = struct;
     if (!isPrimitiveType(baseType)) {
       throw new Error(
         `Const property ${this.structure.name}.${propName} is not a primitive type`
@@ -51,9 +61,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       isConst: true,
       defaultValue: literalValueToCSharpLiteralValue(defaultLiteralValue),
       optional: isOptional,
-      kind: isArray
-        ? kindType + `[${",".repeat(arrayDepth ? arrayDepth - 1 : 0)}]`
-        : kindType,
+      commentString,
+      kind: formatCsharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
   }
@@ -62,7 +71,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     type: PrimitiveType | PrimitiveTypeName,
     isArray: boolean,
     arrayDepth: number,
-    value: LiteralValue
+    value: LiteralValue,
+    commentString?: string
   ) {
     const baseType = isPrimitiveType(type)
       ? type
@@ -74,6 +84,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       arrayDepth,
       isOptional: false,
       defaultLiteralValue: value,
+      commentString,
     };
   }
   getPropertyString(): string {
