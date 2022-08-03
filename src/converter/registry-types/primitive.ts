@@ -20,7 +20,8 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
       false,
       true,
       undefined,
-      0
+      0,
+      false
     );
   }
   getPropertyString(): string {

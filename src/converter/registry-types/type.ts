@@ -7,13 +7,16 @@ import {
 } from "src/csharp/elements";
 import { TypeRegistry } from "../registry";
 import {
+  GenericReference,
   isGenericReference,
   ISyntheticSymbol,
   PropertyStructure,
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { getGenericTypeName } from "../util";
+import { createSymbol, getGenericTypeName } from "../util";
+import { getIndexAndValueType } from "../mapped-type";
+import { TypeRegistryDictType } from "./dict";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -195,6 +198,9 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       return [];
     }
     const genericParamNames = genericParameters.map((g) => g.name);
+    if (Object.keys(properties).length === 0) {
+      return genericParamNames;
+    }
     const usedGenericParamsSet = new Set<string>();
     const cb = (params: string[]) => {
       params.forEach((p) => {
@@ -218,10 +224,11 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   getCSharpElement(): CSharpClass {
     const props = this.generateCSharpProperties();
     const genericParams = this.getUsedGenericParams();
+    const partial = this.isMappedType;
     if ((this.structure.genericParameters ?? []).length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
-        false,
+        partial,
         props,
         this.generateCSharpGenericParams(genericParams),
         undefined,
@@ -230,7 +237,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     }
     return new CSharpClass(
       this.structure.name,
-      false,
+      partial,
       props,
       false,
       undefined,

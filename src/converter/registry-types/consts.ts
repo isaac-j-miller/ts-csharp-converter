@@ -27,7 +27,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       true,
       true,
       undefined,
-      0
+      0,
+      false
     );
   }
   private generateCSharpProperty(

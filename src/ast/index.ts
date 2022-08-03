@@ -27,6 +27,7 @@ export class AstTraverser {
   private entrySourceFile: SourceFile;
   private registry: TypeRegistry;
   private typeFactory: TypeFactory;
+  private sourceFilesProcessed: Set<string>;
   constructor(entrypoint: string, tsconfigPath: string) {
     this.project = new Project({
       tsConfigFilePath: tsconfigPath,
@@ -34,6 +35,7 @@ export class AstTraverser {
     this.entrySourceFile = this.project.getSourceFileOrThrow(entrypoint);
     this.registry = new TypeRegistry();
     this.typeFactory = new TypeFactory(this.registry);
+    this.sourceFilesProcessed = new Set<string>();
   }
   private processDeclaration<T extends DeclarationType>(node: T) {
     const name = node.getName();
@@ -89,6 +91,11 @@ export class AstTraverser {
         case SyntaxKind.EnumDeclaration:
           this.processDeclaration(node.asKindOrThrow(kind));
           break;
+        case SyntaxKind.MappedType: {
+          const k = node.asKindOrThrow(kind);
+          this.registry.markMappedType(k);
+          break;
+        }
         case SyntaxKind.VariableDeclaration:
           this.processVariableDeclaration(node.asKindOrThrow(kind));
           break;
@@ -97,7 +104,11 @@ export class AstTraverser {
           const sourceFile = node
             .asKindOrThrow(kind)
             .getModuleSpecifierSourceFileOrThrow();
-          this.traverseNode(sourceFile);
+          const fp = sourceFile.getFilePath();
+          if (!this.sourceFilesProcessed.has(fp)) {
+            this.traverseNode(sourceFile);
+            this.sourceFilesProcessed.add(fp);
+          }
           break;
         }
         default:

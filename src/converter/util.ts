@@ -83,26 +83,41 @@ export function createSymbol(name: string, t: Type): ISyntheticSymbol {
   const symbolFromType = getFinalSymbolOfType(t);
   return new SyntheticSymbol(name, t, symbolFromType);
 }
+function getTypeFromTag(tag: JSDocTagInfo): JsDocNumberType | undefined {
+  const textInfos = tag.getText();
+  for (const textInfo of textInfos) {
+    const { text } = textInfo;
+    if (text === "{float}") {
+      return "float";
+    }
+    if (text === "{int}") {
+      return "int";
+    }
+  }
+  return;
+}
 export function getJsDocNumberType(
-  tags?: JSDocTagInfo[]
+  tags?: JSDocTagInfo[],
+  index?: number
 ): JsDocNumberType | undefined {
   if (!tags) {
     return;
   }
-  for (const tag of tags) {
-    const name = tag.getName();
-    if (name !== "type") {
-      continue;
+  const typeTags = tags.filter((t) => t.getName() === "type");
+  if (index !== undefined) {
+    const tagToUse = typeTags[index];
+    if (tagToUse) {
+      const typeFromTag = getTypeFromTag(tagToUse);
+      if (typeFromTag) {
+        return typeFromTag;
+      }
     }
-    const textInfos = tag.getText();
-    for (const textInfo of textInfos) {
-      const { text } = textInfo;
-      if (text === "{float}") {
-        return "float";
-      }
-      if (text === "{int}") {
-        return "int";
-      }
+    return;
+  }
+  for (const tag of typeTags) {
+    const typeFromTag = getTypeFromTag(tag);
+    if (typeFromTag) {
+      return typeFromTag;
     }
   }
   return;

@@ -1,4 +1,4 @@
-import { Symbol } from "ts-morph";
+import { MappedTypeNode, Symbol, Type } from "ts-morph";
 import { CSharpElement, CSharpNamespace } from "src/csharp/elements";
 import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import {
@@ -13,8 +13,9 @@ import {
   PrimitiveTypeName,
   RegistryKey,
 } from "./types";
-import { getFinalSymbol, getRefactorName } from "./util";
+import { getFinalSymbol, getFinalSymbolOfType, getRefactorName } from "./util";
 import { TypeRegistryConstType } from "./registry-types/consts";
+import { TypeRegistryType } from "./registry-types";
 
 export const CONSTS_KEYWORD = "__consts__" as const;
 export type ConstKeyword = typeof CONSTS_KEYWORD;
@@ -37,12 +38,14 @@ export class TypeRegistry {
   private textCache: Record<string, string | undefined>;
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
+  private mappedTypes: MappedTypeNode[];
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
     this.declarations = new Set<string>();
     this.hashes = {};
+    this.mappedTypes = [];
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(
     sym: T
@@ -74,7 +77,9 @@ export class TypeRegistry {
     }
     return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
   }
-
+  markMappedType(node: MappedTypeNode) {
+    this.mappedTypes.push(node);
+  }
   addType(type: IRegistryType): void {
     const sym = type.getSymbol();
     const typeIsPrimitive = isPrimitiveType(sym);
@@ -167,6 +172,40 @@ export class TypeRegistry {
       }
     }
     return;
+  }
+  replace(old: ISyntheticSymbol, newType: IRegistryType) {
+    const newSym = newType.getSymbol();
+    if (isPrimitiveType(newSym) || isConstType(newSym)) {
+      throw new Error(`Cannot replace old type with primitive or const`);
+    }
+    const oldSymIdx = this.symbolToIndex(old);
+    const newSymIdx = this.symbolToIndex(newSym);
+    if (!oldSymIdx || !newSymIdx) {
+      throw new Error("Cannot construct index");
+    }
+    const oldValue = this.getType(old);
+    if (!oldValue) {
+      throw new Error("Old symbol not found, cannot replace");
+    }
+    const name = oldValue.getStructure().name;
+    this.declarations.delete(name);
+    const hash = oldValue.getHash();
+    if (this.hashes[hash]) {
+      delete this.hashes[hash];
+    }
+    this.addType(newType);
+    const resolvedOldSymbol = oldValue.getSymbol();
+    if (
+      !isPrimitiveType(resolvedOldSymbol) &&
+      !isConstType(resolvedOldSymbol)
+    ) {
+      const resolvedOldSymIdx = this.symbolToIndex(resolvedOldSymbol);
+      if (resolvedOldSymIdx) {
+        this.redirects[resolvedOldSymIdx] = newSymIdx;
+        delete this.symbolMap[resolvedOldSymIdx];
+      }
+    }
+    this.redirects[oldSymIdx] = newSymIdx;
   }
   findTypeByName<T extends string>(
     name: T
@@ -293,7 +332,47 @@ export class TypeRegistry {
     });
     return elements;
   }
+  private getRegistryTypeFromMappedType(t: Type): IRegistryType | undefined {
+    const sym = getFinalSymbolOfType(t);
+    if (!sym) {
+      return;
+    }
+    const fromRegistryInitial = this.getType(sym);
+    if (fromRegistryInitial) {
+      return fromRegistryInitial;
+    }
+    const decType = sym.getDeclarations()[0]?.getType();
+    const declarationTypeSymbol = decType
+      ? getFinalSymbolOfType(decType)
+      : undefined;
+    if (!declarationTypeSymbol) {
+      return;
+    }
+    const fromRegistry = this.getType(declarationTypeSymbol);
+    if (fromRegistry) {
+      return fromRegistry;
+    }
+    const byText = this.findTypeBySymbolText(decType.getText());
+    if (byText) {
+      return byText;
+    }
+    return;
+  }
+  private markMappedTypes() {
+    this.mappedTypes.forEach((node) => {
+      const t = node.getType();
+      const fromRegistry = this.getRegistryTypeFromMappedType(t);
+      if (!fromRegistry) {
+        return;
+      }
+      console.debug(
+        `Marking ${fromRegistry.getOriginalName()} as a mapped type`
+      );
+      fromRegistry.markAsMappedType(node);
+    });
+  }
   toNamespace(name: string): CSharpNamespace {
+    this.markMappedTypes();
     this.consolidate();
     return new CSharpNamespace(name, this.getElements());
   }

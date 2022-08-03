@@ -26,7 +26,8 @@ export abstract class TypeRegistryPossiblyGenericType<
     shouldBeRendered: boolean,
     protected readonly node: Node,
     type: Type,
-    level: number
+    level: number,
+    isMappedType?: boolean
   ) {
     const structure: TypeStructure<T> = {
       tokenType,
@@ -34,7 +35,16 @@ export abstract class TypeRegistryPossiblyGenericType<
       properties: {},
       genericParameters: [],
     };
-    super(registry, structure, sym, shouldBeRendered, internal, type, level);
+    super(
+      registry,
+      structure,
+      sym,
+      shouldBeRendered,
+      internal,
+      type,
+      level,
+      !!isMappedType
+    );
   }
   addGenericParameter(p: GenericParameter) {
     if (!this.structure.genericParameters) {

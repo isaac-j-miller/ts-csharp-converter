@@ -1,4 +1,4 @@
-import { Symbol, Type } from "ts-morph";
+import { MappedTypeNode, Symbol, Type } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
 
 export type TokenType =
@@ -48,12 +48,14 @@ export type GenericReference = {
   isGenericReference: true;
   genericParamName: string;
 };
+
 export type TypeReference =
   | Symbol
   | PrimitiveType
   | GenericReference
   | ISyntheticSymbol
   | ConstType;
+
 export type PropertyStructure = {
   propertyName: string;
   baseType: TypeReference;
@@ -77,8 +79,8 @@ export type TypeStructure<T extends TokenType> = {
   unionMembers?: UnionMember[];
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
-  mappedIndexType?: string;
-  mappedValueType?: string;
+  mappedIndexType?: TypeReference;
+  mappedValueType?: TypeReference;
 };
 
 export type PrimitiveType = {
@@ -113,6 +115,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   getType(): Type | undefined;
   rename(name: string): void;
   getOriginalName(): string;
+  markAsMappedType(mappedTypeNode: MappedTypeNode): void;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;

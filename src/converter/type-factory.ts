@@ -1,4 +1,6 @@
 import { Node, Symbol, Type } from "ts-morph";
+import { SyntaxKind } from "typescript";
+import { getIndexAndValueType } from "./mapped-type";
 import { TypeRegistry } from "./registry";
 import {
   PropertyOptions,
@@ -10,8 +12,10 @@ import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-gener
 import {
   GenericParameter,
   IRegistryType,
+  isPrimitiveTypeName,
   PrimitiveTypeName,
   TokenType,
+  TypeReference,
   UnionMember,
 } from "./types";
 import {
@@ -43,6 +47,8 @@ type GenericConstraintOptions = {
   primitiveType?: PrimitiveTypeName;
   genericParameters?: string[];
 };
+
+const MAX_DEPTH = 50;
 
 function getPropertyOptions(
   parentNode: Node,
@@ -194,31 +200,103 @@ export class TypeFactory {
       level
     );
   }
+  private getReferenceOrGetFromRegistry(
+    node: Node,
+    type: Type | PrimitiveTypeName,
+    name: string,
+    level: number,
+    symbol?: Symbol
+  ): TypeReference {
+    if (isPrimitiveTypeName(type)) {
+      return this.registry.getType(type).getSymbol();
+    }
+    const symbolToUse = symbol ?? type.getSymbol() ?? type.getAliasSymbol();
+    const tags = symbolToUse?.getJsDocTags();
+    const asPrimitive = asPrimitiveTypeName(type, tags);
+    if (asPrimitive) {
+      return this.registry.getType(asPrimitive).getSymbol();
+    }
+    if (!symbolToUse) {
+      return this.registry.getType("object").getSymbol();
+    }
+    if (type.isTypeParameter()) {
+      return {
+        isGenericReference: true,
+        genericParamName: symbolToUse.getName(),
+      };
+    }
+    const regType = this.getFromRegistryOrCreateAnon(
+      node,
+      type,
+      name,
+      level,
+      symbolToUse
+    );
+    return regType.getSymbol();
+  }
   private createMappedType(options: TypeOptions): IRegistryType | undefined {
     const { name, node, type, internal, level } = options;
-    const symbolToUse = createSymbol(name, type);
-    const stringIndexType = type.getStringIndexType();
-    if (!stringIndexType) {
+    const asMappedType = node.asKind(SyntaxKind.MappedType);
+    const getIndexAndValueTypeRefs = ():
+      | [TypeReference, TypeReference]
+      | undefined => {
+      const stringIndexType = type.getStringIndexType();
+      const numberIndexType = type.getNumberIndexType();
+      if ((!stringIndexType && !numberIndexType) || asMappedType) {
+        const [[index, indexNode], [value, valueNode]] =
+          getIndexAndValueType(node);
+        if (index && value && indexNode && valueNode) {
+          const indexTypeRef = this.getReferenceOrGetFromRegistry(
+            indexNode,
+            index,
+            `${name}IndexType`,
+            level
+          );
+          const valueTypeRef = this.getReferenceOrGetFromRegistry(
+            valueNode,
+            value,
+            `${name}ValueType`,
+            level
+          );
+          return [indexTypeRef, valueTypeRef];
+        }
+      }
+      let indexTypeString: "string" | "number" | "float" | "int";
+      let valueTypeToUse: Type;
+      if (stringIndexType) {
+        indexTypeString = "string";
+        valueTypeToUse = stringIndexType;
+      } else if (numberIndexType) {
+        indexTypeString = "number";
+        valueTypeToUse = numberIndexType;
+      } else {
+        return;
+      }
+      const valueType = valueTypeToUse.getApparentType();
+      const indexType = this.registry.getType(indexTypeString).getSymbol();
+      const valueTypeName = `${name}Value`;
+      const vType = this.getFromRegistryOrCreateAnon(
+        node,
+        valueType,
+        valueTypeName,
+        level,
+        valueType.getSymbol()
+      );
+      return [indexType, vType.getSymbol()];
+    };
+
+    const indexAndValueTypes = getIndexAndValueTypeRefs();
+    if (!indexAndValueTypes) {
       return;
     }
-    const valueType = stringIndexType.getApparentType();
-    const indexType = this.registry.getType("string").getSymbol();
-    const valueTypeName = `${name}Value`;
-    console.debug(`Creating internal type ${valueTypeName}`);
-    const vType = this.getFromRegistryOrCreateAnon(
-      node,
-      valueType,
-      valueTypeName,
-      level,
-      valueType.getSymbol()
-    );
-
+    const [indexType, valueType] = indexAndValueTypes;
+    const symbolToUse = createSymbol(name, type);
     const mappedType = new TypeRegistryDictType(
       this.registry,
       name,
       symbolToUse,
       indexType,
-      vType.getSymbol(),
+      valueType,
       internal,
       node,
       type,
@@ -244,6 +322,12 @@ export class TypeFactory {
     const fromText = this.registry.findTypeBySymbolText(propertyText);
     if (fromText) {
       return fromText;
+    }
+    if (level === MAX_DEPTH - 1) {
+      console.warn("will fail on next iteration if recursion continues");
+    }
+    if (level >= MAX_DEPTH) {
+      throw new Error(`Recursion depth exceeded.`);
     }
     console.debug(`Creating internal type ${name}`);
     const anon = this.createType({

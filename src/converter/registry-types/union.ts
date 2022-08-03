@@ -19,7 +19,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
       name,
       unionMembers: members,
     };
-    super(registry, structure, symbol, true, internal, type, level);
+    super(registry, structure, symbol, true, internal, type, level, false);
   }
   getPropertyString(): string {
     return this.structure.name;

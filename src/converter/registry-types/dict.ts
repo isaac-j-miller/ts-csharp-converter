@@ -32,11 +32,14 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
       !internal,
       node,
       type,
-      level
+      level,
+      true
     );
     this.structure.genericParameters = genericParameters?.map((g) => ({
       name: g,
     }));
+    this.structure.mappedIndexType = indexType;
+    this.structure.mappedValueType = valueType;
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {

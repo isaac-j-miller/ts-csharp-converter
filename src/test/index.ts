@@ -4,3 +4,4 @@ export * as More from "./subfolder/more";
 export * from "./consts";
 export * from "./subfolder/class";
 export * from "./subfolder/conflict";
+export * from "./subfolder/indexes";

@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { Symbol, Type } from "ts-morph";
+import { MappedTypeNode, Symbol, Type } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
 import {
   ConstType,
@@ -9,6 +9,7 @@ import {
   PrimitiveType,
   PropertyStructure,
   TokenType,
+  TypeReference,
   TypeStructure,
 } from "../types";
 import { TypeRegistry } from "../registry";
@@ -18,6 +19,7 @@ export abstract class RegistryType<T extends TokenType>
 {
   private readonly originalName: string;
   public readonly tokenType: T;
+  protected mappedTypeNode?: MappedTypeNode;
   constructor(
     protected registry: TypeRegistry,
     protected structure: TypeStructure<T>,
@@ -29,10 +31,15 @@ export abstract class RegistryType<T extends TokenType>
     public readonly shouldBeRendered: boolean,
     protected readonly internal: boolean,
     protected readonly type: Type | undefined,
-    private readonly level: number
+    private readonly level: number,
+    protected isMappedType: boolean
   ) {
     this.tokenType = structure.tokenType;
     this.originalName = structure.name;
+  }
+  markAsMappedType(mappedTypeNode: MappedTypeNode): void {
+    this.isMappedType = true;
+    this.mappedTypeNode = mappedTypeNode;
   }
   getLevel(): number {
     return this.level;
@@ -81,17 +88,24 @@ export abstract class RegistryType<T extends TokenType>
     return hashes.join(":");
   }
   private hashProperty(property: PropertyStructure): string {
-    const { baseType, isArray, isOptional, genericParameters } = property;
-    let baseTypeHash: string;
-    if (isGenericReference(baseType)) {
-      baseTypeHash = baseType.genericParamName;
-    } else {
-      const fromRegistry = this.registry.getType(baseType);
-      baseTypeHash = fromRegistry?.getHash() ?? "undefined";
-    }
+    const { baseType, isArray, isOptional } = property;
+    const baseTypeHash = this.hashTypeRef(baseType);
     return `${baseTypeHash}#${isOptional}#${isArray}#${this.hashGenericParameters(
       property
     )}`;
+  }
+  private hashTypeRef(ref: TypeReference | undefined): string {
+    if (!ref) {
+      return "undefined";
+    }
+    let baseTypeHash: string;
+    if (isGenericReference(ref)) {
+      baseTypeHash = ref.genericParamName;
+    } else {
+      const fromRegistry = this.registry.getType(ref);
+      baseTypeHash = fromRegistry?.getHash() ?? "undefined";
+    }
+    return baseTypeHash;
   }
   private hashProperties(
     properties: Record<string, PropertyStructure>
@@ -116,7 +130,9 @@ export abstract class RegistryType<T extends TokenType>
       : "undefined";
     const hash = `${tokenType}#${
       tokenType === "Primitive" ? `${name}#` : ""
-    }${unionHash}#${propertiesHash}#${mappedIndexType}#${mappedValueType}`;
+    }${unionHash}#${propertiesHash}#${this.hashTypeRef(
+      mappedIndexType
+    )}#${this.hashTypeRef(mappedValueType)}`;
     return hash;
   }
   getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol | ConstType {

@@ -5,3 +5,4 @@ TODO:
 - index types other than plain strings (enum, string union, number) for mapped type
 - transfer comments and jsdocs
 - make sure conditional types work
+- tuples
