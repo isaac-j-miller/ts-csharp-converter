@@ -5,3 +5,4 @@ export * from "./consts";
 export * from "./subfolder/class";
 export * from "./subfolder/conflict";
 export * from "./subfolder/indexes";
+export * from "./subfolder/tuple";

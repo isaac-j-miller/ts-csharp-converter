@@ -9,6 +9,7 @@ import {
   TypeRegistryUnionType,
 } from "./registry-types";
 import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { TypeRegistryTupleType } from "./registry-types/tuple";
 import {
   GenericParameter,
   IRegistryType,
@@ -200,6 +201,32 @@ export class TypeFactory {
       level
     );
   }
+  private createTupleType(options: TypeOptions): IRegistryType | undefined {
+    const { name, node, type, internal, level } = options;
+    if (!type.isTuple()) {
+      return;
+    }
+    const symbolToUse = createSymbol(name, type);
+    const tupleElements = type.getTupleElements();
+    const members = tupleElements.map((t, i) =>
+      this.getReferenceOrGetFromRegistry(node, t, `${name}Member${i}`, level)
+    );
+    const tuple = new TypeRegistryTupleType(
+      this.registry,
+      name,
+      symbolToUse,
+      members,
+      internal,
+      type,
+      level,
+      node
+    );
+
+    type.getAliasTypeArguments().forEach((alias) => {
+      this.addGenericParameter(tuple, options, alias);
+    });
+    return tuple;
+  }
   private getReferenceOrGetFromRegistry(
     node: Node,
     type: Type | PrimitiveTypeName,
@@ -208,31 +235,59 @@ export class TypeFactory {
     symbol?: Symbol
   ): TypeReference {
     if (isPrimitiveTypeName(type)) {
-      return this.registry.getType(type).getSymbol();
+      const asPrimitive = this.registry.getType(type).getSymbol();
+      return {
+        ref: asPrimitive,
+        isArray: false,
+        arrayDepth: 0,
+      };
     }
-    const symbolToUse = symbol ?? type.getSymbol() ?? type.getAliasSymbol();
+    const isArray = type.isArray();
+    const typeToUse = getFinalArrayType(type);
+    const arrayDepth = getArrayDepth(type);
+    const symbolToUse =
+      symbol ?? typeToUse.getSymbol() ?? typeToUse.getAliasSymbol();
     const tags = symbolToUse?.getJsDocTags();
-    const asPrimitive = asPrimitiveTypeName(type, tags);
+    const asPrimitive = asPrimitiveTypeName(typeToUse, tags);
     if (asPrimitive) {
-      return this.registry.getType(asPrimitive).getSymbol();
+      const sym = this.registry.getType(asPrimitive).getSymbol();
+      return {
+        ref: sym,
+        isArray,
+        arrayDepth,
+      };
     }
     if (!symbolToUse) {
-      return this.registry.getType("object").getSymbol();
-    }
-    if (type.isTypeParameter()) {
+      const asPrimitive = this.registry.getType("object").getSymbol();
       return {
-        isGenericReference: true,
-        genericParamName: symbolToUse.getName(),
+        ref: asPrimitive,
+        isArray,
+        arrayDepth,
+      };
+    }
+    if (typeToUse.isTypeParameter()) {
+      return {
+        ref: {
+          isGenericReference: true,
+          genericParamName: symbolToUse.getName(),
+        },
+        isArray,
+        arrayDepth,
       };
     }
     const regType = this.getFromRegistryOrCreateAnon(
       node,
-      type,
+      typeToUse,
       name,
       level,
       symbolToUse
     );
-    return regType.getSymbol();
+    const sym = regType.getSymbol();
+    return {
+      ref: sym,
+      isArray,
+      arrayDepth,
+    };
   }
   private createMappedType(options: TypeOptions): IRegistryType | undefined {
     const { name, node, type, internal, level } = options;
@@ -273,16 +328,22 @@ export class TypeFactory {
         return;
       }
       const valueType = valueTypeToUse.getApparentType();
+      const isArray = valueType.isArray();
+      const arrayDepth = getArrayDepth(valueType);
+      const valueToUse = getFinalArrayType(valueType);
       const indexType = this.registry.getType(indexTypeString).getSymbol();
       const valueTypeName = `${name}Value`;
       const vType = this.getFromRegistryOrCreateAnon(
         node,
-        valueType,
+        valueToUse,
         valueTypeName,
         level,
         valueType.getSymbol()
       );
-      return [indexType, vType.getSymbol()];
+      return [
+        { ref: indexType, isArray: false, arrayDepth: 0 },
+        { ref: vType.getSymbol(), isArray, arrayDepth },
+      ];
     };
 
     const indexAndValueTypes = getIndexAndValueTypeRefs();
@@ -408,17 +469,25 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     paramName: string,
     constraintOptions: GenericConstraintOptions
-  ): IRegistryType {
+  ): TypeReference {
     const { node, name, level } = parentOptions;
     const { baseType, symbol } = constraintOptions;
     const internalClassName = `${name}${paramName}ConstraintClass`;
-    return this.getFromRegistryOrCreateAnon(
+    const isArray = baseType.isArray();
+    const arrayDepth = getArrayDepth(baseType);
+    const typeToUse = getFinalArrayType(baseType);
+    const fromRegOrAnon = this.getFromRegistryOrCreateAnon(
       node,
-      baseType,
+      typeToUse,
       internalClassName,
       level,
       symbol
     );
+    return {
+      ref: fromRegOrAnon.getSymbol(),
+      isArray,
+      arrayDepth,
+    };
   }
   private addGenericParameter<T extends TokenType>(
     registryType: TypeRegistryPossiblyGenericType<T>,
@@ -431,17 +500,17 @@ export class TypeFactory {
     if (!v) {
       return;
     }
-    const constraint = parameterType.getConstraint();
-    const typeFromRegistry = constraint
+    const constraintType = parameterType.getConstraint();
+    const constraint = constraintType
       ? this.getGenericTypeConstraintFromRegistry(
           parentOptions,
           v,
-          getGenericConstraintOptions(constraint)
+          getGenericConstraintOptions(constraintType)
         )
       : undefined;
     const p: GenericParameter = {
       name: v,
-      constraint: typeFromRegistry?.getSymbol(),
+      constraint,
     };
     registryType.addGenericParameter(p);
   }
@@ -478,6 +547,10 @@ export class TypeFactory {
     const asUnionFromEnum = this.createUnionTypeFromEnum(options);
     if (asUnionFromEnum) {
       return asUnionFromEnum;
+    }
+    const asTuple = this.createTupleType(options);
+    if (asTuple) {
+      return asTuple;
     }
     const asMappedType = this.createMappedType(options);
     if (asMappedType) {

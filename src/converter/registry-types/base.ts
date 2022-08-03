@@ -88,8 +88,13 @@ export abstract class RegistryType<T extends TokenType>
     return hashes.join(":");
   }
   private hashProperty(property: PropertyStructure): string {
-    const { baseType, isArray, isOptional } = property;
-    const baseTypeHash = this.hashTypeRef(baseType);
+    const { baseType, isArray, isOptional, arrayDepth } = property;
+    const typeRef = {
+      ref: baseType,
+      isArray,
+      arrayDepth: arrayDepth ?? 0,
+    };
+    const baseTypeHash = this.hashTypeRef(typeRef);
     return `${baseTypeHash}#${isOptional}#${isArray}#${this.hashGenericParameters(
       property
     )}`;
@@ -98,12 +103,15 @@ export abstract class RegistryType<T extends TokenType>
     if (!ref) {
       return "undefined";
     }
+    const { arrayDepth, isArray, ref: typeRef } = ref;
     let baseTypeHash: string;
-    if (isGenericReference(ref)) {
-      baseTypeHash = ref.genericParamName;
+    if (isGenericReference(typeRef)) {
+      baseTypeHash = typeRef.genericParamName;
     } else {
-      const fromRegistry = this.registry.getType(ref);
-      baseTypeHash = fromRegistry?.getHash() ?? "undefined";
+      const fromRegistry = this.registry.getType(typeRef);
+      baseTypeHash =
+        (fromRegistry?.getHash() ?? "undefined") +
+        `a:${isArray};d:${arrayDepth ?? 0}`;
     }
     return baseTypeHash;
   }
@@ -121,6 +129,7 @@ export abstract class RegistryType<T extends TokenType>
       tokenType,
       unionMembers,
       properties,
+      tupleMembers,
       mappedIndexType,
       mappedValueType,
     } = this.structure;
@@ -132,7 +141,9 @@ export abstract class RegistryType<T extends TokenType>
       tokenType === "Primitive" ? `${name}#` : ""
     }${unionHash}#${propertiesHash}#${this.hashTypeRef(
       mappedIndexType
-    )}#${this.hashTypeRef(mappedValueType)}`;
+    )}#${this.hashTypeRef(mappedValueType)}#${tupleMembers?.map((t) =>
+      this.hashTypeRef(t)
+    )}`;
     return hash;
   }
   getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol | ConstType {

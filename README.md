@@ -4,4 +4,3 @@ TODO:
 - serialization/deserialization code
 - transfer comments and jsdocs
 - make sure conditional types work
-- tuples

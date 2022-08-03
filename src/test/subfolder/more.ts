@@ -36,3 +36,7 @@ export function someFn() {
 export const anotherFn = () => {
   console.debug("jjjjjjjjj");
 };
+
+export type AAAAAAAA<T> = {
+  vvv: T[];
+};

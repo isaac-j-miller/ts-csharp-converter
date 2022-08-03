@@ -1,7 +1,8 @@
-import { JSDocTagInfo, Symbol, Type } from "ts-morph";
+import { JSDocTagInfo, Symbol, Type, TypeParameter } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
+  BaseTypeReference,
   GenericParameter,
   IRegistryType,
   isSyntheticSymbol,
@@ -9,6 +10,7 @@ import {
   JsDocNumberType,
   LiteralValue,
   PrimitiveTypeName,
+  TypeReference,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
 import { TypeRegistry } from "./registry";
@@ -221,19 +223,55 @@ export function getGenericParameters(
       return;
     }
 
-    const typeConstraint = param.getConstraint();
-    const constraintSymbol = typeConstraint
-      ? getFinalSymbolOfType(typeConstraint)
-      : undefined;
-    const constraint = (
-      constraintSymbol ? registry.getType(constraintSymbol) : undefined
-    )?.getSymbol();
-    const p: GenericParameter = {
-      name: v,
-      constraint,
-    };
+    const p = getConstraint(registry, param, v);
 
     params.push(p);
   });
   return params;
+}
+
+export function formatCsharpArrayString(
+  name: string,
+  isArray: boolean,
+  arrayDepth: number
+): string {
+  if (!isArray) {
+    return name;
+  }
+  return name + `[${",".repeat(arrayDepth ? arrayDepth - 1 : 0)}]`;
+}
+
+function getConstraint(
+  registry: TypeRegistry,
+  param: TypeParameter,
+  v: string
+): GenericParameter {
+  const underlyingTypeConstraint = param.getConstraint();
+  const typeConstraint = underlyingTypeConstraint
+    ? getFinalArrayType(underlyingTypeConstraint)
+    : undefined;
+  const constraintSymbol = typeConstraint
+    ? getFinalSymbolOfType(typeConstraint)
+    : undefined;
+  let isArray = false;
+  let arrayDepth = 0;
+  if (typeConstraint) {
+    isArray = typeConstraint.isArray();
+    arrayDepth = getArrayDepth(typeConstraint);
+  }
+  const constraintBaseRef: BaseTypeReference | undefined = (
+    constraintSymbol ? registry.getType(constraintSymbol) : undefined
+  )?.getSymbol();
+  const constraint = constraintBaseRef
+    ? {
+        ref: constraintBaseRef,
+        isArray,
+        arrayDepth,
+      }
+    : undefined;
+  const p: GenericParameter = {
+    name: v,
+    constraint,
+  };
+  return p;
 }

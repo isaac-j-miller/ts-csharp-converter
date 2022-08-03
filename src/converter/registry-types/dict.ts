@@ -43,8 +43,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
-    const indexTypeName = this.resolveTypeName(this.indexType);
-    const valueTypeName = this.resolveTypeName(this.valueType);
+    const indexTypeName = this.resolveAndFormatTypeName(this.indexType);
+    const valueTypeName = this.resolveAndFormatTypeName(this.valueType);
     return getGenericTypeName(this.baseName, [indexTypeName, valueTypeName]);
   }
   getPropertyString(genericParameterValues?: string[]): string {

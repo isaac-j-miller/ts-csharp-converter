@@ -9,7 +9,9 @@ export type TokenType =
   | "Enum"
   | "Primitive"
   | "Dictionary"
-  | "Const";
+  | "Const"
+  | "Tuple"
+  | "Array";
 
 const primitiveTypeNames = [
   "string",
@@ -48,8 +50,12 @@ export type GenericReference = {
   isGenericReference: true;
   genericParamName: string;
 };
-
-export type TypeReference =
+export type TypeReference<T extends BaseTypeReference = BaseTypeReference> = {
+  isArray: boolean;
+  arrayDepth: number;
+  ref: T;
+};
+export type BaseTypeReference =
   | Symbol
   | PrimitiveType
   | GenericReference
@@ -58,7 +64,7 @@ export type TypeReference =
 
 export type PropertyStructure = {
   propertyName: string;
-  baseType: TypeReference;
+  baseType: BaseTypeReference;
   isArray: boolean;
   arrayDepth?: number;
   isOptional: boolean;
@@ -77,6 +83,7 @@ export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
   unionMembers?: UnionMember[];
+  tupleMembers?: TypeReference[];
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
   mappedIndexType?: TypeReference;
@@ -110,7 +117,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   getStructure(): TypeStructure<T>;
   getHash(): string;
   getPropertyString(genericParameterValues?: string[]): string;
-  getSymbol(): Exclude<TypeReference, GenericReference>;
+  getSymbol(): Exclude<BaseTypeReference, GenericReference>;
   getCSharpElement(): CSharpElement;
   getType(): Type | undefined;
   rename(name: string): void;
