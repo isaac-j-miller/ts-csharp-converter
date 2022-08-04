@@ -130,8 +130,12 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       this.structure.commentString
     );
   }
+
   getPropertyString(genericParameterValues?: string[]): string {
     const { name } = this.structure;
-    return getGenericTypeName(name, genericParameterValues);
+    const namesToUse = this.getGenericParametersForPropertyString(
+      genericParameterValues ?? []
+    );
+    return getGenericTypeName(name, namesToUse);
   }
 }

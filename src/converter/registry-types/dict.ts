@@ -54,7 +54,10 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
       return this.getBaseClassName();
     }
     const { name } = this.structure;
-    return getGenericTypeName(name, genericParameterValues);
+    const namesToUse = this.getGenericParametersForPropertyString(
+      genericParameterValues ?? []
+    );
+    return getGenericTypeName(name, namesToUse);
   }
   getCSharpElement(): CSharpClass {
     if (!this.shouldBeRendered) {

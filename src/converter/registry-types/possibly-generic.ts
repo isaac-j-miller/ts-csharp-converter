@@ -230,4 +230,29 @@ export abstract class TypeRegistryPossiblyGenericType<
     console.error("Type not found in registry", ref);
     return "object";
   }
+  protected getGenericParametersForPropertyString(
+    givenValues: string[]
+  ): string[] {
+    const { name } = this.structure;
+    const genericParameters = this.structure.genericParameters ?? [];
+    const namesToUse: string[] = [];
+    if(name==="DefaultGeneric") {
+      console.debug()
+    }
+    for (let i = 0; i < genericParameters.length; i++) {
+      const thisParam = genericParameters[i];
+      const { default: defaultValue } = thisParam;
+      const givenValue = givenValues[i];
+      if (givenValue) {
+        namesToUse.push(givenValue);
+      } else if (defaultValue) {
+        namesToUse.push(this.resolveAndFormatTypeName(defaultValue));
+      } else {
+        console.warn(
+          `No parameter defined for ${name}'s type parameter in position ${i} (${thisParam.name})!`
+        );
+      }
+    }
+    return namesToUse;
+  }
 }

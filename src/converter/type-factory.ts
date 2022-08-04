@@ -43,7 +43,7 @@ type PropertyInfo = {
   primitiveType?: PrimitiveTypeName;
   options: PropertyOptions;
 };
-type GenericConstraintOptions = {
+type GenericConstraintOrDefaultOptions = {
   baseType: Type;
   symbol?: Symbol;
   primitiveType?: PrimitiveTypeName;
@@ -87,7 +87,9 @@ function getPropertyOptions(
     options,
   };
 }
-function getGenericConstraintOptions(type: Type): GenericConstraintOptions {
+function getGenericConstraintOrDefaultOptions(
+  type: Type
+): GenericConstraintOrDefaultOptions {
   const baseType = getFinalArrayType(type);
   const typeArgs = baseType.getAliasTypeArguments();
   const genericParameters = typeArgs.map(
@@ -479,14 +481,15 @@ export class TypeFactory {
       options
     );
   }
-  private getGenericTypeConstraintFromRegistry(
+  private getGenericTypeConstraintOrDefaultFromRegistry(
     parentOptions: TypeOptions,
     paramName: string,
-    constraintOptions: GenericConstraintOptions
+    constraintOptions: GenericConstraintOrDefaultOptions,
+    type: "Constraint" | "Default"
   ): TypeReference {
     const { node, name, level } = parentOptions;
     const { baseType, symbol } = constraintOptions;
-    const internalClassName = `${name}${paramName}ConstraintClass`;
+    const internalClassName = `${name}${paramName}${type}Class`;
     const isArray = baseType.isArray();
     const arrayDepth = getArrayDepth(baseType);
     const typeToUse = getFinalArrayType(baseType);
@@ -516,15 +519,26 @@ export class TypeFactory {
     }
     const constraintType = parameterType.getConstraint();
     const constraint = constraintType
-      ? this.getGenericTypeConstraintFromRegistry(
+      ? this.getGenericTypeConstraintOrDefaultFromRegistry(
           parentOptions,
           v,
-          getGenericConstraintOptions(constraintType)
+          getGenericConstraintOrDefaultOptions(constraintType),
+          "Constraint"
+        )
+      : undefined;
+    const defaultType = parameterType.getDefault();
+    const defaultValue = defaultType
+      ? this.getGenericTypeConstraintOrDefaultFromRegistry(
+          parentOptions,
+          v,
+          getGenericConstraintOrDefaultOptions(defaultType),
+          "Default"
         )
       : undefined;
     const p: GenericParameter = {
       name: v,
       constraint,
+      default: defaultValue,
     };
     registryType.addGenericParameter(p);
   }

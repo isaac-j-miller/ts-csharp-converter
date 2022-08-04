@@ -77,6 +77,7 @@ export type PropertyStructure = {
 export type GenericParameter = {
   name: string;
   constraint?: TypeReference;
+  default?: TypeReference;
 };
 
 export type TypeStructure<T extends TokenType> = {
