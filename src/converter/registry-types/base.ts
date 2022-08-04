@@ -1,18 +1,22 @@
 import { createHash } from "crypto";
-import { MappedTypeNode, Symbol, Type } from "ts-morph";
+import { MappedTypeNode, Symbol } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
 import {
   ConstType,
   IRegistryType,
+  isConstType,
   isGenericReference,
+  isPrimitiveType,
   ISyntheticSymbol,
   PrimitiveType,
   PropertyStructure,
   TokenType,
   TypeReference,
   TypeStructure,
+  UnderlyingType,
 } from "../types";
-import { TypeRegistry } from "../registry";
+import { NonPrimitiveType, TypeRegistry } from "../registry";
+import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
 export abstract class RegistryType<T extends TokenType>
   implements IRegistryType<T>
@@ -30,7 +34,7 @@ export abstract class RegistryType<T extends TokenType>
       | ConstType,
     public readonly shouldBeRendered: boolean,
     protected readonly internal: boolean,
-    protected readonly type: Type | undefined,
+    protected readonly type: UnderlyingType<T>,
     private readonly level: number,
     protected isMappedType: boolean
   ) {
@@ -44,10 +48,6 @@ export abstract class RegistryType<T extends TokenType>
       this.structure.commentString = commentString;
     }
   }
-  markAsMappedType(mappedTypeNode: MappedTypeNode): void {
-    this.isMappedType = true;
-    this.mappedTypeNode = mappedTypeNode;
-  }
   getLevel(): number {
     return this.level;
   }
@@ -60,7 +60,7 @@ export abstract class RegistryType<T extends TokenType>
   getOriginalName(): string {
     return this.originalName;
   }
-  getType() {
+  getType(): UnderlyingType<T> {
     return this.type;
   }
   getStructure(): TypeStructure<T> {
@@ -87,8 +87,22 @@ export abstract class RegistryType<T extends TokenType>
   private hashGenericParameters(property: PropertyStructure): string {
     const hashes: string[] = [];
     property.genericParameters?.forEach((g) => {
+      let gName: string;
+      if (isGenericReference(g.ref)) {
+        gName = g.ref.genericParamName;
+      } else if (isConstType(g.ref)) {
+        throw new Error("__const__ should not be referenced");
+      } else if (isPrimitiveType(g.ref)) {
+        gName = g.ref.primitiveType;
+      } else {
+        const fromRegistry = this.registry.getType(g.ref);
+        if (!fromRegistry) {
+          throw new Error("Type not found in registry");
+        }
+        gName = fromRegistry.getStructure().name;
+      }
       const foundGenericParam = this.structure.genericParameters?.find(
-        (p) => p.name === g
+        (p) => p.name === gName
       );
       hashes.push(g + "." + this.hash(foundGenericParam));
     });
@@ -145,17 +159,34 @@ export abstract class RegistryType<T extends TokenType>
       ? this.hashProperties(properties)
       : "undefined";
     const hash = `${tokenType}#${
-      tokenType === "Primitive" ? `${name}#` : ""
+      tokenType === "Primitive" || tokenType === "Instance" ? `${name}#` : ""
     }${unionHash}#${propertiesHash}#${this.hashTypeRef(
-      mappedIndexType
-    )}#${this.hashTypeRef(mappedValueType)}#${tupleMembers?.map((t) =>
-      this.hashTypeRef(t)
+      mappedIndexType?.ref
+    )}#${mappedIndexType?.genericParameters
+      ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
+      .join(".")}#${this.hashTypeRef(
+      mappedValueType?.ref
+    )}#${mappedValueType?.genericParameters
+      ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
+      .join(".")}#${tupleMembers?.map(
+      (t) =>
+        this.hashTypeRef(t.ref) +
+        "#" +
+        t.genericParameters
+          ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
+          .join(".")
     )}`;
     return hash;
   }
   getSymbol(): Symbol | PrimitiveType | ISyntheticSymbol | ConstType {
     return this.symbol;
   }
-  abstract getPropertyString(genericParameterValues?: string[]): string;
+  abstract getPropertyString(genericParameterValues?: TypeReference[]): string;
   abstract getCSharpElement(): CSharpElement;
+  isGeneric(): this is TypeRegistryPossiblyGenericType<T> {
+    return false;
+  }
+  isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
+    return true;
+  }
 }

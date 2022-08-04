@@ -1,4 +1,4 @@
-import { MappedTypeNode, Symbol, Type } from "ts-morph";
+import { MappedTypeNode, Symbol } from "ts-morph";
 import { CSharpElement, CSharpNamespace } from "src/csharp/elements";
 import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import {
@@ -12,14 +12,14 @@ import {
   PrimitiveType,
   PrimitiveTypeName,
   RegistryKey,
+  TokenType,
 } from "./types";
-import { getFinalSymbol, getFinalSymbolOfType, getRefactorName } from "./util";
+import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
 import { TypeRegistryConstType } from "./registry-types/consts";
-import { TypeRegistryType } from "./registry-types";
 
 export const CONSTS_KEYWORD = "__consts__" as const;
 export type ConstKeyword = typeof CONSTS_KEYWORD;
-
+export type NonPrimitiveType = Exclude<TokenType, "Primitive" | "Const">;
 type GetTypeReturn<
   T extends
     | RegistryKey
@@ -31,7 +31,7 @@ type GetTypeReturn<
   ? TypeRegistryPrimitiveType
   : T extends ConstType | ConstKeyword
   ? TypeRegistryConstType
-  : IRegistryType | undefined;
+  : IRegistryType<NonPrimitiveType> | undefined;
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
@@ -253,6 +253,7 @@ export class TypeRegistry {
     if (symIsConstKeyword || symIsConstType) {
       return this.getConstValueType() as GetTypeReturn<T>;
     }
+
     // need this really dumb type guard because typescript can't tell that sym does not extend PrimitiveType | PrimitiveTypeName at this point
     const emptyReturnValue = undefined as GetTypeReturn<T>;
     const idx = this.symbolToIndex(sym);
@@ -262,6 +263,12 @@ export class TypeRegistry {
     const fromMap = this.getWithKey(idx);
     if (fromMap) {
       return fromMap as GetTypeReturn<T>;
+    }
+    if (!isSyntheticSymbol(sym)) {
+      const primitiveTypeName = asPrimitiveTypeName(sym.getDeclaredType());
+      if (primitiveTypeName) {
+        return this.getType(primitiveTypeName) as GetTypeReturn<T>;
+      }
     }
     const underlyingSym = isSyntheticSymbol(sym)
       ? sym.getUnderlyingSymbol()
@@ -274,7 +281,10 @@ export class TypeRegistry {
     }
     const redirectedIdx = this.redirects[idx];
     if (redirectedIdx) {
-      return this.getWithKey(redirectedIdx) as GetTypeReturn<T>;
+      const fromKey = this.getWithKey(redirectedIdx) as GetTypeReturn<T>;
+      if (fromKey) {
+        return fromKey;
+      }
     }
     return emptyReturnValue;
   }
@@ -332,47 +342,7 @@ export class TypeRegistry {
     });
     return elements;
   }
-  private getRegistryTypeFromMappedType(t: Type): IRegistryType | undefined {
-    const sym = getFinalSymbolOfType(t);
-    if (!sym) {
-      return;
-    }
-    const fromRegistryInitial = this.getType(sym);
-    if (fromRegistryInitial) {
-      return fromRegistryInitial;
-    }
-    const decType = sym.getDeclarations()[0]?.getType();
-    const declarationTypeSymbol = decType
-      ? getFinalSymbolOfType(decType)
-      : undefined;
-    if (!declarationTypeSymbol) {
-      return;
-    }
-    const fromRegistry = this.getType(declarationTypeSymbol);
-    if (fromRegistry) {
-      return fromRegistry;
-    }
-    const byText = this.findTypeBySymbolText(decType.getText());
-    if (byText) {
-      return byText;
-    }
-    return;
-  }
-  private markMappedTypes() {
-    this.mappedTypes.forEach((node) => {
-      const t = node.getType();
-      const fromRegistry = this.getRegistryTypeFromMappedType(t);
-      if (!fromRegistry) {
-        return;
-      }
-      console.debug(
-        `Marking ${fromRegistry.getOriginalName()} as a mapped type`
-      );
-      fromRegistry.markAsMappedType(node);
-    });
-  }
   toNamespace(name: string): CSharpNamespace {
-    this.markMappedTypes();
     this.consolidate();
     return new CSharpNamespace(name, this.getElements());
   }

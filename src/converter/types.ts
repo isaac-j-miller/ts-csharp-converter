@@ -1,17 +1,16 @@
 import { MappedTypeNode, Symbol, Type } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
+import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { NonPrimitiveType } from "./registry";
 
 export type TokenType =
   | "Type"
-  | "Alias"
   | "StringUnion"
-  | "Interface"
-  | "Enum"
   | "Primitive"
   | "Dictionary"
   | "Const"
   | "Tuple"
-  | "Array";
+  | "Instance";
 
 const primitiveTypeNames = [
   "string",
@@ -68,7 +67,7 @@ export type PropertyStructure = {
   isArray: boolean;
   arrayDepth?: number;
   isOptional: boolean;
-  genericParameters?: string[];
+  genericParameters?: TypeReference[];
   defaultLiteralValue?: LiteralValue;
   jsDocNumberType?: JsDocNumberType;
   commentString?: string;
@@ -76,6 +75,7 @@ export type PropertyStructure = {
 
 export type GenericParameter = {
   name: string;
+  apparent?: TypeReference;
   constraint?: TypeReference;
   default?: TypeReference;
 };
@@ -84,12 +84,17 @@ export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
   unionMembers?: UnionMember[];
-  tupleMembers?: TypeReference[];
+  tupleMembers?: TypeReferenceWithGenericParameters[];
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
-  mappedIndexType?: TypeReference;
-  mappedValueType?: TypeReference;
+  mappedIndexType?: TypeReferenceWithGenericParameters;
+  mappedValueType?: TypeReferenceWithGenericParameters;
   commentString?: string;
+};
+
+export type TypeReferenceWithGenericParameters = {
+  ref: TypeReference;
+  genericParameters?: PropertyStringArgs;
 };
 
 export type PrimitiveType = {
@@ -101,6 +106,10 @@ export type ConstType = {
   isConstType: true;
 };
 
+export type PropertyStringArg = TypeReference | string;
+
+export type PropertyStringArgs = PropertyStringArg[];
+
 export interface ISyntheticSymbol {
   getDeclaredType(): Type;
   getName(): string;
@@ -110,28 +119,33 @@ export interface ISyntheticSymbol {
   id: string;
   isSynthetic: true;
 }
-
+export type UnderlyingType<T extends TokenType> = T extends
+  | "Primitive"
+  | "Const"
+  ? undefined
+  : Type;
 export interface IRegistryType<T extends TokenType = TokenType> {
   readonly tokenType: T;
   readonly shouldBeRendered: boolean;
+  isGeneric(): this is TypeRegistryPossiblyGenericType<T>;
   addCommentString(commentString: string): void;
   isPublic(): boolean;
   getLevel(): number;
   getStructure(): TypeStructure<T>;
   getHash(): string;
-  getPropertyString(genericParameterValues?: string[]): string;
+  getPropertyString(genericParameterValues?: PropertyStringArgs): string;
   getSymbol(): Exclude<BaseTypeReference, GenericReference>;
   getCSharpElement(): CSharpElement;
-  getType(): Type | undefined;
+  getType(): UnderlyingType<T>;
   rename(name: string): void;
   getOriginalName(): string;
-  markAsMappedType(mappedTypeNode: MappedTypeNode): void;
+  isNonPrimitive(): this is IRegistryType<NonPrimitiveType>;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;
 
 export function isPrimitiveType(t: unknown): t is PrimitiveType {
-  return !!(t as PrimitiveType).isPrimitiveType;
+  return !!(t as PrimitiveType)?.isPrimitiveType;
 }
 export function isPrimitiveTypeName(str: unknown): str is PrimitiveTypeName {
   if (typeof str !== "string") {
@@ -140,13 +154,13 @@ export function isPrimitiveTypeName(str: unknown): str is PrimitiveTypeName {
   return primitiveTypeNames.includes(str as PrimitiveTypeName);
 }
 export function isGenericReference(t: unknown): t is GenericReference {
-  return !!(t as GenericReference).isGenericReference;
+  return !!(t as GenericReference)?.isGenericReference;
 }
 
 export function isSyntheticSymbol(t: unknown): t is ISyntheticSymbol {
-  return !!(t as ISyntheticSymbol).isSynthetic;
+  return !!(t as ISyntheticSymbol)?.isSynthetic;
 }
 
 export function isConstType(t: unknown): t is ConstType {
-  return !!(t as ConstType).isConstType;
+  return !!(t as ConstType)?.isConstType;
 }

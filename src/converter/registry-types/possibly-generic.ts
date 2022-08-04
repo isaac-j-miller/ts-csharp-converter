@@ -4,23 +4,16 @@ import { TypeRegistry } from "../registry";
 import {
   BaseTypeReference,
   GenericParameter,
-  isConstType,
   isGenericReference,
-  isPrimitiveType,
-  isSyntheticSymbol,
   ISyntheticSymbol,
+  PropertyStringArgs,
   TokenType,
   TypeReference,
   TypeStructure,
+  UnderlyingType,
 } from "../types";
-import {
-  formatCsharpArrayString,
-  getGenericParameters,
-  getGenericTypeName,
-  toCSharpPrimitive,
-} from "../util";
+import { formatCSharpArrayString, resolveTypeName } from "../util";
 import { RegistryType } from "./base";
-import { TypeRegistryType } from "./type";
 
 export abstract class TypeRegistryPossiblyGenericType<
   T extends TokenType
@@ -33,7 +26,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     internal: boolean,
     shouldBeRendered: boolean,
     protected readonly node: Node,
-    type: Type,
+    type: UnderlyingType<T>,
     level: number,
     isMappedType?: boolean
   ) {
@@ -60,88 +53,17 @@ export abstract class TypeRegistryPossiblyGenericType<
     }
     this.structure.genericParameters!.push(p);
   }
-  protected getUsedGenericParams(): string[] {
-    const { properties, genericParameters } = this.structure;
-    if (!genericParameters) {
-      return [];
-    }
-    const genericParamNames = genericParameters.map((g) => g.name);
-    if (!properties || Object.keys(properties).length === 0) {
-      return genericParamNames;
-    }
-    const usedGenericParamsSet = new Set<string>();
-    const cb = (params: string[]) => {
-      params.forEach((p) => {
-        usedGenericParamsSet.add(p);
-      });
-    };
-    Object.keys(properties).forEach((name) => {
-      const params = this.getGenericParametersOfProperty(name, cb);
-      const { baseType } = properties[name];
-      if (isGenericReference(baseType)) {
-        usedGenericParamsSet.add(baseType.genericParamName);
-      }
-      if (params) {
-        params.forEach((p) => {
-          usedGenericParamsSet.add(p);
-        });
-      }
-    });
-    return genericParamNames.filter((g) => usedGenericParamsSet.has(g));
-  }
 
-  private getGenericParametersOfProperty(
-    propName: string,
-    onFoundArgCb?: (args: string[]) => void
-  ): string[] | undefined {
+  private getGenericParametersOfProperty(propName: string): TypeReference[] {
     const property = (this.structure.properties ?? {})[propName];
     if (!property) {
-      return;
-    }
-    const { baseType } = property;
-    let numGenericArgs = 0;
-    let restrictLength = false;
-    if (!isGenericReference(baseType)) {
-      const fromRegistry = this.registry.getType(baseType);
-      if (fromRegistry && fromRegistry.tokenType === "Type") {
-        const asRegistryType = fromRegistry as TypeRegistryType;
-        numGenericArgs = asRegistryType.getUsedGenericParams().length;
-        restrictLength = true;
-      }
-    }
-
-    const thisType = this.getType();
-    if (!thisType) {
-      return;
-    }
-    const matchingProperty = thisType.getApparentProperty(propName);
-    if (!matchingProperty) {
       throw new Error(
-        `Property ${propName} declared but not found on type ${this.structure.name}`
+        `Property ${propName} does not exist on ${this.structure.name}`
       );
     }
-    const valueDec = matchingProperty.getValueDeclaration();
-    if (!valueDec) {
-      return;
-    }
-    const valueDecType = valueDec.getType();
-    let elemToUse = valueDecType;
-    if (property.isArray) {
-      elemToUse = valueDecType.getArrayElementType()!;
-      if (!elemToUse) {
-        throw new Error(
-          `Property ${propName} on type ${this.structure.name} is supposed to be an array but the underlying declaration contradicts`
-        );
-      }
-    }
-    const args = elemToUse
-      .getAliasTypeArguments()
-      .map((a) => this.getArgString(a, onFoundArgCb))
-      .filter((arg) => arg !== undefined) as string[];
-    if (restrictLength) {
-      return args.slice(0, numGenericArgs);
-    }
-    return args;
+    const { genericParameters } = property;
+    const givenGenericParams = genericParameters ?? [];
+    return givenGenericParams;
   }
   protected propertySymbolToString(
     propName: string,
@@ -151,26 +73,13 @@ export abstract class TypeRegistryPossiblyGenericType<
       return baseType.genericParamName;
     }
     const fromRegistry = this.registry.getType(baseType);
-    if (fromRegistry) {
-      const genericParameters = this.getGenericParametersOfProperty(propName);
-      return fromRegistry.getPropertyString(genericParameters);
+    if (!fromRegistry) {
+      throw new Error(
+        `Unable to find symbol for ${this.structure.name}.${propName}`
+      );
     }
-    return this.resolveTypeName(baseType);
-  }
-  private getArgString(
-    t: Type,
-    cb?: (str: string[]) => void
-  ): string | undefined {
-    const name = (t.getAliasSymbol() ?? t.getSymbol())?.getName();
-    if (!name) {
-      return;
-    }
-    const aliasArgs = t.getAliasTypeArguments();
-    const argsList = aliasArgs
-      .map((a) => this.getArgString(a, cb))
-      .filter((a) => a !== undefined) as string[];
-    cb && cb(argsList);
-    return getGenericTypeName(name, argsList);
+    const genericParameters = this.getGenericParametersOfProperty(propName);
+    return fromRegistry.getPropertyString(genericParameters);
   }
   protected generateCSharpGenericParams(
     paramsToInclude: string[]
@@ -181,70 +90,40 @@ export abstract class TypeRegistryPossiblyGenericType<
       );
       acc[curr] = {
         constraint: param?.constraint
-          ? this.resolveTypeName(param.constraint.ref)
+          ? this.resolveAndFormatTypeName(param.constraint)
           : undefined,
       };
       return acc;
     }, {} as Record<string, GenericParam>);
   }
-  protected resolveAndFormatTypeName(t: TypeReference): string {
-    const resolved = this.resolveTypeName(t.ref);
-    return formatCsharpArrayString(resolved, t.isArray, t.arrayDepth);
-  }
-  protected resolveTypeName(ref: BaseTypeReference): string {
-    if (isGenericReference(ref)) {
-      return ref.genericParamName;
-    }
-    if (isPrimitiveType(ref)) {
-      return toCSharpPrimitive(ref.primitiveType);
-    }
-    const registryType = this.registry.getType(ref);
-    let genericParameterNames: string[] = [];
-    if (registryType) {
-      const { genericParameters } = registryType.getStructure();
-      if (genericParameters && genericParameters.length > 0) {
-        let typeToUse = registryType.getType()?.getApparentType();
-        if (!typeToUse) {
-          if (isSyntheticSymbol(ref)) {
-            const underlyingSymbol = ref.getUnderlyingSymbol();
-            typeToUse = ref.getDeclaredType();
-            if (underlyingSymbol) {
-              const typeFromUnderlyingSymbol =
-                underlyingSymbol.getTypeAtLocation(this.node);
-              if (typeFromUnderlyingSymbol) {
-                typeToUse = typeFromUnderlyingSymbol;
-              }
-            }
-          } else if (!isConstType(ref)) {
-            typeToUse = ref.getTypeAtLocation(this.node);
-          }
-        }
-        genericParameterNames = getGenericParameters(
-          this.registry,
-          typeToUse
-        ).map((t) => t.name);
-      }
-      return registryType.getPropertyString(genericParameterNames);
-    }
-
-    console.error("Type not found in registry", ref);
-    return "object";
+  protected resolveAndFormatTypeName(
+    t: TypeReference,
+    genericParams?: PropertyStringArgs
+  ): string {
+    const resolved = resolveTypeName(
+      this.registry,
+      t.ref,
+      this.structure.genericParameters ?? [],
+      genericParams
+    );
+    return formatCSharpArrayString(resolved, t.isArray, t.arrayDepth);
   }
   protected getGenericParametersForPropertyString(
-    givenValues: string[]
+    givenValues: PropertyStringArgs
   ): string[] {
     const { name } = this.structure;
     const genericParameters = this.structure.genericParameters ?? [];
     const namesToUse: string[] = [];
-    if(name==="DefaultGeneric") {
-      console.debug()
-    }
     for (let i = 0; i < genericParameters.length; i++) {
       const thisParam = genericParameters[i];
       const { default: defaultValue } = thisParam;
       const givenValue = givenValues[i];
       if (givenValue) {
-        namesToUse.push(givenValue);
+        if (typeof givenValue === "string") {
+          namesToUse.push(givenValue);
+        } else {
+          namesToUse.push(this.resolveAndFormatTypeName(givenValue));
+        }
       } else if (defaultValue) {
         namesToUse.push(this.resolveAndFormatTypeName(defaultValue));
       } else {
@@ -254,5 +133,8 @@ export abstract class TypeRegistryPossiblyGenericType<
       }
     }
     return namesToUse;
+  }
+  override isGeneric(): this is TypeRegistryPossiblyGenericType<T> {
+    return true;
   }
 }

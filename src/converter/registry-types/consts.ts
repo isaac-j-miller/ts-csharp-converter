@@ -1,6 +1,7 @@
 import { CSharpClass, CSharpProperty } from "src/csharp/elements";
-import { TypeRegistry } from "../registry";
+import { NonPrimitiveType, TypeRegistry } from "../registry";
 import {
+  IRegistryType,
   isPrimitiveType,
   LiteralValue,
   PrimitiveType,
@@ -9,7 +10,7 @@ import {
   TypeStructure,
 } from "../types";
 import {
-  formatCsharpArrayString,
+  formatCSharpArrayString,
   literalValueToCSharpLiteralValue,
   toCSharpPrimitive,
 } from "../util";
@@ -62,7 +63,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       defaultValue: literalValueToCSharpLiteralValue(defaultLiteralValue),
       optional: isOptional,
       commentString,
-      kind: formatCsharpArrayString(kindType, isArray, arrayDepth ?? 0),
+      kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
   }
@@ -99,5 +100,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
   getCSharpElement(): CSharpClass {
     const properties = this.generateCSharpProperties();
     return new CSharpClass(this.structure.name, false, properties, true);
+  }
+  isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
+    return false;
   }
 }

@@ -3,17 +3,24 @@ import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/elements";
 import {
   BaseTypeReference,
+  ConstType,
   GenericParameter,
+  GenericReference,
   IRegistryType,
+  isConstType,
+  isGenericReference,
+  isPrimitiveType,
   isSyntheticSymbol,
   ISyntheticSymbol,
   JsDocNumberType,
   LiteralValue,
+  PrimitiveType,
   PrimitiveTypeName,
+  PropertyStringArgs,
   TypeReference,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
-import { TypeRegistry } from "./registry";
+import { NonPrimitiveType, TypeRegistry } from "./registry";
 
 // TODO: make this config-driven
 const DEFAULT_NUMBER_TYPE = "int" as const;
@@ -184,53 +191,141 @@ export function getRefactorName(name: string): string {
   }
   return name + "2";
 }
-export function getGenericParameters(
+
+export function resolveTypeName(
   registry: TypeRegistry,
-  t: Type | undefined
-): GenericParameter[] {
-  if (!t) {
-    return [];
+  ref: BaseTypeReference,
+  parentGenericParameters: GenericParameter[],
+  immediateGenericParameters?: PropertyStringArgs
+): string {
+  if (isGenericReference(ref)) {
+    return ref.genericParamName;
   }
-  const params: GenericParameter[] = [];
-  const genericParameters = t.getAliasTypeArguments();
-  genericParameters.forEach((param) => {
+  if (isPrimitiveType(ref)) {
+    return toCSharpPrimitive(ref.primitiveType);
+  }
+  if (isConstType(ref)) {
+    throw new Error("__const__ should not be referenced");
+  }
+  const registryType = registry.getType(ref);
+  if (!registryType) {
+    throw new Error(`Type not found in registry: ${ref}`);
+  }
+  const genericParameterNames =
+    immediateGenericParameters ??
+    getGenericParameters(registry, registryType, parentGenericParameters);
+  return registryType.getPropertyString(genericParameterNames);
+}
+
+export function getGenericParametersFromType(
+  registry: TypeRegistry,
+  type: Type,
+  parentGenericParameters: GenericParameter[],
+  typeName?: string
+): PropertyStringArgs {
+  const params: PropertyStringArgs = [];
+  const genericParameters = type.getAliasTypeArguments();
+  if (!typeName) {
+    typeName =
+      (type.getAliasSymbol() ?? type.getSymbol())?.getName() ?? "<anonymous>";
+  }
+  genericParameters.forEach((param, i) => {
+    const symName = param.getSymbol()?.getName();
+    if (symName) {
+      const inParentParams = parentGenericParameters.find(
+        (p) => p.name === symName
+      );
+      if (inParentParams) {
+        const ref: GenericReference = {
+          isGenericReference: true,
+          genericParamName: inParentParams.name,
+        };
+        const isArray = param.isArray();
+        const arrayDepth = getArrayDepth(param);
+        const typeRef: TypeReference<GenericReference> = {
+          ref,
+          isArray,
+          arrayDepth,
+        };
+        params.push(typeRef);
+        return;
+      }
+    }
     const apparentType = param.getApparentType();
-    const defaultValue = param.getDefault();
-    let v = (
-      apparentType.getSymbol() ?? apparentType.getAliasSymbol()
-    )?.getName();
-
-    if (defaultValue && !v) {
-      const defaultSymbol = getFinalSymbolOfType(defaultValue);
-      const asPrimitive = asPrimitiveTypeName(defaultValue);
-      let defaultParam: IRegistryType | undefined = asPrimitive
-        ? registry.getType(asPrimitive)
-        : undefined;
-      if (defaultSymbol && !defaultParam) {
-        defaultParam = registry.getType(defaultSymbol);
+    let sym: Symbol | ISyntheticSymbol | PrimitiveType | ConstType | undefined =
+      getFinalSymbolOfType(apparentType);
+    const fromRegistryByText = registry.findTypeBySymbolText(param.getText());
+    if (fromRegistryByText) {
+      sym = fromRegistryByText.getSymbol();
+    }
+    if (!sym) {
+      const defaultType = param.getDefault();
+      if (!defaultType) {
+        console.warn(
+          `No symbol found for param ${i} of ${typeName} and default value not found`
+        );
+        return;
       }
-      if (defaultParam) {
-        const defaultParamGenericParams = getGenericParameters(
-          registry,
-          defaultValue
+      const defaultSymbol = getFinalSymbolOfType(defaultType);
+      if (!defaultSymbol) {
+        const apparentType = defaultType.getApparentType();
+        const apparentSymbol = getFinalSymbolOfType(apparentType);
+        if (apparentSymbol) {
+          sym = apparentSymbol;
+        }
+      } else {
+        sym = defaultSymbol;
+      }
+      if (!sym) {
+        console.warn(
+          `No symbol found for param ${i} of ${typeName} but default value was found, but with no symbol`
         );
-        v = defaultParam.getPropertyString(
-          defaultParamGenericParams.map((v) => v.name)
-        );
+        return;
       }
     }
-    if (!v) {
-      return;
+    const fromRegistry = registry.getType(sym);
+    if (!fromRegistry) {
+      const castSym = sym as Symbol;
+      throw new Error(
+        `No type found in registry for symbol ${castSym.getName()}`
+      );
     }
-
-    const p = getConstraint(registry, param, v);
-
-    params.push(p);
+    if (fromRegistry.isNonPrimitive()) {
+      const genericParamGenericParameters = getGenericParameters(
+        registry,
+        fromRegistry,
+        parentGenericParameters
+      );
+      const propString = fromRegistry.getPropertyString(
+        genericParamGenericParameters
+      );
+      params.push(propString);
+    } else {
+      params.push(fromRegistry.getPropertyString());
+    }
   });
   return params;
 }
 
-export function formatCsharpArrayString(
+export function getGenericParameters(
+  registry: TypeRegistry,
+  registryType: IRegistryType<NonPrimitiveType>,
+  parentGenericParameters: GenericParameter[]
+): PropertyStringArgs {
+  const t = registryType.getType()?.getApparentType();
+  if (!t) {
+    return [];
+  }
+  const typeName = registryType.getStructure().name;
+  return getGenericParametersFromType(
+    registry,
+    t,
+    parentGenericParameters,
+    typeName
+  );
+}
+
+export function formatCSharpArrayString(
   name: string,
   isArray: boolean,
   arrayDepth: number
@@ -239,41 +334,6 @@ export function formatCsharpArrayString(
     return name;
   }
   return name + `[${",".repeat(arrayDepth ? arrayDepth - 1 : 0)}]`;
-}
-
-function getConstraint(
-  registry: TypeRegistry,
-  param: TypeParameter,
-  v: string
-): GenericParameter {
-  const underlyingTypeConstraint = param.getConstraint();
-  const typeConstraint = underlyingTypeConstraint
-    ? getFinalArrayType(underlyingTypeConstraint)
-    : undefined;
-  const constraintSymbol = typeConstraint
-    ? getFinalSymbolOfType(typeConstraint)
-    : undefined;
-  let isArray = false;
-  let arrayDepth = 0;
-  if (typeConstraint) {
-    isArray = typeConstraint.isArray();
-    arrayDepth = getArrayDepth(typeConstraint);
-  }
-  const constraintBaseRef: BaseTypeReference | undefined = (
-    constraintSymbol ? registry.getType(constraintSymbol) : undefined
-  )?.getSymbol();
-  const constraint = constraintBaseRef
-    ? {
-        ref: constraintBaseRef,
-        isArray,
-        arrayDepth,
-      }
-    : undefined;
-  const p: GenericParameter = {
-    name: v,
-    constraint,
-  };
-  return p;
 }
 
 export function getComments(node: Node): string | undefined {

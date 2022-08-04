@@ -5,7 +5,12 @@ import {
 } from "src/csharp/elements";
 import { Symbol, Node, Type } from "ts-morph";
 import { TypeRegistry } from "../registry";
-import { ISyntheticSymbol, TypeReference } from "../types";
+import {
+  ISyntheticSymbol,
+  TypeReferenceWithGenericParameters,
+  PropertyStringArg,
+  TypeReference,
+} from "../types";
 import { getGenericTypeName } from "../util";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
@@ -15,8 +20,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     registry: TypeRegistry,
     name: string,
     sym: Symbol | ISyntheticSymbol,
-    public readonly indexType: TypeReference,
-    public readonly valueType: TypeReference,
+    public readonly indexType: TypeReferenceWithGenericParameters,
+    public readonly valueType: TypeReferenceWithGenericParameters,
     internal: boolean,
     node: Node,
     type: Type,
@@ -45,11 +50,35 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
-    const indexTypeName = this.resolveAndFormatTypeName(this.indexType);
-    const valueTypeName = this.resolveAndFormatTypeName(this.valueType);
+    if (this.structure.name === "ZZZxClass") {
+      console.debug();
+    }
+    const indexTypeName = this.resolveAndFormatTypeName(
+      this.indexType.ref,
+      this.indexType.genericParameters
+    );
+    const valueTypeName = this.resolveAndFormatTypeName(
+      this.valueType.ref,
+      this.valueType.genericParameters
+    );
     return getGenericTypeName(this.baseName, [indexTypeName, valueTypeName]);
   }
-  getPropertyString(genericParameterValues?: string[]): string {
+  private addGenericParameterToIndexOrValue(
+    key: "mappedIndexType" | "mappedValueType",
+    parameter: PropertyStringArg
+  ) {
+    this.structure[key]!.genericParameters = [
+      ...(this.structure[key]!.genericParameters ?? []),
+      parameter,
+    ];
+  }
+  addGenericParameterToIndex(parameter: PropertyStringArg) {
+    this.addGenericParameterToIndexOrValue("mappedIndexType", parameter);
+  }
+  addGenericParameterToValue(parameter: PropertyStringArg) {
+    this.addGenericParameterToIndexOrValue("mappedValueType", parameter);
+  }
+  getPropertyString(genericParameterValues?: TypeReference[]): string {
     if (this.internal) {
       return this.getBaseClassName();
     }

@@ -10,9 +10,10 @@ import {
   isGenericReference,
   ISyntheticSymbol,
   PropertyStructure,
+  TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { formatCsharpArrayString, getGenericTypeName } from "../util";
+import { formatCSharpArrayString, getGenericTypeName } from "../util";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -43,7 +44,14 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       propertyName,
       baseType,
     };
-    this.structure.properties![propertyName] = propertyStructure;
+    if (!this.structure.properties) {
+      this.structure.properties = {};
+    }
+    const existing = this.structure.properties[propertyName] ?? {};
+    this.structure.properties[propertyName] = {
+      ...existing,
+      ...propertyStructure,
+    };
     if (isGenericReference(baseType)) {
       const paramName = baseType.genericParamName;
       const { genericParameters } = this.structure;
@@ -69,6 +77,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       }
     }
   }
+
   private generateCSharpProperty(
     propName: string,
     struct: PropertyStructure
@@ -83,7 +92,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       isConst: false,
       optional: isOptional,
       commentString,
-      kind: formatCsharpArrayString(kindType, isArray, arrayDepth ?? 0),
+      kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
   }
@@ -96,7 +105,9 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
 
   getCSharpElement(): CSharpClass {
     const props = this.generateCSharpProperties();
-    const genericParams = this.getUsedGenericParams();
+    const genericParams = (this.structure.genericParameters ?? []).map(
+      (g) => g.name
+    );
     const partial = this.isMappedType;
     if (
       (!this.structure.properties ||
@@ -131,7 +142,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     );
   }
 
-  getPropertyString(genericParameterValues?: string[]): string {
+  getPropertyString(genericParameterValues?: TypeReference[]): string {
     const { name } = this.structure;
     const namesToUse = this.getGenericParametersForPropertyString(
       genericParameterValues ?? []

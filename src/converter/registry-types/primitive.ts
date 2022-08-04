@@ -1,6 +1,11 @@
 import { CSharpElement } from "src/csharp/elements";
-import { TypeRegistry } from "../registry";
-import { PrimitiveType, PrimitiveTypeName, TypeStructure } from "../types";
+import { NonPrimitiveType, TypeRegistry } from "../registry";
+import {
+  IRegistryType,
+  PrimitiveType,
+  PrimitiveTypeName,
+  TypeStructure,
+} from "../types";
 import { toCSharpPrimitive } from "../util";
 import { RegistryType } from "./base";
 
@@ -32,5 +37,8 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
   }
   getCSharpElement(): CSharpElement {
     throw new Error("Should not render primitive");
+  }
+  isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
+    return false;
   }
 }
