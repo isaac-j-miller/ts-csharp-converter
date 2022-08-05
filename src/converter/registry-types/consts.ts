@@ -1,4 +1,5 @@
 import { CSharpClass, CSharpProperty } from "src/csharp/elements";
+import { NameMapper } from "../name-mapper/mapper";
 import { NonPrimitiveType, TypeRegistry } from "../registry";
 import {
   IRegistryType,

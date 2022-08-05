@@ -11,13 +11,16 @@ export type PropertyValue = {
 export type CSharpElementKind = "class" | "enum" | "namespace" | "struct";
 
 export type CSharpAccessLevel = "private" | "protected" | "public";
-export type CSharpPrimitiveType =
-  | "string"
-  | "double"
-  | "bool"
-  | "object"
-  | "int"
-  | "null";
+export const cSharpPrimitives = [
+  "string",
+  "double",
+  "bool",
+  "object",
+  "int",
+  "null",
+] as const;
+export type CSharpPrimitiveType = typeof cSharpPrimitives[number];
+
 export type CSharpProperty = {
   name: string;
   accessLevel: CSharpAccessLevel;

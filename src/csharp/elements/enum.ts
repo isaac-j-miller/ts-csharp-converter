@@ -1,3 +1,5 @@
+import { NameType } from "src/converter/name-mapper";
+import { NameMapper } from "src/converter/name-mapper/mapper";
 import { UnionMember } from "src/converter/types";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
@@ -11,17 +13,17 @@ export class CSharpEnum extends CSharpElement {
   ) {
     super("enum", name, commentString, isInternal);
   }
-  private serializeUnionMembers(): string[] {
+  private serializeUnionMembers(mapper: NameMapper): string[] {
     return this.items.map(({ name, value }) => {
       const shouldShowValue = value !== undefined;
-      let str = name;
+      let str = mapper.transform(name, NameType.EnumMember);
       if (shouldShowValue) {
         str += ` = ${value}`;
       }
       return str;
     });
   }
-  serialize(indentation: number = 0): string {
+  serialize(mapper: NameMapper, indentation: number = 0): string {
     const indentString = getIndentString(indentation);
     const bodyIndent = getIndentString(indentation + 1);
     const formattedCommentString = formatCommentString(
@@ -34,8 +36,9 @@ export class CSharpEnum extends CSharpElement {
     } else {
       serialized += "internal ";
     }
-    serialized += `enum ${this.name} {\n`;
-    serialized += this.serializeUnionMembers()
+    const name = mapper.transform(this.name, NameType.DeclarationName);
+    serialized += `enum ${name} {\n`;
+    serialized += this.serializeUnionMembers(mapper)
       .map(
         (item, i) =>
           `${bodyIndent}${item}${i === this.items.length - 1 ? "" : ","}`

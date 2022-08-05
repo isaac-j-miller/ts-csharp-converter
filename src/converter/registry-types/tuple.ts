@@ -10,6 +10,7 @@ import {
 import { TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { getGenericTypeName } from "../util";
+import { NameMapper } from "../name-mapper/mapper";
 
 export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tuple"> {
   private baseName: string;
@@ -73,18 +74,13 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     return getGenericTypeName(this.baseName, typeNames);
   }
   getCSharpElement(): CSharpClass {
-    // const genericParams = this.getUsedGenericParams();
-
-    const genericParams = (this.structure.genericParameters ?? []).map(
-      (g) => g.name
-    );
     const baseClass = this.getBaseClassName();
     if ((this.structure.genericParameters ?? []).length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
         false,
         [],
-        this.generateCSharpGenericParams(genericParams),
+        this.generateCSharpGenericParams(),
         baseClass,
         this.internal,
         this.structure.commentString

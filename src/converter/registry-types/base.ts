@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { NonPrimitiveType, TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
+import { NameMapper } from "../name-mapper/mapper";
 
 export abstract class RegistryType<T extends TokenType>
   implements IRegistryType<T>

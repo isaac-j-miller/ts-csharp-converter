@@ -14,6 +14,7 @@ import {
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { formatCSharpArrayString, getGenericTypeName } from "../util";
+import { NameMapper } from "../name-mapper/mapper";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -105,9 +106,6 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
 
   getCSharpElement(): CSharpClass {
     const props = this.generateCSharpProperties();
-    const genericParams = (this.structure.genericParameters ?? []).map(
-      (g) => g.name
-    );
     const partial = this.isMappedType;
     if (
       (!this.structure.properties ||
@@ -125,7 +123,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         this.structure.name,
         partial,
         props,
-        this.generateCSharpGenericParams(genericParams),
+        this.generateCSharpGenericParams(),
         undefined,
         this.internal,
         this.structure.commentString

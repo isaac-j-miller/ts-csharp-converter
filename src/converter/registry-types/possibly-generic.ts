@@ -14,6 +14,8 @@ import {
 } from "../types";
 import { formatCSharpArrayString, resolveTypeName } from "../util";
 import { RegistryType } from "./base";
+import { NameMapper } from "../name-mapper/mapper";
+import { NameType } from "../name-mapper";
 
 export abstract class TypeRegistryPossiblyGenericType<
   T extends TokenType
@@ -81,14 +83,10 @@ export abstract class TypeRegistryPossiblyGenericType<
     const genericParameters = this.getGenericParametersOfProperty(propName);
     return fromRegistry.getPropertyString(genericParameters);
   }
-  protected generateCSharpGenericParams(
-    paramsToInclude: string[]
-  ): Record<string, GenericParam> {
-    return paramsToInclude.reduce((acc, curr) => {
-      const param = (this.structure.genericParameters ?? []).find(
-        (g) => g.name === curr
-      );
-      acc[curr] = {
+  protected generateCSharpGenericParams(): Record<string, GenericParam> {
+    const genericParams = this.structure.genericParameters ?? [];
+    return genericParams.reduce((acc, param) => {
+      acc[param.name] = {
         constraint: param?.constraint
           ? this.resolveAndFormatTypeName(param.constraint)
           : undefined,

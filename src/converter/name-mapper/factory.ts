@@ -1,40 +1,52 @@
 import { assertNever } from "src/common/util";
 import {
-  CamelToSnake,
-  PascalToSnake,
-  SnakeToCamel,
-  SnakeToPascal,
+  CamelInputMapper,
+  PascalInputMapper,
+  CamelOutputMapper,
+  SnakeInputMapper,
+  SnakeOutputMapper,
+  PascalOutputMapper,
+  KebabInputMapper,
+  KebabOutputMapper,
 } from "./mappers";
-import { CasedString, CasingConvention, PropertyNameMapper } from "./types";
+import {
+  CasedString,
+  CasingConvention,
+  NameInputMapper,
+  NameOutputMapper,
+  NameMapperFunction,
+} from "./types";
 
-function getToSnakeCase<T extends CasingConvention>(
+function getInputMapper<T extends CasingConvention>(
   source: T
-): PropertyNameMapper<T, CasingConvention.SnakeCase> {
+): NameInputMapper<T> {
   switch (source) {
     case CasingConvention.SnakeCase:
-      return (str: CasedString<T>) =>
-        str as CasedString<CasingConvention.SnakeCase>;
+      return SnakeInputMapper as NameInputMapper<T>;
     case CasingConvention.PascalCase:
-      return PascalToSnake as PropertyNameMapper<T, CasingConvention.SnakeCase>;
+      return PascalInputMapper as NameInputMapper<T>;
     case CasingConvention.CamelCase:
-      return CamelToSnake as PropertyNameMapper<T, CasingConvention.SnakeCase>;
+      return CamelInputMapper as NameInputMapper<T>;
+    case CasingConvention.KebabCase:
+      return KebabInputMapper as NameInputMapper<T>;
     default:
       assertNever(source);
   }
   throw new Error(`Could not find mapping for source: ${source}`);
 }
 
-function getFromSnakeCase<T extends CasingConvention>(
+function getOutputMapper<T extends CasingConvention>(
   target: T
-): PropertyNameMapper<CasingConvention.SnakeCase, T> {
+): NameOutputMapper<T> {
   switch (target) {
     case CasingConvention.SnakeCase:
-      return (str: CasedString<CasingConvention.SnakeCase>) =>
-        str as CasedString<T>;
+      return SnakeOutputMapper as NameOutputMapper<T>;
     case CasingConvention.PascalCase:
-      return SnakeToPascal as PropertyNameMapper<CasingConvention.SnakeCase, T>;
+      return PascalOutputMapper as NameOutputMapper<T>;
     case CasingConvention.CamelCase:
-      return SnakeToCamel as PropertyNameMapper<CasingConvention.SnakeCase, T>;
+      return CamelOutputMapper as NameOutputMapper<T>;
+    case CasingConvention.KebabCase:
+      return KebabOutputMapper as NameOutputMapper<T>;
     default:
       assertNever(target);
   }
@@ -44,10 +56,12 @@ function getFromSnakeCase<T extends CasingConvention>(
 export function getNameMapper<
   TSource extends CasingConvention,
   TTarget extends CasingConvention
->(source: TSource, target: TTarget): PropertyNameMapper<TSource, TTarget> {
-  const toSnake = getToSnakeCase(source);
-  const fromSnake = getFromSnakeCase(target);
+>(source: TSource, target: TTarget): NameMapperFunction<TSource, TTarget> {
+  const toWords = getInputMapper(source);
+  const fromWords = getOutputMapper(target);
   return (str: CasedString<TSource>): CasedString<TTarget> => {
-    return fromSnake(toSnake(str));
+    const words = toWords(str);
+    const newName = fromWords(words);
+    return newName;
   };
 }

@@ -16,6 +16,7 @@ import {
 } from "./types";
 import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
 import { TypeRegistryConstType } from "./registry-types/consts";
+import { NameMapper } from "./name-mapper/mapper";
 
 export const CONSTS_KEYWORD = "__consts__" as const;
 export type ConstKeyword = typeof CONSTS_KEYWORD;

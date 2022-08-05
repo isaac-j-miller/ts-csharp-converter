@@ -1,4 +1,3 @@
-import { type } from "os";
 import { Node, Symbol, Type } from "ts-morph";
 import { SyntaxKind } from "typescript";
 import { getIndexAndValueType } from "./mapped-type";

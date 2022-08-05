@@ -1,3 +1,4 @@
+import { NameType, CasingConvention } from "./converter/name-mapper";
 import { convertTypescriptToCSharp } from "./index";
 
 const main = async () => {
@@ -5,7 +6,23 @@ const main = async () => {
     "./src/test/index.ts",
     "./tsconfig.json",
     "./dist/Output.cs",
-    "TestNamespace"
+    "TestNamespace",
+    {
+      transforms: {
+        [NameType.DeclarationName]: {
+          input: CasingConvention.PascalCase,
+          output: CasingConvention.PascalCase,
+        },
+        [NameType.PropertyName]: {
+          input: CasingConvention.CamelCase,
+          output: CasingConvention.PascalCase,
+        },
+        [NameType.EnumMember]: {
+          input: CasingConvention.CamelCase,
+          output: CasingConvention.PascalCase,
+        },
+      },
+    }
   );
 };
 

@@ -1,3 +1,5 @@
+import { NameType } from "src/converter/name-mapper";
+import { NameMapper } from "src/converter/name-mapper/mapper";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
 import { CSharpProperty } from "./types";
@@ -21,6 +23,7 @@ export class CSharpClass extends CSharpElement {
     return !!this._isStatic;
   }
   protected serializeProperty(
+    mapper: NameMapper,
     property: CSharpProperty,
     indent: number
   ): string {
@@ -40,11 +43,11 @@ export class CSharpClass extends CSharpElement {
     if (isConst) {
       serialized += "const ";
     }
-    serialized += `${kind}`;
+    serialized += `${mapper.transform(kind, NameType.DeclarationName)}`;
     if (optional) {
       serialized += "?";
     }
-    serialized += ` ${name}`;
+    serialized += ` ${mapper.transform(name, NameType.PropertyName)}`;
     if (getter || setter) {
       serialized += " {";
       if (getter) {
@@ -60,7 +63,7 @@ export class CSharpClass extends CSharpElement {
     }
     return serialized;
   }
-  protected serializeDeclaration(indentation: number) {
+  protected serializeDeclaration(mapper: NameMapper, indentation: number) {
     const indentString = getIndentString(indentation);
     let serialized = indentString;
     if (this.isPublic) {
@@ -74,22 +77,27 @@ export class CSharpClass extends CSharpElement {
     if (this.isPartial) {
       serialized += "partial ";
     }
-    serialized += `class ${this.name} ${
-      this.inheritsFrom ? `: ${this.inheritsFrom} ` : ""
+    const name = mapper.transform(this.name, NameType.DeclarationName);
+    serialized += `class ${name} ${
+      this.inheritsFrom
+        ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
+        : ""
     }{\n`;
     return serialized;
   }
-  protected serializeBody(indentation?: number) {
+  protected serializeBody(mapper: NameMapper, indentation?: number) {
     const propertyIndent = indentation ?? 0;
     return this.properties
-      .map((property) => this.serializeProperty(property, propertyIndent))
+      .map((property) =>
+        this.serializeProperty(mapper, property, propertyIndent)
+      )
       .join("\n");
   }
-  serialize(indentation: number = 0): string {
+  serialize(mapper: NameMapper, indentation: number = 0): string {
     const indentString = getIndentString(indentation);
     let serialized = formatCommentString(this.commentString, indentation);
-    serialized += this.serializeDeclaration(indentation);
-    serialized += this.serializeBody(indentation + 1);
+    serialized += this.serializeDeclaration(mapper, indentation);
+    serialized += this.serializeBody(mapper, indentation + 1);
     serialized += "\n" + indentString + "}";
     return serialized;
   }

@@ -1,9 +1,6 @@
-import {
-  CSharpClass,
-  CSharpGenericClass,
-  GenericParam,
-} from "src/csharp/elements";
+import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
 import { Symbol, Node, Type } from "ts-morph";
+import { NameMapper } from "../name-mapper/mapper";
 import { TypeRegistry } from "../registry";
 import {
   ISyntheticSymbol,
@@ -50,9 +47,6 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     this.baseName = "System.Collections.Generic.Dictionary";
   }
   private getBaseClassName(): string {
-    if (this.structure.name === "ZZZxClass") {
-      console.debug();
-    }
     const indexTypeName = this.resolveAndFormatTypeName(
       this.indexType.ref,
       this.indexType.genericParameters
@@ -92,13 +86,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     if (!this.shouldBeRendered) {
       throw new Error("Should not render dictionary");
     }
-    const genericParams = (this.structure.genericParameters ?? []).reduce(
-      (acc, curr) => {
-        acc[curr.name] = {};
-        return acc;
-      },
-      {} as Record<string, GenericParam>
-    );
+    const genericParams = this.generateCSharpGenericParams();
     const baseClassName = this.getBaseClassName();
     if (Object.keys(genericParams).length > 0) {
       return new CSharpGenericClass(

@@ -1,3 +1,4 @@
+import { NameMapper } from "src/converter/name-mapper/mapper";
 import { CSharpElement } from "./base";
 import { TAB_WIDTH } from "./types";
 
@@ -9,7 +10,7 @@ export class CSharpNamespace extends CSharpElement {
   ) {
     super("namespace", name, commentString, false);
   }
-  serialize(): string {
+  serialize(mapper: NameMapper): string {
     const indent = " ".repeat(TAB_WIDTH);
     let serialized = "";
     if (this.isPublic) {
@@ -21,7 +22,7 @@ export class CSharpNamespace extends CSharpElement {
     serialized += indent + "using System;\n";
     serialized += indent + "using System.Collections.Generic;\n";
     serialized += this.elements
-      .map((element) => element.serialize(1))
+      .map((element) => element.serialize(mapper, 1))
       .join("\n");
     serialized += "\n}";
     return serialized;

@@ -1,32 +1,46 @@
-import { CasedString, CasingConvention, PropertyNameMapper } from "./types";
+import {
+  CasedString,
+  CasingConvention,
+  NameInputMapper,
+  NameOutputMapper,
+} from "./types";
 import { capitalize } from "./util";
 
-export const SnakeToPascal: PropertyNameMapper<
-  CasingConvention.SnakeCase,
+// TODO: handle reference names (including arrays, generics, etc)
+
+export const PascalOutputMapper: NameOutputMapper<
   CasingConvention.PascalCase
-> = (str) => {
-  const words = str.toLocaleLowerCase().split("_");
+> = (words) => {
   const capitalized = words.map(capitalize);
-  return capitalized.join() as unknown as CasedString<CasingConvention.PascalCase>;
+  return capitalized.join(
+    ""
+  ) as unknown as CasedString<CasingConvention.PascalCase>;
 };
 
-export const SnakeToCamel: PropertyNameMapper<
-  CasingConvention.SnakeCase,
-  CasingConvention.CamelCase
-> = (str) => {
-  const words = str.toLocaleLowerCase().split("_");
+export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
+  words
+) => {
   const [firstWord, ...rest] = words;
   const capitalized = rest.map(capitalize);
-  return [
-    firstWord,
-    capitalized.join(),
-  ].join() as unknown as CasedString<CasingConvention.CamelCase>;
+  return [firstWord, capitalized.join("")].join(
+    ""
+  ) as unknown as CasedString<CasingConvention.CamelCase>;
 };
 
-export const PascalToSnake: PropertyNameMapper<
-  CasingConvention.PascalCase,
-  CasingConvention.SnakeCase
-> = (str) => {
+export const SnakeOutputMapper: NameOutputMapper<CasingConvention.SnakeCase> = (
+  words
+) => {
+  return words.join("_") as unknown as CasedString<CasingConvention.SnakeCase>;
+};
+
+export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = (
+  words
+) => {
+  return words.join("-") as unknown as CasedString<CasingConvention.KebabCase>;
+};
+export const PascalInputMapper: NameInputMapper<CasingConvention.PascalCase> = (
+  str
+) => {
   const words: string[] = [];
   let currentWord = "";
   for (let i = 0; i < str.length; i++) {
@@ -41,13 +55,12 @@ export const PascalToSnake: PropertyNameMapper<
   if (currentWord) {
     words.push(currentWord);
   }
-  return words.join("_") as unknown as CasedString<CasingConvention.SnakeCase>;
+  return words;
 };
 
-export const CamelToSnake: PropertyNameMapper<
-  CasingConvention.CamelCase,
-  CasingConvention.SnakeCase
-> = (str) => {
+export const CamelInputMapper: NameInputMapper<CasingConvention.CamelCase> = (
+  str
+) => {
   const words: string[] = [];
   let currentWord = "";
   for (let i = 0; i < str.length; i++) {
@@ -62,5 +75,17 @@ export const CamelToSnake: PropertyNameMapper<
   if (currentWord) {
     words.push(currentWord);
   }
-  return words.join("_") as unknown as CasedString<CasingConvention.SnakeCase>;
+  return words;
+};
+
+export const SnakeInputMapper: NameInputMapper<CasingConvention.SnakeCase> = (
+  str
+) => {
+  return str.toLocaleLowerCase().split("_");
+};
+
+export const KebabInputMapper: NameInputMapper<CasingConvention.KebabCase> = (
+  str
+) => {
+  return str.toLocaleLowerCase().split("-");
 };

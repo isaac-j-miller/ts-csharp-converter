@@ -1,4 +1,4 @@
-import { MappedTypeNode, Symbol, Type } from "ts-morph";
+import { Symbol, Type } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
 import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
 import { NonPrimitiveType } from "./registry";
