@@ -1,4 +1,4 @@
-import { TAB_WIDTH } from "./elements/types";
+import { TAB_WIDTH } from "./types";
 
 export function formatCommentString(
   commentString: string | undefined,

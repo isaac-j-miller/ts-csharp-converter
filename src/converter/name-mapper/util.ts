@@ -1,11 +1,11 @@
-import { cSharpPrimitives, CSharpPrimitiveType } from "src/csharp";
+import { cSharpPrimitives, CSharpPrimitiveType } from "src/csharp/";
 
 export const capitalize = (str: string): string => {
   const [first, ...rest] = str;
   return [first.toLocaleUpperCase(), ...rest].join("");
 };
 
-export function isCSharpPrimitive(str: string): str is CSharpPrimitiveType {
+export function isCSharpPrimitive(str: string): boolean {
   const bracketIndex = str.indexOf("[");
   if (bracketIndex === -1) {
     return cSharpPrimitives.includes(str as CSharpPrimitiveType);

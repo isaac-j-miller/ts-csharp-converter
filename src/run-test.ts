@@ -26,6 +26,4 @@ const main = async () => {
   );
 };
 
-if (require.main === module) {
-  void main();
-}
+void main();

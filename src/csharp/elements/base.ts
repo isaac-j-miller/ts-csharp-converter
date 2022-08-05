@@ -1,5 +1,5 @@
 import { NameMapper } from "src/converter/name-mapper/mapper";
-import { CSharpElementKind } from "./types";
+import { CSharpElementKind } from "../types";
 
 export abstract class CSharpElement {
   private _isInternal: boolean;

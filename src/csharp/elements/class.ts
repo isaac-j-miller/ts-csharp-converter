@@ -2,7 +2,7 @@ import { NameType } from "src/converter/name-mapper";
 import { NameMapper } from "src/converter/name-mapper/mapper";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
-import { CSharpProperty } from "./types";
+import { CSharpProperty } from "../types";
 
 export class CSharpClass extends CSharpElement {
   constructor(
@@ -63,7 +63,11 @@ export class CSharpClass extends CSharpElement {
     }
     return serialized;
   }
-  protected serializeDeclaration(mapper: NameMapper, indentation: number) {
+  protected serializeDeclaration(
+    mapper: NameMapper,
+    indentation: number,
+    addNewline: boolean
+  ) {
     const indentString = getIndentString(indentation);
     let serialized = indentString;
     if (this.isPublic) {
@@ -82,7 +86,7 @@ export class CSharpClass extends CSharpElement {
       this.inheritsFrom
         ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
         : ""
-    }{\n`;
+    }{${addNewline ? "\n" : ""}`;
     return serialized;
   }
   protected serializeBody(mapper: NameMapper, indentation?: number) {
@@ -96,9 +100,10 @@ export class CSharpClass extends CSharpElement {
   serialize(mapper: NameMapper, indentation: number = 0): string {
     const indentString = getIndentString(indentation);
     let serialized = formatCommentString(this.commentString, indentation);
-    serialized += this.serializeDeclaration(mapper, indentation);
+    const hasProperties = this.properties.length > 0;
+    serialized += this.serializeDeclaration(mapper, indentation, hasProperties);
     serialized += this.serializeBody(mapper, indentation + 1);
-    serialized += "\n" + indentString + "}";
+    serialized += (hasProperties ? "\n" + indentString : "    ") + "}";
     return serialized;
   }
 }

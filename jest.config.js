@@ -3,7 +3,6 @@ module.exports = {
   clearMocks: true,
   collectCoverage: false,
   testEnvironment: "node",
-  //   roots: ["<rootDir>/src"],
   moduleNameMapper: {
     "^src/(.*)": "<rootDir>/src/$1",
   },

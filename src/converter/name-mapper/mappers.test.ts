@@ -200,6 +200,60 @@ const inputs: Input[] = [
       },
     ],
   },
+  {
+    formatted: {
+      [CasingConvention.CamelCase]: "x",
+      [CasingConvention.KebabCase]: "x",
+      [CasingConvention.PascalCase]: "X",
+      [CasingConvention.SnakeCase]: "x",
+    },
+    parsed: [
+      {
+        base: "x",
+      },
+    ],
+  },
+  {
+    formatted: {
+      [CasingConvention.CamelCase]: "map<string, string[]>",
+      [CasingConvention.KebabCase]: "map<string, string[]>",
+      [CasingConvention.PascalCase]: "Map<string, string[]>",
+      [CasingConvention.SnakeCase]: "map<string, string[]>",
+    },
+    parsed: [
+      {
+        base: "map",
+        typeArguments: [
+          [{ base: "string" }],
+          [{ base: "string", arrayPart: "[]" }],
+        ],
+      },
+    ],
+  },
+  {
+    formatted: {
+      [CasingConvention.CamelCase]: "map<string, string[], foo<int[,,]>>[]",
+      [CasingConvention.KebabCase]: "map<string, string[], foo<int[,,]>>[]",
+      [CasingConvention.PascalCase]: "Map<string, string[], Foo<int[,,]>>[]",
+      [CasingConvention.SnakeCase]: "map<string, string[], foo<int[,,]>>[]",
+    },
+    parsed: [
+      {
+        base: "map",
+        typeArguments: [
+          [{ base: "string" }],
+          [{ base: "string", arrayPart: "[]" }],
+          [
+            {
+              base: "foo",
+              typeArguments: [[{ base: "int", arrayPart: "[,,]" }]],
+            },
+          ],
+        ],
+        arrayPart: "[]",
+      },
+    ],
+  },
 ];
 
 function runInputTests<T extends CasingConvention>(

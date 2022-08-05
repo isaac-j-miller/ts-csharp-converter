@@ -2,7 +2,7 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "module": "commonjs",
-    "target": "ES2019",
+    "target": "ES2022",
     "jsx": "react",
     "strict": true,
     "allowJs": true,
@@ -28,8 +28,8 @@
       "src/*": ["./src/*"]
     },
     "typeRoots": ["./node_modules/@types"],
-    "lib": ["es2019"],
-    "types": ["jest"]
+    "lib": ["ES2022"],
+    "types": ["node", "jest"]
   },
   "exclude": ["**/dist/**", "**/node_modules"]
 }

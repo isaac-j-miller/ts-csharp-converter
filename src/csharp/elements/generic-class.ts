@@ -3,7 +3,7 @@ import { NameMapper } from "src/converter/name-mapper/mapper";
 import { getGenericTypeName } from "src/converter/util";
 import { getIndentString } from "../util";
 import { CSharpClass } from "./class";
-import { CSharpProperty, GenericParam } from "./types";
+import { CSharpProperty, GenericParam } from "../types";
 
 export class CSharpGenericClass extends CSharpClass {
   constructor(

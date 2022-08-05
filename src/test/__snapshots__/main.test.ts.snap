@@ -16,58 +16,58 @@ exports[`snapshot works 1`] = `
     }
     public class X {
         // whatever is a number property on X
-        public Int Whatever { get; set; }
+        public int Whatever { get; set; }
     }
     public class SomeInterface {
-        public String? Foo { get; set; }
-        public String Bar { get; set; }
+        public string? Foo { get; set; }
+        public string Bar { get; set; }
     }
     public class SomeInterface2 {
-        public String Foo2 { get; set; }
-        public String Bar { get; set; }
+        public string Foo2 { get; set; }
+        public string Bar { get; set; }
         // whatever is a number property on X
-        public Int Whatever { get; set; }
+        public int Whatever { get; set; }
     }
     public class TypeWithEnums {
         public TestEnum1 Enum1 { get; set; }
         public TestEnum2 Enum2 { get; set; }
     }
     public static class GlobalVars {
-        public const String FOO = \\"some string\\";
-        public const String BAR = \\"some string as const\\";
-        public const Int Whatever = 1;
+        public const string FOO = \\"some string\\";
+        public const string BAR = \\"some string as const\\";
+        public const int Whatever = 1;
         /**
         * an array of strings
         */
-        public const String[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
-        public const Int[] ANumberArray = { 1, 2, 3, 4 };
+        public const string[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
+        public const int[] ANumberArray = { 1, 2, 3, 4 };
         // a 2D int array
-        public const Int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
+        public const int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
     }
     public class AAAAAAAA<T> {
         public T[] Vvv { get; set; }
     }
     public class Foo {
         // x is a number
-        public Int X { get; set; }
+        public int X { get; set; }
         // comment comment comment
-        public String Y { get; set; }
+        public string Y { get; set; }
     }
     public enum Abc {
         A,
         B,
         C
     }
-    public class GenericWithConstraints<T> where T: String {
+    public class GenericWithConstraints<T> where T: string {
         public T Str { get; set; }
     }
     public class GenericWithConstraints2<T> where T: Foo {
         public T Foo { get; set; }
     }
-    public class GenericWithConstraints3<T> where T: Int {
+    public class GenericWithConstraints3<T> where T: int {
         public T Digit { get; set; }
     }
-    public class GenericWithConstraints4<T> where T: Object {
+    public class GenericWithConstraints4<T> where T: object {
         public T Z { get; set; }
     }
     public class SomeGenericType<T> {
@@ -81,40 +81,39 @@ exports[`snapshot works 1`] = `
         public U Foo { get; set; }
     }
     public class SomeLargerType<U> {
-        public String A { get; set; }
+        public string A { get; set; }
         public Abc Y { get; set; }
-        public Int V { get; set; }
+        public int V { get; set; }
         public SomeLargerTypexClass<U> X { get; set; }
     }
     public class Composite {
-        public Int V { get; set; }
+        public int V { get; set; }
         public Abc Foo { get; set; }
         public Abc Bar { get; set; }
         // x is a number
-        public Int X { get; set; }
+        public int X { get; set; }
         // comment comment comment
-        public String Y { get; set; }
+        public string Y { get; set; }
     }
     internal class BlahBlahxClass {
         // x is a number
-        public Int X { get; set; }
+        public int X { get; set; }
         // comment comment comment
-        public String Y { get; set; }
-        public String Foo { get; set; }
+        public string Y { get; set; }
+        public string Foo { get; set; }
         public Abc Bar { get; set; }
     }
     public class BlahBlah {
         public BlahBlahxClass[] X { get; set; }
-        public SomeLargerType<DefaultGeneric<Int>>[] Y { get; set; }
+        public SomeLargerType<DefaultGeneric<int>>[] Y { get; set; }
     }
     public class ZZZ {
-        public String Z { get; set; }
-        public System.Collections.Generic.Dictionary<String, String> V { get; set; }
-        public System.Collections.Generic.Dictionary<String, DefaultGeneric<Int>> Y { get; set; }
-        public System.Collections.Generic.Dictionary<String, SomeGenericType<Abc>> X { get; set; }
+        public string Z { get; set; }
+        public System.Collections.Generic.Dictionary<string, string> V { get; set; }
+        public System.Collections.Generic.Dictionary<string, DefaultGeneric<int>> Y { get; set; }
+        public System.Collections.Generic.Dictionary<string, SomeGenericType<Abc>> X { get; set; }
     }
-    public class Bs<T> : System.Collections.Generic.Dictionary<String, DefaultGeneric<T>> {
-
+    public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> {
     }
     public enum SomeStupidSubEnum {
         FooBar,
@@ -125,25 +124,25 @@ exports[`snapshot works 1`] = `
         Value2 = 101
     }
     public class DumbType {
-        public Double Num { get; set; }
-        public Int Dumber { get; set; }
-        public String Un { get; set; }
-        public Object Absurd { get; set; }
+        public double Num { get; set; }
+        public int Dumber { get; set; }
+        public string Un { get; set; }
+        public object Absurd { get; set; }
     }
     internal class IndexTypeaClass {
         public Abc Foo { get; set; }
     }
     public class IndexType {
-        public System.Collections.Generic.Dictionary<String, String> Abc { get; set; }
+        public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
         public IndexTypeaClass A { get; set; }
     }
-    public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<String, DefaultGeneric<Object>> {
+    public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<string, DefaultGeneric<object>> {
         public IndexType I { get; set; }
         public T V { get; set; }
     }
     public class AnotherType {
-        public String[,,] X { get; set; }
-        public Int[,,,,] N { get; set; }
+        public string[,,] X { get; set; }
+        public int[,,,,] N { get; set; }
     }
     public class GenericArrayType {
         public SomeGenericType<Composite>[] J { get; set; }
@@ -157,15 +156,15 @@ exports[`snapshot works 1`] = `
         /**
         * @type {int}
         */
-        public Int IntProperty { get; set; }
+        public int IntProperty { get; set; }
         /**
         * @type {float}
         */
-        public Double FloatProperty { get; set; }
+        public double FloatProperty { get; set; }
     }
     public class ConsumesInterface {
-        public Int Integer { get; set; }
-        public Int Float { get; set; }
+        public int Integer { get; set; }
+        public int Float { get; set; }
     }
     public enum TestEnum3 {
         X,
@@ -173,80 +172,56 @@ exports[`snapshot works 1`] = `
         Z
     }
     public class UnionIndex {
-        public Int? A { get; set; }
-        public Int? B { get; set; }
-        public Int? C { get; set; }
+        public int? A { get; set; }
+        public int? B { get; set; }
+        public int? C { get; set; }
     }
     public class UnionIndex2 {
-        public Bool A { get; set; }
-        public Bool B { get; set; }
-        public Bool C { get; set; }
+        public bool A { get; set; }
+        public bool B { get; set; }
+        public bool C { get; set; }
     }
-    public class GenericUnionIndex<T, V> where T: Object : System.Collections.Generic.Dictionary<T, V> {
-
+    public class GenericUnionIndex<T, V> where T: object : System.Collections.Generic.Dictionary<T, V> {
     }
-    public class GenericUnionIndex2<T> where T: Object : System.Collections.Generic.Dictionary<T, String> {
-
+    public class GenericUnionIndex2<T> where T: object : System.Collections.Generic.Dictionary<T, string> {
     }
-    public class GenericUnionIndex3<T> where T: Object : System.Collections.Generic.Dictionary<T, Object> {
-
+    public class GenericUnionIndex3<T> where T: object : System.Collections.Generic.Dictionary<T, object> {
     }
-    public class GenericUnionIndex4<T> where T: Object : System.Collections.Generic.Dictionary<T, Object> {
-
+    public class GenericUnionIndex4<T> where T: object : System.Collections.Generic.Dictionary<T, object> {
     }
-    public class GenericConsumer : System.Collections.Generic.Dictionary<String, Int> {
-
-    }
+    public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> {    }
     // this is a comment that should show up on the GenericConsumerConsumer class
     public class GenericConsumerConsumer {
         // g comment
         public GenericConsumer G { get; set; }
     }
-    public class ATuple : System.Tuple<String, Int> {
-
-    }
-    public class BTuple : System.Tuple<Double, Double, Double> {
-
-    }
-    public class CTuple : System.Tuple<String, Double, UnionIndex2, Object> {
-
-    }
-    public class TupleMap : System.Collections.Generic.Dictionary<String, BTuple> {
-
-    }
+    public class ATuple : System.Tuple<string, int> {    }
+    public class BTuple : System.Tuple<double, double, double> {    }
+    public class CTuple : System.Tuple<string, double, UnionIndex2, object> {    }
+    public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> {    }
     public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
-
     }
     public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
-
     }
-    public class TupleMap2 : System.Tuple<String, String[], Int[,,]> {
-
-    }
-    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> {
-
-    }
-    public class Tuple1 : System.Tuple<String, Double, SomeGenericType<Double>, DefaultGeneric<Double>, SomeGenericType<Abc>> {
-
-    }
+    public class TupleMap2 : System.Tuple<string, string[], int[,,]> {    }
+    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> {    }
+    public class Tuple1 : System.Tuple<string, double, SomeGenericType<double>, DefaultGeneric<double>, SomeGenericType<Abc>> {    }
     public class A {
-        public Int Foo { get; set; }
+        public int Foo { get; set; }
     }
     public class B {
-        public String Bar { get; set; }
+        public string Bar { get; set; }
     }
     // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:10
     // Source code:
     // 
     // export type Inverse<T extends A | B> = T extends A ? B : A;
-    public class Inverse<T> where T: Object {
-
+    public class Inverse<T> where T: object {
     }
     public class ConsumesConditional {
         public B Prop1 { get; set; }
     }
-    public class ConditionalMappedType<T, V> where T: String : System.Collections.Generic.Dictionary<String, Object> {
-
+    public class ConditionalMappedType<T, V> where T: string : System.Collections.Generic.Dictionary<string, object> {
     }
     internal class ConsumesConditionalMappedTypexClass {
         public B A { get; set; }

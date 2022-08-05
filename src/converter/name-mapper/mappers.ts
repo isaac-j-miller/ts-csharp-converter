@@ -5,7 +5,7 @@ import {
   NameOutputMapper,
   ParsedWord,
 } from "./types";
-import { capitalize } from "./util";
+import { capitalize, isCSharpPrimitive } from "./util";
 
 export function parseNormalized(word: string): ParsedWord[] {
   const basicWords: string[] = [];
@@ -80,9 +80,11 @@ function format<T extends CasingConvention>(
 export const PascalOutputMapper: NameOutputMapper<
   CasingConvention.PascalCase
 > = (words) => {
-  const formattedWords = words.map((word) => {
+  const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
-    const newBase = capitalize(base);
+    const isPossiblyPrimitive = i === 0 && words.length === 1;
+    const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
+    const newBase = isPrimitive ? base : capitalize(base);
     return format(newBase, typeArguments, arrayPart, PascalOutputMapper);
   });
   const outputWord = formattedWords.join("");
@@ -94,7 +96,9 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
 ) => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
-    const newBase = i > 0 ? capitalize(base) : base;
+    const isPossiblyPrimitive = i === 0 && words.length === 1;
+    const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
+    const newBase = i > 0 && !isPrimitive ? capitalize(base) : base;
     return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
   });
   const outputWord = formattedWords.join("");

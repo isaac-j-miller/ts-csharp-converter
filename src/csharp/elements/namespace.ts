@@ -1,6 +1,6 @@
 import { NameMapper } from "src/converter/name-mapper/mapper";
 import { CSharpElement } from "./base";
-import { TAB_WIDTH } from "./types";
+import { TAB_WIDTH } from "../types";
 
 export class CSharpNamespace extends CSharpElement {
   constructor(
