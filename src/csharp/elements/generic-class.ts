@@ -40,7 +40,8 @@ export class CSharpGenericClass extends CSharpClass {
   }
   protected override serializeDeclaration(
     mapper: NameMapper,
-    indentation: number
+    indentation: number,
+    addNewline: boolean
   ): string {
     const indentString = getIndentString(indentation);
     let serialized = indentString;
@@ -61,7 +62,7 @@ export class CSharpGenericClass extends CSharpClass {
       this.inheritsFrom
         ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
         : ""
-    }{\n`;
+    }{${addNewline ? "\n" : ""}`;
     return serialized;
   }
 }

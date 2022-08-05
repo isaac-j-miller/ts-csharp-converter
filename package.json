@@ -7,7 +7,7 @@
     "test": "node node_modules/jest/bin/jest.js",
     "test-inspect": "node --inspect  node_modules/jest/bin/jest.js --no-cache",
     "run-test": "node -r ts-node/register -r tsconfig-paths/register ./src/run-test.ts",
-    "run-test-inspect": "node -r ts-node/register -r tsconfig-paths/register --inspect ./src/test.ts",
+    "run-test-inspect": "node -r ts-node/register -r tsconfig-paths/register --inspect ./src/run-test.ts",
     "prettier": "prettier --write .",
     "check-ts": "tsc --noEmit"
   },
