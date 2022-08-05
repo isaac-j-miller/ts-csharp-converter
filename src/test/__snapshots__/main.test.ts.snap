@@ -1,0 +1,266 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`snapshot works 1`] = `
+"public namespace TestNamespace {
+    using System;
+    using System.Collections.Generic;
+    public enum TestEnum1 {
+        FooBar,
+        Baz,
+        Fooooo
+    }
+    public enum TestEnum2 {
+        Value1 = 100,
+        Value2,
+        Value3
+    }
+    public class X {
+        // whatever is a number property on X
+        public Int Whatever { get; set; }
+    }
+    public class SomeInterface {
+        public String? Foo { get; set; }
+        public String Bar { get; set; }
+    }
+    public class SomeInterface2 {
+        public String Foo2 { get; set; }
+        public String Bar { get; set; }
+        // whatever is a number property on X
+        public Int Whatever { get; set; }
+    }
+    public class TypeWithEnums {
+        public TestEnum1 Enum1 { get; set; }
+        public TestEnum2 Enum2 { get; set; }
+    }
+    public static class GlobalVars {
+        public const String FOO = \\"some string\\";
+        public const String BAR = \\"some string as const\\";
+        public const Int Whatever = 1;
+        /**
+        * an array of strings
+        */
+        public const String[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
+        public const Int[] ANumberArray = { 1, 2, 3, 4 };
+        // a 2D int array
+        public const Int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
+    }
+    public class AAAAAAAA<T> {
+        public T[] Vvv { get; set; }
+    }
+    public class Foo {
+        // x is a number
+        public Int X { get; set; }
+        // comment comment comment
+        public String Y { get; set; }
+    }
+    public enum Abc {
+        A,
+        B,
+        C
+    }
+    public class GenericWithConstraints<T> where T: String {
+        public T Str { get; set; }
+    }
+    public class GenericWithConstraints2<T> where T: Foo {
+        public T Foo { get; set; }
+    }
+    public class GenericWithConstraints3<T> where T: Int {
+        public T Digit { get; set; }
+    }
+    public class GenericWithConstraints4<T> where T: Object {
+        public T Z { get; set; }
+    }
+    public class SomeGenericType<T> {
+        public T Foo { get; set; }
+        public Abc Bar { get; set; }
+    }
+    public class DefaultGeneric<Ta> {
+        public Ta V { get; set; }
+    }
+    internal class SomeLargerTypexClass<U> {
+        public U Foo { get; set; }
+    }
+    public class SomeLargerType<U> {
+        public String A { get; set; }
+        public Abc Y { get; set; }
+        public Int V { get; set; }
+        public SomeLargerTypexClass<U> X { get; set; }
+    }
+    public class Composite {
+        public Int V { get; set; }
+        public Abc Foo { get; set; }
+        public Abc Bar { get; set; }
+        // x is a number
+        public Int X { get; set; }
+        // comment comment comment
+        public String Y { get; set; }
+    }
+    internal class BlahBlahxClass {
+        // x is a number
+        public Int X { get; set; }
+        // comment comment comment
+        public String Y { get; set; }
+        public String Foo { get; set; }
+        public Abc Bar { get; set; }
+    }
+    public class BlahBlah {
+        public BlahBlahxClass[] X { get; set; }
+        public SomeLargerType<DefaultGeneric<Int>>[] Y { get; set; }
+    }
+    public class ZZZ {
+        public String Z { get; set; }
+        public System.Collections.Generic.Dictionary<String, String> V { get; set; }
+        public System.Collections.Generic.Dictionary<String, DefaultGeneric<Int>> Y { get; set; }
+        public System.Collections.Generic.Dictionary<String, SomeGenericType<Abc>> X { get; set; }
+    }
+    public class Bs<T> : System.Collections.Generic.Dictionary<String, DefaultGeneric<T>> {
+
+    }
+    public enum SomeStupidSubEnum {
+        FooBar,
+        Baz
+    }
+    public enum SomeStupidSubEnum2 {
+        Fooooo = 2,
+        Value2 = 101
+    }
+    public class DumbType {
+        public Double Num { get; set; }
+        public Int Dumber { get; set; }
+        public String Un { get; set; }
+        public Object Absurd { get; set; }
+    }
+    internal class IndexTypeaClass {
+        public Abc Foo { get; set; }
+    }
+    public class IndexType {
+        public System.Collections.Generic.Dictionary<String, String> Abc { get; set; }
+        public IndexTypeaClass A { get; set; }
+    }
+    public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<String, DefaultGeneric<Object>> {
+        public IndexType I { get; set; }
+        public T V { get; set; }
+    }
+    public class AnotherType {
+        public String[,,] X { get; set; }
+        public Int[,,,,] N { get; set; }
+    }
+    public class GenericArrayType {
+        public SomeGenericType<Composite>[] J { get; set; }
+        public AnotherType[,] K { get; set; }
+    }
+    public class GenericArrayType2<V> {
+        public V[,] SomeProperty { get; set; }
+        public DefaultGeneric<V>[] AnotherProperty { get; set; }
+    }
+    public class NumbersWithJsDoc {
+        /**
+        * @type {int}
+        */
+        public Int IntProperty { get; set; }
+        /**
+        * @type {float}
+        */
+        public Double FloatProperty { get; set; }
+    }
+    public class ConsumesInterface {
+        public Int Integer { get; set; }
+        public Int Float { get; set; }
+    }
+    public enum TestEnum3 {
+        X,
+        Y,
+        Z
+    }
+    public class UnionIndex {
+        public Int? A { get; set; }
+        public Int? B { get; set; }
+        public Int? C { get; set; }
+    }
+    public class UnionIndex2 {
+        public Bool A { get; set; }
+        public Bool B { get; set; }
+        public Bool C { get; set; }
+    }
+    public class GenericUnionIndex<T, V> where T: Object : System.Collections.Generic.Dictionary<T, V> {
+
+    }
+    public class GenericUnionIndex2<T> where T: Object : System.Collections.Generic.Dictionary<T, String> {
+
+    }
+    public class GenericUnionIndex3<T> where T: Object : System.Collections.Generic.Dictionary<T, Object> {
+
+    }
+    public class GenericUnionIndex4<T> where T: Object : System.Collections.Generic.Dictionary<T, Object> {
+
+    }
+    public class GenericConsumer : System.Collections.Generic.Dictionary<String, Int> {
+
+    }
+    // this is a comment that should show up on the GenericConsumerConsumer class
+    public class GenericConsumerConsumer {
+        // g comment
+        public GenericConsumer G { get; set; }
+    }
+    public class ATuple : System.Tuple<String, Int> {
+
+    }
+    public class BTuple : System.Tuple<Double, Double, Double> {
+
+    }
+    public class CTuple : System.Tuple<String, Double, UnionIndex2, Object> {
+
+    }
+    public class TupleMap : System.Collections.Generic.Dictionary<String, BTuple> {
+
+    }
+    public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
+
+    }
+    public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
+
+    }
+    public class TupleMap2 : System.Tuple<String, String[], Int[,,]> {
+
+    }
+    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> {
+
+    }
+    public class Tuple1 : System.Tuple<String, Double, SomeGenericType<Double>, DefaultGeneric<Double>, SomeGenericType<Abc>> {
+
+    }
+    public class A {
+        public Int Foo { get; set; }
+    }
+    public class B {
+        public String Bar { get; set; }
+    }
+    // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:10
+    // Source code:
+    // 
+    // export type Inverse<T extends A | B> = T extends A ? B : A;
+    public class Inverse<T> where T: Object {
+
+    }
+    public class ConsumesConditional {
+        public B Prop1 { get; set; }
+    }
+    public class ConditionalMappedType<T, V> where T: String : System.Collections.Generic.Dictionary<String, Object> {
+
+    }
+    internal class ConsumesConditionalMappedTypexClass {
+        public B A { get; set; }
+        public B B { get; set; }
+        public B C { get; set; }
+    }
+    internal class ConsumesConditionalMappedTypeyClass {
+        public ConsumesConditional A { get; set; }
+        public ConsumesConditional B { get; set; }
+        public ConsumesConditional C { get; set; }
+    }
+    public class ConsumesConditionalMappedType {
+        public ConsumesConditionalMappedTypexClass X { get; set; }
+        public ConsumesConditionalMappedTypeyClass Y { get; set; }
+    }
+}"
+`;

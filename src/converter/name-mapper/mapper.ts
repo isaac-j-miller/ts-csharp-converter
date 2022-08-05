@@ -6,7 +6,6 @@ import {
   CasedString,
   CasingConvention,
 } from "./types";
-import { isCSharpPrimitive } from "./util";
 
 type MapperMap = {
   [K in NameType]: NameMapperFunction;
@@ -26,9 +25,6 @@ export class NameMapper {
       }, {} as MapperMap);
   }
   transform(name: string, nameType: NameType): string {
-    if (isCSharpPrimitive(name)) {
-      return name;
-    }
     const mapperFn = this.mappers[nameType];
     const mapped = mapperFn(name as unknown as CasedString<CasingConvention>);
     return mapped.toString();

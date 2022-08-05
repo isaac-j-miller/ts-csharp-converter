@@ -17,7 +17,7 @@ import {
   NameMapperFunction,
 } from "./types";
 
-function getInputMapper<T extends CasingConvention>(
+export function getInputMapper<T extends CasingConvention>(
   source: T
 ): NameInputMapper<T> {
   switch (source) {
@@ -35,7 +35,7 @@ function getInputMapper<T extends CasingConvention>(
   throw new Error(`Could not find mapping for source: ${source}`);
 }
 
-function getOutputMapper<T extends CasingConvention>(
+export function getOutputMapper<T extends CasingConvention>(
   target: T
 ): NameOutputMapper<T> {
   switch (target) {

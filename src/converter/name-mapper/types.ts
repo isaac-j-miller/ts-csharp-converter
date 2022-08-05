@@ -5,16 +5,21 @@ export enum CasingConvention {
   KebabCase,
 }
 
+export type ParsedWord = {
+  base: string;
+  typeArguments?: ParsedWord[][];
+  arrayPart?: string;
+};
+
 export interface CasedString<T extends CasingConvention> extends String {
   _casing: T;
 }
-
 export type NameInputMapper<T extends CasingConvention> = (
   source: CasedString<T>
-) => string[];
+) => ParsedWord[];
 
 export type NameOutputMapper<T extends CasingConvention> = (
-  source: string[]
+  source: ParsedWord[]
 ) => CasedString<T>;
 
 export type NameMapperFunction<

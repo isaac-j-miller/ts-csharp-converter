@@ -4,8 +4,9 @@
   "description": "Convert typescript to C# data classes",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "run-test": "node -r ts-node/register -r tsconfig-paths/register ./src/test.ts",
+    "test": "node node_modules/jest/bin/jest.js",
+    "test-inspect": "node --inspect  node_modules/jest/bin/jest.js --no-cache",
+    "run-test": "node -r ts-node/register -r tsconfig-paths/register ./src/run-test.ts",
     "run-test-inspect": "node -r ts-node/register -r tsconfig-paths/register --inspect ./src/test.ts",
     "prettier": "prettier --write .",
     "check-ts": "tsc --noEmit"
@@ -18,8 +19,20 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.18.10",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
+    "@babel/plugin-proposal-object-rest-spread": "^7.18.9",
+    "@babel/plugin-proposal-optional-chaining": "^7.18.9",
+    "@babel/plugin-transform-runtime": "^7.18.10",
+    "@babel/plugin-transform-typescript": "^7.18.12",
+    "@babel/preset-env": "^7.18.10",
+    "@babel/preset-typescript": "^7.18.6",
+    "@babel/runtime": "^7.18.9",
+    "@types/jest": "^28.1.6",
     "@types/node": "^18.6.1",
     "@types/uuid": "^8.3.4",
+    "jest": "^28.1.3",
     "prettier": "^2.7.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.0.0"
