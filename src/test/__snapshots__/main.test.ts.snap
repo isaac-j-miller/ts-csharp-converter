@@ -114,7 +114,7 @@ exports[`snapshot works 1`] = `
         public System.Collections.Generic.Dictionary<string, SomeGenericType<Abc>> X { get; set; }
     }
     public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> {
-    }
+ }
     public enum SomeStupidSubEnum {
         FooBar,
         Baz
@@ -182,30 +182,30 @@ exports[`snapshot works 1`] = `
         public bool C { get; set; }
     }
     public class GenericUnionIndex<T, V> where T: object : System.Collections.Generic.Dictionary<T, V> {
-    }
+ }
     public class GenericUnionIndex2<T> where T: object : System.Collections.Generic.Dictionary<T, string> {
-    }
+ }
     public class GenericUnionIndex3<T> where T: object : System.Collections.Generic.Dictionary<T, object> {
-    }
+ }
     public class GenericUnionIndex4<T> where T: object : System.Collections.Generic.Dictionary<T, object> {
-    }
-    public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> {    }
+ }
+    public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> { }
     // this is a comment that should show up on the GenericConsumerConsumer class
     public class GenericConsumerConsumer {
         // g comment
         public GenericConsumer G { get; set; }
     }
-    public class ATuple : System.Tuple<string, int> {    }
-    public class BTuple : System.Tuple<double, double, double> {    }
-    public class CTuple : System.Tuple<string, double, UnionIndex2, object> {    }
-    public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> {    }
+    public class ATuple : System.Tuple<string, int> { }
+    public class BTuple : System.Tuple<double, double, double> { }
+    public class CTuple : System.Tuple<string, double, UnionIndex2, object> { }
+    public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> { }
     public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
-    }
+ }
     public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
-    }
-    public class TupleMap2 : System.Tuple<string, string[], int[,,]> {    }
-    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> {    }
-    public class Tuple1 : System.Tuple<string, double, SomeGenericType<double>, DefaultGeneric<double>, SomeGenericType<Abc>> {    }
+ }
+    public class TupleMap2 : System.Tuple<string, string[], int[,,]> { }
+    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> { }
+    public class Tuple1 : System.Tuple<string, double, SomeGenericType<double>, DefaultGeneric<double>, SomeGenericType<Abc>> { }
     public class A {
         public int Foo { get; set; }
     }
@@ -217,12 +217,12 @@ exports[`snapshot works 1`] = `
     // 
     // export type Inverse<T extends A | B> = T extends A ? B : A;
     public class Inverse<T> where T: object {
-    }
+ }
     public class ConsumesConditional {
         public B Prop1 { get; set; }
     }
     public class ConditionalMappedType<T, V> where T: string : System.Collections.Generic.Dictionary<string, object> {
-    }
+ }
     internal class ConsumesConditionalMappedTypexClass {
         public B A { get; set; }
         public B B { get; set; }

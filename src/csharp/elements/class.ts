@@ -103,7 +103,7 @@ export class CSharpClass extends CSharpElement {
     const hasProperties = this.properties.length > 0;
     serialized += this.serializeDeclaration(mapper, indentation, hasProperties);
     serialized += this.serializeBody(mapper, indentation + 1);
-    serialized += (hasProperties ? "\n" + indentString : "    ") + "}";
+    serialized += (hasProperties ? "\n" + indentString : " ") + "}";
     return serialized;
   }
 }
