@@ -22,6 +22,7 @@
     "skipLibCheck": true,
     "noUnusedLocals": false,
     "experimentalDecorators": true,
+    "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "baseUrl": "./",
     "paths": {

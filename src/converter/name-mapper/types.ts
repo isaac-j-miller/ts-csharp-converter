@@ -4,6 +4,9 @@ export enum CasingConvention {
   CamelCase,
   KebabCase,
 }
+export const casingConventions = Object.values(CasingConvention).filter(
+  (k) => typeof k === "string"
+) as string[];
 
 export type ParsedWord = {
   base: string;
