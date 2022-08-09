@@ -1,4 +1,4 @@
-import "source-map-support/register"
+import "source-map-support/register";
 import { ArgumentParser } from "argparse";
 import { convertTypescriptToCSharp } from ".";
 import {
@@ -113,7 +113,9 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
   };
 };
 const getRunConfig = () => {
-  const args: RunConfig = argParser.parse_args(process.argv);
+  const [knownArgs] = argParser.parse_known_args(process.argv);
+  const args: RunConfig = knownArgs;
+
   return runConfigToCompleteRunConfig(args);
 };
 

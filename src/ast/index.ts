@@ -54,7 +54,8 @@ export class AstTraverser {
     let literal = typeToUse.getLiteralValue();
     const structure = node.getStructure();
     if (isArray && structure.initializer) {
-      literal = eval(structure.initializer.toString());
+      // have to call eval like this because esbuild freaks out when I use eval the normal way
+      literal = (0, eval)(structure.initializer.toString());
     }
     if (!node.isExported() || !literalType) {
       return;

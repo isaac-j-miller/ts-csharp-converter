@@ -123,8 +123,10 @@ export class TypeFactory {
     if (
       nonUndefinedUnionTypes.every((unionType) => unionType.isStringLiteral())
     ) {
-      const members = unionTypes.map((member) =>
-        member.getLiteralValueOrThrow()
+      const members = nonUndefinedUnionTypes.map(
+        (member) =>
+          member.getLiteralValue() ??
+          member.getApparentType().getLiteralValueOrThrow()
       );
       const unionRegType = new TypeRegistryUnionType(
         this.registry,
