@@ -7,6 +7,7 @@ import {
 import { TypeRegistry } from "../registry";
 import {
   BaseTypeReference,
+  GenericParameter,
   isGenericReference,
   ISyntheticSymbol,
   PropertyStructure,
@@ -14,7 +15,6 @@ import {
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { formatCSharpArrayString, getGenericTypeName } from "../util";
-import { NameMapper } from "../name-mapper/mapper";
 
 export type PropertyOptions = Omit<
   PropertyStructure,
@@ -34,6 +34,32 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   ) {
     super(registry, "Type", name, symbol, internal, true, node, type, level);
     this.structure.commentString = commentString;
+  }
+  addCommentStringToProperty(
+    propertyName: string,
+    newCommentString: string
+  ): void {
+    const prop = this.structure.properties![propertyName];
+    if (!prop) {
+      throw new Error(
+        `Type ${this.structure.name} has no property "${propertyName}"`
+      );
+    }
+    const { commentString } = prop;
+    prop.commentString =
+      (commentString ? commentString + "\n" : "") + newCommentString;
+  }
+  addGenericParameterToProperty(
+    propertyName: string,
+    ref: TypeReference<BaseTypeReference>
+  ) {
+    const prop = (this.structure.properties ?? {})[propertyName];
+    if (!prop) {
+      throw new Error(
+        `Type ${this.structure.name} has no property "${propertyName}"`
+      );
+    }
+    prop.genericParameters = [...(prop.genericParameters ?? []), ref];
   }
   addProperty(
     propertyName: string,

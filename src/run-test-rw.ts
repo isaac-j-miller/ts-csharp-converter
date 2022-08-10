@@ -22,7 +22,30 @@ const main = async () => {
           output: CasingConvention.PascalCase,
         },
       },
-    }
+    },
+    false,
+    new Set([
+      "JsonSchema",
+      "DeepPartial",
+      "RwContext",
+      "SpanWrapped",
+      "Headers",
+      "SchemaProvider",
+      "TableWriteRequest",
+      "DynamoDbAPI",
+      "AsyncOptions",
+      "SpanWrapped",
+      "StackItem",
+      "TracingContextUnpackaged",
+      "TracingContextPackaged",
+      "NodeEnv",
+      "Resources",
+      "Timer",
+      "WrapperData",
+      "DbAdapter",
+      "Cache",
+      "ConfigByEnv",
+    ])
   );
 };
 

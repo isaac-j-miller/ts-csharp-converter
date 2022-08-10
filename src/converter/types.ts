@@ -53,6 +53,7 @@ export type TypeReference<T extends BaseTypeReference = BaseTypeReference> = {
   isArray: boolean;
   arrayDepth: number;
   ref: T;
+  genericParameters?: PropertyStringArgs;
 };
 export type BaseTypeReference =
   | Symbol
@@ -84,17 +85,12 @@ export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
   unionMembers?: UnionMember[];
-  tupleMembers?: TypeReferenceWithGenericParameters[];
+  tupleMembers?: TypeReference[];
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
-  mappedIndexType?: TypeReferenceWithGenericParameters;
-  mappedValueType?: TypeReferenceWithGenericParameters;
+  mappedIndexType?: TypeReference;
+  mappedValueType?: TypeReference;
   commentString?: string;
-};
-
-export type TypeReferenceWithGenericParameters = {
-  ref: TypeReference;
-  genericParameters?: PropertyStringArgs;
 };
 
 export type PrimitiveType = {

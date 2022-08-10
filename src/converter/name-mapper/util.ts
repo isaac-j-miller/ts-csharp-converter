@@ -2,6 +2,9 @@ import { cSharpPrimitives, CSharpPrimitiveType } from "src/csharp/";
 import { CasingConvention, casingConventions } from "./types";
 
 export const capitalize = (str: string): string => {
+  if (!str) {
+    return "";
+  }
   const [first, ...rest] = str;
   return [first.toLocaleUpperCase(), ...rest].join("");
 };

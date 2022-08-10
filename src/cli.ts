@@ -22,10 +22,14 @@ type RunConfig = RunConfigBase & {
   propertyNameTargetCasing?: string;
   enumMemberSourceCasing?: string;
   enumMemberTargetCasing?: string;
+  includeNodeModules?: boolean;
+  ignoreClasses?: string;
 };
 
 type CompleteConfig = RunConfigBase & {
   nameMapperConfig: NameMapperConfig;
+  includeNodeModules: boolean;
+  ignoreClasses: Set<string>;
 };
 
 const argParser = new ArgumentParser();
@@ -69,6 +73,16 @@ argParser.add_argument("--enum-member-target-casing", {
   required: false,
   dest: "enumNameTargetCasing",
 });
+argParser.add_argument("--include-node-modules", {
+  required: false,
+  action: "storeTrue",
+  default: false,
+  dest: "includeNodeModules",
+});
+argParser.add_argument("--ignore", {
+  required: false,
+  dest: "ignoreClasses",
+});
 const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
   const {
     classNameSourceCasing,
@@ -77,8 +91,13 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
     propertyNameTargetCasing,
     enumMemberSourceCasing: enumNameSourceCasing,
     enumMemberTargetCasing: enumNameTargetCasing,
+    includeNodeModules,
+    ignoreClasses,
     ...rest
   } = c;
+  const ignoreClassesSet = new Set(
+    ignoreClasses ? ignoreClasses.split(",") : []
+  );
   const nameMapperConfig: NameMapperConfig = {
     transforms: {
       [NameType.DeclarationName]: {
@@ -110,6 +129,8 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
   return {
     ...rest,
     nameMapperConfig,
+    includeNodeModules: !!includeNodeModules,
+    ignoreClasses: ignoreClassesSet,
   };
 };
 const getRunConfig = () => {
@@ -120,14 +141,23 @@ const getRunConfig = () => {
 };
 
 async function main() {
-  const { entrypoint, tsconfigPath, outputFile, namespace, nameMapperConfig } =
-    getRunConfig();
+  const {
+    entrypoint,
+    tsconfigPath,
+    outputFile,
+    namespace,
+    nameMapperConfig,
+    includeNodeModules,
+  } = getRunConfig();
   await convertTypescriptToCSharp(
     entrypoint,
     tsconfigPath,
     outputFile,
     namespace,
-    nameMapperConfig
+    nameMapperConfig,
+    includeNodeModules,
+    // TODO: fix
+    new Set()
   );
 }
 

@@ -344,8 +344,12 @@ export class TypeRegistry {
     return elements;
   }
   toNamespace(name: string): CSharpNamespace {
+    console.info("Preparing to create namespace...");
     this.consolidate();
-    return new CSharpNamespace(name, this.getElements());
+    console.info("Creating namespace...");
+    const ns = new CSharpNamespace(name, this.getElements());
+    console.info(`Created namespace ${name}`);
+    return ns;
   }
 }
 

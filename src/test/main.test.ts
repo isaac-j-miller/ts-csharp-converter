@@ -26,7 +26,9 @@ describe("snapshot", () => {
     const mapper = new NameMapper(config);
     const traverser = new AstTraverser(
       "./src/test/index.ts",
-      "./tsconfig.json"
+      "./tsconfig.json",
+      false,
+      new Set()
     );
     traverser.traverse();
     const ns = traverser.createNamespace("TestNamespace");

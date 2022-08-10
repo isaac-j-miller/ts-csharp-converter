@@ -2,7 +2,6 @@ import { Node, Symbol, Type } from "ts-morph";
 import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
 import {
   ISyntheticSymbol,
-  TypeReferenceWithGenericParameters,
   TypeReference,
   TypeStructure,
   PropertyStringArg,
@@ -10,7 +9,6 @@ import {
 import { TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { getGenericTypeName } from "../util";
-import { NameMapper } from "../name-mapper/mapper";
 
 export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tuple"> {
   private baseName: string;
@@ -18,7 +16,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
-    members: TypeReferenceWithGenericParameters[],
+    members: TypeReference[],
     internal: boolean,
     type: Type,
     level: number,
@@ -69,7 +67,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
   }
   private getBaseClassName(): string {
     const typeNames = (this.structure.tupleMembers ?? []).map((m) =>
-      this.resolveAndFormatTypeName(m.ref, m.genericParameters)
+      this.resolveAndFormatTypeName(m)
     );
     return getGenericTypeName(this.baseName, typeNames);
   }

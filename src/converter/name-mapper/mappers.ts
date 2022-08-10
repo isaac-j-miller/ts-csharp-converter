@@ -87,7 +87,8 @@ export const PascalOutputMapper: NameOutputMapper<
     const newBase = isPrimitive ? base : capitalize(base);
     return format(newBase, typeArguments, arrayPart, PascalOutputMapper);
   });
-  const outputWord = formattedWords.join("");
+  // TODO: don't land this. Replace with auto-detect
+  const outputWord = formattedWords.join("").replace(/-|\/|\\/g, "");
   return outputWord as unknown as CasedString<CasingConvention.PascalCase>;
 };
 
@@ -101,7 +102,8 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
     const newBase = i > 0 && !isPrimitive ? capitalize(base) : base;
     return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
   });
-  const outputWord = formattedWords.join("");
+  // TODO: don't land this. Replace with auto-detect
+  const outputWord = formattedWords.join("").replace(/-|\/|\\/g, "");
   return outputWord as unknown as CasedString<CasingConvention.CamelCase>;
 };
 

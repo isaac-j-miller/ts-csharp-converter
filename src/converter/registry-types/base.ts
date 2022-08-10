@@ -131,9 +131,15 @@ export abstract class RegistryType<T extends TokenType>
       baseTypeHash = typeRef.genericParamName;
     } else {
       const fromRegistry = this.registry.getType(typeRef);
-      baseTypeHash =
-        (fromRegistry?.getHash() ?? "undefined") +
-        `a:${isArray};d:${arrayDepth ?? 0}`;
+      let prefix = "undefined";
+      if (fromRegistry) {
+        if (fromRegistry.getStructure().name === this.structure.name) {
+          prefix = this.getStructure().name + "(this)";
+        } else {
+          prefix = fromRegistry.getHash();
+        }
+      }
+      baseTypeHash = prefix + `a:${isArray};d:${arrayDepth ?? 0}`;
     }
     return baseTypeHash;
   }
@@ -162,16 +168,16 @@ export abstract class RegistryType<T extends TokenType>
     const hash = `${tokenType}#${
       tokenType === "Primitive" || tokenType === "Instance" ? `${name}#` : ""
     }${unionHash}#${propertiesHash}#${this.hashTypeRef(
-      mappedIndexType?.ref
+      mappedIndexType
     )}#${mappedIndexType?.genericParameters
       ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
       .join(".")}#${this.hashTypeRef(
-      mappedValueType?.ref
+      mappedValueType
     )}#${mappedValueType?.genericParameters
       ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
       .join(".")}#${tupleMembers?.map(
       (t) =>
-        this.hashTypeRef(t.ref) +
+        this.hashTypeRef(t) +
         "#" +
         t.genericParameters
           ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))

@@ -1,4 +1,4 @@
-import { Symbol, Type, Node } from "ts-morph";
+import { Symbol, Node } from "ts-morph";
 import { GenericParam } from "src/csharp";
 import { TypeRegistry } from "../registry";
 import {
@@ -14,8 +14,6 @@ import {
 } from "../types";
 import { formatCSharpArrayString, resolveTypeName } from "../util";
 import { RegistryType } from "./base";
-import { NameMapper } from "../name-mapper/mapper";
-import { NameType } from "../name-mapper";
 
 export abstract class TypeRegistryPossiblyGenericType<
   T extends TokenType
@@ -94,15 +92,12 @@ export abstract class TypeRegistryPossiblyGenericType<
       return acc;
     }, {} as Record<string, GenericParam>);
   }
-  protected resolveAndFormatTypeName(
-    t: TypeReference,
-    genericParams?: PropertyStringArgs
-  ): string {
+  protected resolveAndFormatTypeName(t: TypeReference): string {
     const resolved = resolveTypeName(
       this.registry,
       t.ref,
       this.structure.genericParameters ?? [],
-      genericParams
+      t.genericParameters
     );
     return formatCSharpArrayString(resolved, t.isArray, t.arrayDepth);
   }

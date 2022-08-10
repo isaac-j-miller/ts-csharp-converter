@@ -56,6 +56,9 @@ export function toCSharpPrimitive(
 }
 
 export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
+  if (!sym) {
+    throw new Error("symbol not defined");
+  }
   if (!isSyntheticSymbol(sym) && sym.isAlias()) {
     return getFinalSymbol(sym.getAliasedSymbolOrThrow()) as T;
   }
@@ -283,12 +286,13 @@ export function getGenericParametersFromType(
         return;
       }
     }
-    const fromRegistry = registry.getType(sym);
+    let fromRegistry = registry.getType(sym);
     if (!fromRegistry) {
       const castSym = sym as Symbol;
-      throw new Error(
-        `No type found in registry for symbol ${castSym.getName()}`
+      console.warn(
+        `No type found in registry for symbol ${castSym.getName()}, using any`
       );
+      fromRegistry = registry.getType("any");
     }
     if (fromRegistry.isNonPrimitive()) {
       const genericParamGenericParameters = getGenericParameters(

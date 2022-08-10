@@ -4,8 +4,8 @@ import { NameMapper } from "../name-mapper/mapper";
 import { TypeRegistry } from "../registry";
 import {
   ISyntheticSymbol,
-  TypeReferenceWithGenericParameters,
   PropertyStringArg,
+  PropertyStringArgs,
   TypeReference,
 } from "../types";
 import { getGenericTypeName } from "../util";
@@ -17,8 +17,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     registry: TypeRegistry,
     name: string,
     sym: Symbol | ISyntheticSymbol,
-    public readonly indexType: TypeReferenceWithGenericParameters,
-    public readonly valueType: TypeReferenceWithGenericParameters,
+    public readonly indexType: TypeReference,
+    public readonly valueType: TypeReference,
     internal: boolean,
     node: Node,
     type: Type,
@@ -46,15 +46,22 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     this.structure.commentString = commentString;
     this.baseName = "System.Collections.Generic.Dictionary";
   }
-  private getBaseClassName(): string {
-    const indexTypeName = this.resolveAndFormatTypeName(
-      this.indexType.ref,
-      this.indexType.genericParameters
-    );
-    const valueTypeName = this.resolveAndFormatTypeName(
-      this.valueType.ref,
-      this.valueType.genericParameters
-    );
+  private getGenericParamName(
+    defaultRef: TypeReference,
+    override?: PropertyStringArg
+  ): string {
+    if (!override) {
+      return this.resolveAndFormatTypeName(defaultRef);
+    }
+    if (typeof override === "string") {
+      return override;
+    }
+    return this.resolveAndFormatTypeName(override);
+  }
+  private getBaseClassName(genericParameters?: PropertyStringArgs): string {
+    const g = genericParameters ?? [];
+    const indexTypeName = this.getGenericParamName(this.indexType, g[0]);
+    const valueTypeName = this.getGenericParamName(this.valueType, g[1]);
     return getGenericTypeName(this.baseName, [indexTypeName, valueTypeName]);
   }
   private addGenericParameterToIndexOrValue(
@@ -72,9 +79,9 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
   addGenericParameterToValue(parameter: PropertyStringArg) {
     this.addGenericParameterToIndexOrValue("mappedValueType", parameter);
   }
-  getPropertyString(genericParameterValues?: TypeReference[]): string {
+  getPropertyString(genericParameterValues?: PropertyStringArgs): string {
     if (this.internal) {
-      return this.getBaseClassName();
+      return this.getBaseClassName(genericParameterValues);
     }
     const { name } = this.structure;
     const namesToUse = this.getGenericParametersForPropertyString(

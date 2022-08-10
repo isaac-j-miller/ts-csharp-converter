@@ -9,10 +9,17 @@ export async function convertTypescriptToCSharp(
   tsconfigPath: string,
   outputPath: string,
   namespaceName: string,
-  config: NameMapperConfig
+  config: NameMapperConfig,
+  includeNodeModules: boolean,
+  ignoreClasses: Set<string>
 ): Promise<void> {
   const mapper = new NameMapper(config);
-  const traverser = new AstTraverser(entrypoint, tsconfigPath);
+  const traverser = new AstTraverser(
+    entrypoint,
+    tsconfigPath,
+    includeNodeModules,
+    ignoreClasses
+  );
   traverser.traverse();
   const ns = traverser.createNamespace(namespaceName);
   const str = ns.serialize(mapper);

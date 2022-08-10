@@ -22,7 +22,9 @@ const main = async () => {
           output: CasingConvention.PascalCase,
         },
       },
-    }
+    },
+    false,
+    new Set()
   );
 };
 
