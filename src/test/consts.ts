@@ -1,6 +1,14 @@
 import { TypeWithEnums } from "./subfolder/more";
 import { TestEnum1, TestEnum2 } from "./subfolder/more-types";
 
+const x = [1, 2, 3, 4];
+
+export const usingRef = [...x, 6, 7, 8];
+
+const f = "whatever";
+
+export const fRef = f + "s";
+
 export const FOO = "some string";
 export const BAR = "some string as const" as const;
 

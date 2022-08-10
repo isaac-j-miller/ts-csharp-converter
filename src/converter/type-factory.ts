@@ -480,12 +480,6 @@ export class TypeFactory {
     } = propertyInfo;
     const { isArray } = options;
     const internalClassName = `${name}${propertyName}Class`;
-    if (
-      parentType.getOriginalName() === "JobQueryOptions" &&
-      propertyName === "KeyConditions"
-    ) {
-      console.debug("here");
-    }
     const nodeToUse = (
       propertyTypeSymbol ??
       baseType.getSymbol() ??
@@ -671,7 +665,7 @@ export class TypeFactory {
     const isArray = parameterType.isArray();
     const arrayDepth = getArrayDepth(parameterType);
     if (arrayDepth > 0) {
-      console.debug("too deep");
+      console.warn("too deep getting generic params");
     }
     let apparent: TypeReference | undefined;
     const sym = parameterType.getSymbol();

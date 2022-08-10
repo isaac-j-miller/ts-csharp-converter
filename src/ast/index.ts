@@ -71,17 +71,21 @@ export class AstTraverser {
     const constType = this.registry.getConstValueType();
     const typeToUse = getFinalArrayType(asType).getApparentType();
     const literalType = asPrimitiveTypeName(typeToUse);
-    let literal = typeToUse.getApparentType().getLiteralValue() as LiteralValue;
+    let literal = asType.getLiteralValue() as LiteralValue;
     const structure = node.getStructure();
     // TODO: make this work better
-    if (isArray && structure.initializer) {
+    if (structure.initializer && !literal) {
       try {
         // have to call eval like this because esbuild freaks out when I use eval the normal way
         literal = (0, eval)(structure.initializer.toString());
       } catch (e) {
-        const arrayTypes = typeToUse.getUnionTypes();
-        if (arrayTypes.every((e) => e.isLiteral())) {
-          literal = arrayTypes.map((t) => t.getLiteralValue() as LiteralValue);
+        if (isArray) {
+          const arrayTypes = typeToUse.getUnionTypes();
+          if (arrayTypes.every((e) => e.isLiteral())) {
+            literal = arrayTypes.map(
+              (t) => t.getLiteralValue() as LiteralValue
+            );
+          }
         }
       }
     }
@@ -94,7 +98,17 @@ export class AstTraverser {
     }
     const arrayDepth = getArrayDepth(asType);
     const varStatement = node.getVariableStatement();
-    const comments = varStatement ? getComments(varStatement) : undefined;
+    let comments = varStatement ? getComments(varStatement) : undefined;
+    if (literal === undefined) {
+      literal = null;
+      const comment = "Unable to resolve value for type";
+      console.warn(
+        `${comment} for declaration ${name} in ${node
+          .getSourceFile()
+          .getFilePath()}`
+      );
+      comments = comments ? comments + `\n// ${comment}` : "// " + comment;
+    }
     constType.addConst(
       name,
       literalType,
@@ -102,11 +116,6 @@ export class AstTraverser {
       arrayDepth,
       literal,
       comments
-    );
-    console.debug(
-      `Found declaration: ${name} = ${JSON.stringify(
-        literal
-      )}, with comments "${comments}"`
     );
   }
   private createType(
