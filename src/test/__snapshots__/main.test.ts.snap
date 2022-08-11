@@ -14,25 +14,10 @@ exports[`snapshot works 1`] = `
         Value2,
         Value3
     }
-    public class X {
-        // whatever is a number property on X
-        public int Whatever { get; set; }
-    }
-    public class SomeInterface {
-        public string? Foo { get; set; }
-        public string Bar { get; set; }
-    }
-    public class SomeInterface2 {
-        public string Foo2 { get; set; }
-        public string Bar { get; set; }
-        // whatever is a number property on X
-        public int Whatever { get; set; }
-    }
-    public class TypeWithEnums {
-        public TestEnum1 Enum1 { get; set; }
-        public TestEnum2 Enum2 { get; set; }
-    }
     public static class GlobalVars {
+        public const int[] UsingRef = {  };
+        // Unable to resolve value for type
+        public const string FRef = null;
         public const string FOO = \\"some string\\";
         public const string BAR = \\"some string as const\\";
         public const int Whatever = 1;
@@ -43,9 +28,6 @@ exports[`snapshot works 1`] = `
         public const int[] ANumberArray = { 1, 2, 3, 4 };
         // a 2D int array
         public const int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
-    }
-    public class AAAAAAAA<T> {
-        public T[] Vvv { get; set; }
     }
     public class Foo {
         // x is a number
@@ -135,7 +117,7 @@ exports[`snapshot works 1`] = `
         public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
         public IndexTypeaClass A { get; set; }
     }
-    public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<string, DefaultGeneric<object>> {
+    public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<object, T> {
         public IndexType I { get; set; }
         public T V { get; set; }
     }
@@ -190,6 +172,38 @@ exports[`snapshot works 1`] = `
         // g comment
         public GenericConsumer G { get; set; }
     }
+    public class FooBar {
+        // This property is a function, and it was unable to be translated at this time
+        public object? F { get; set; }
+        // This property is a function, and it was unable to be translated at this time
+        public object? G { get; set; }
+    }
+    public class Whatever1 {
+        public object W { get; set; }
+    }
+    public class RecursiveType {
+        public int T { get; set; }
+        public RecursiveType R { get; set; }
+    }
+    public class RecursiveType2 {
+        public int T { get; set; }
+        public RecursiveType R { get; set; }
+    }
+    public class RecursiveType3 {
+        public int T { get; set; }
+        public RecursiveType? R2 { get; set; }
+    }
+    public class GenericRecursive {
+        public SomeGenericType<object> T { get; set; }
+    }
+    public enum DumbEnum {
+        MemberOne,
+        MemberTwo,
+        Member3,
+        MemberMember1,
+        PascalMember,
+        ApplicationFooooABCX
+    }
     public class ATuple : System.Tuple<string, int> { }
     public class BTuple : System.Tuple<double, double, double> { }
     public class CTuple : System.Tuple<string, double, UnionIndex2, object> { }
@@ -214,19 +228,9 @@ exports[`snapshot works 1`] = `
         public B Prop1 { get; set; }
     }
     public class ConditionalMappedType<T, V> where T: string : System.Collections.Generic.Dictionary<string, object> { }
-    internal class ConsumesConditionalMappedTypexClass {
-        public B A { get; set; }
-        public B B { get; set; }
-        public B C { get; set; }
-    }
-    internal class ConsumesConditionalMappedTypeyClass {
-        public ConsumesConditional A { get; set; }
-        public ConsumesConditional B { get; set; }
-        public ConsumesConditional C { get; set; }
-    }
     public class ConsumesConditionalMappedType {
-        public ConsumesConditionalMappedTypexClass X { get; set; }
-        public ConsumesConditionalMappedTypeyClass Y { get; set; }
+        public System.Collections.Generic.Dictionary<object, A> X { get; set; }
+        public System.Collections.Generic.Dictionary<object, B> Y { get; set; }
     }
 }"
 `;
