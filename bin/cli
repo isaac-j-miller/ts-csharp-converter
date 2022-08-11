@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+PWD=$( pwd )
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
+declare -a node_args=()
+declare -a script_args=()
+
+for var in "$@"
+do
+    case $var in
+      --inspect|--inspect-brk)
+        node_args+=("$var")
+        shift
+        ;;
+        *)
+        script_args+=("$var")
+        shift
+        ;;
+    esac
+done
+cd "$PWD"
+node ${node_args[@]+"${node_args[@]}"} --stack-size=32000 ${DIR}/dist/cli.js ${script_args[@]+"${script_args[@]}"}

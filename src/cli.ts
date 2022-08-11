@@ -121,6 +121,7 @@ async function main() {
     namespace,
     nameMapperConfig,
     includeNodeModules,
+    ignoreClasses,
   } = getRunConfig();
   await convertTypescriptToCSharp(
     entrypoint,
@@ -129,8 +130,7 @@ async function main() {
     namespace,
     nameMapperConfig,
     includeNodeModules,
-    // TODO: fix
-    new Set()
+    ignoreClasses
   );
 }
 

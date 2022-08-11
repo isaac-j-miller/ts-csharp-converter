@@ -1,6 +1,6 @@
 {
   "name": "csharp-converter",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Convert typescript to C# data classes",
   "main": "index.js",
   "scripts": {
@@ -26,6 +26,7 @@
     "typescript": "^4.7.4",
     "uuid": "^7"
   },
+  "bin": "./bin/cli",
   "devDependencies": {
     "@babel/core": "^7.18.10",
     "@babel/plugin-proposal-class-properties": "^7.18.6",

@@ -25,6 +25,7 @@
     "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "baseUrl": "./",
+    "declaration": true,
     "paths": {
       "src/*": ["./src/*"]
     },
