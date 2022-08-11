@@ -43,6 +43,7 @@ const main = async () => {
       "Cache",
       "ConfigByEnv",
       "S3Tree",
+      "RuntimeConfig",
     ])
   );
 };

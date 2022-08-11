@@ -60,7 +60,7 @@ argParser.add_argument("--enum-member-target-casing", {
 });
 argParser.add_argument("--include-node-modules", {
   required: false,
-  action: "storeTrue",
+  action: "store_true",
   default: false,
   dest: "includeNodeModules",
 });
