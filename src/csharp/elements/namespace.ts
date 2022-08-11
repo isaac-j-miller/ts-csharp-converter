@@ -12,15 +12,10 @@ export class CSharpNamespace extends CSharpElement {
   }
   serialize(mapper: NameMapper): string {
     const indent = " ".repeat(TAB_WIDTH);
-    let serialized = "";
-    if (this.isPublic) {
-      serialized += "public ";
-    } else {
-      serialized += "internal ";
-    }
-    serialized += `namespace ${this.name} {\n`;
+    let serialized = `namespace ${this.name} {\n`;
     serialized += indent + "using System;\n";
     serialized += indent + "using System.Collections.Generic;\n";
+    serialized += indent + "using System.Runtime.Serialization;\n";
     serialized += this.elements
       .map((element) => element.serialize(mapper, 1))
       .join("\n");

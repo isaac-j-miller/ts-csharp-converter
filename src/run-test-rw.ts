@@ -44,6 +44,7 @@ const main = async () => {
       "ConfigByEnv",
       "S3Tree",
       "RuntimeConfig",
+      "ParsedLoggable",
     ])
   );
 };

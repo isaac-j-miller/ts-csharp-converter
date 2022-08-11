@@ -41,7 +41,7 @@ export class CSharpClass extends CSharpElement {
     let serialized = formatCommentString(commentString, indent);
     serialized += `${getIndentString(indent)}${accessLevel} `;
     if (isConst) {
-      serialized += "const ";
+      serialized += "readonly static ";
     }
     serialized += `${mapper.transform(kind, NameType.DeclarationName)}`;
     if (optional) {
@@ -69,12 +69,12 @@ export class CSharpClass extends CSharpElement {
     addNewline: boolean
   ) {
     const indentString = getIndentString(indentation);
-    let serialized = indentString;
-    if (this.isPublic) {
-      serialized += "public ";
-    } else {
-      serialized += "internal ";
-    }
+    let serialized = indentString + "public ";
+    // if (this.isPublic) {
+    //   serialized += "public ";
+    // } else {
+    //   serialized += "internal ";
+    // }
     if (this.isStatic) {
       serialized += "static ";
     }
