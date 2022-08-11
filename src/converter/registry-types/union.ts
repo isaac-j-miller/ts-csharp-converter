@@ -13,6 +13,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     internal: boolean,
     type: Type,
     level: number,
+    private readonly isStringEnum: boolean,
     commentString?: string
   ) {
     const structure: TypeStructure<"StringUnion"> = {
@@ -30,6 +31,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     return new CSharpEnum(
       this.structure.name!,
       this.structure.unionMembers!,
+      this.isStringEnum,
       this.internal
     );
   }

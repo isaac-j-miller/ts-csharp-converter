@@ -71,4 +71,10 @@ export type GenericRecursive = {
 };
 export type Constructor<T> = new (...args: any[]) => T;
 
-export type DumbEnum = "member_one" | "member-two" | "member3" | "memberMember1" | "PascalMember" | "application/foooo.a-b-c.x"
+export type DumbEnum =
+  | "member_one"
+  | "member-two"
+  | "member3"
+  | "memberMember1"
+  | "PascalMember"
+  | "application/foooo.a-b-c.x";

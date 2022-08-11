@@ -36,8 +36,11 @@ exports[`snapshot works 1`] = `
         public string Y { get; set; }
     }
     public enum Abc {
+        [EnumMember(Value = \\"a\\")]
         A,
+        [EnumMember(Value = \\"b\\")]
         B,
+        [EnumMember(Value = \\"c\\")]
         C
     }
     public class GenericWithConstraints<T> where T: string {
@@ -148,8 +151,11 @@ exports[`snapshot works 1`] = `
         public int Float { get; set; }
     }
     public enum TestEnum3 {
+        [EnumMember(Value = \\"x\\")]
         X,
+        [EnumMember(Value = \\"y\\")]
         Y,
+        [EnumMember(Value = \\"z\\")]
         Z
     }
     public class UnionIndex {
@@ -197,11 +203,17 @@ exports[`snapshot works 1`] = `
         public SomeGenericType<object> T { get; set; }
     }
     public enum DumbEnum {
+        [EnumMember(Value = \\"member_one\\")]
         MemberOne,
+        [EnumMember(Value = \\"member-two\\")]
         MemberTwo,
+        [EnumMember(Value = \\"member3\\")]
         Member3,
+        [EnumMember(Value = \\"memberMember1\\")]
         MemberMember1,
+        [EnumMember(Value = \\"PascalMember\\")]
         PascalMember,
+        [EnumMember(Value = \\"application/foooo.a-b-c.x\\")]
         ApplicationFooooABCX
     }
     public class ATuple : System.Tuple<string, int> { }

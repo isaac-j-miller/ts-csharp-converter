@@ -8,17 +8,23 @@ export class CSharpEnum extends CSharpElement {
   constructor(
     name: string,
     public readonly items: UnionMember[],
+    private readonly isStringEnum: boolean,
     isInternal?: boolean,
     commentString?: string
   ) {
     super("enum", name, commentString, isInternal);
   }
-  private serializeUnionMembers(mapper: NameMapper): string[] {
+  private serializeUnionMembers(mapper: NameMapper, indent: number): string[] {
     return this.items.map(({ name, value }) => {
       const shouldShowValue = value !== undefined;
       let str = mapper.transform(name, NameType.EnumMember);
+
       if (shouldShowValue) {
         str += ` = ${value}`;
+      } else if (this.isStringEnum) {
+        str = `[EnumMember(Value = "${name}")]\n${getIndentString(
+          indent
+        )}${str}`;
       }
       return str;
     });
@@ -38,7 +44,7 @@ export class CSharpEnum extends CSharpElement {
     }
     const name = mapper.transform(this.name, NameType.DeclarationName);
     serialized += `enum ${name} {\n`;
-    serialized += this.serializeUnionMembers(mapper)
+    serialized += this.serializeUnionMembers(mapper, indentation + 1)
       .map(
         (item, i) =>
           `${bodyIndent}${item}${i === this.items.length - 1 ? "" : ","}`

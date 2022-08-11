@@ -140,6 +140,7 @@ export class TypeFactory {
         internal,
         type,
         options.level,
+        true,
         getComments(node)
       );
       return unionRegType;
@@ -210,6 +211,7 @@ export class TypeFactory {
       internal,
       type,
       level,
+      false,
       getComments(node)
     );
   }
