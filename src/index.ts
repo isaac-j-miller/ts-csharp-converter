@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from "fs/promises";
 import { dirname } from "path";
 import { AstTraverser } from "./ast";
-import { NameMapperConfig } from "./converter/name-mapper";
+import { CasingConvention, NameMapperConfig } from "./converter/name-mapper";
 import { NameMapper } from "./converter/name-mapper/mapper";
+
+export { CasingConvention, NameMapperConfig };
 
 export async function convertTypescriptToCSharp(
   entrypoint: string,
