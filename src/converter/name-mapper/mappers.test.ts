@@ -1,11 +1,6 @@
-import { getInputMapper, getOutputMapper } from "./factory";
-import { parseNormalized, PascalInputMapper } from "./mappers";
-import {
-  CasedString,
-  CasingConvention,
-  NameInputMapper,
-  ParsedWord,
-} from "./types";
+import { getOutputMapper } from "./factory";
+import { formatForEnum, normalize, parseNormalized } from "./mappers";
+import { CasedString, CasingConvention, ParsedWord } from "./types";
 
 type Input = {
   parsed: ParsedWord[];
@@ -13,14 +8,6 @@ type Input = {
     [S in CasingConvention]: string;
   };
 };
-function runInputTest<T extends CasingConvention>(convention: T, input: Input) {
-  const key = input.formatted[convention];
-  it(`${key} (${CasingConvention[convention]})`, () => {
-    const inputMapper = getInputMapper(convention);
-    const parsed = inputMapper(key as unknown as CasedString<T>);
-    expect(parsed).toEqual(input.parsed);
-  });
-}
 
 function runOutputTest<T extends CasingConvention>(
   convention: T,
@@ -256,15 +243,6 @@ const inputs: Input[] = [
   },
 ];
 
-function runInputTests<T extends CasingConvention>(
-  inputs: Input[],
-  convention: T
-) {
-  inputs.forEach((input) => {
-    runInputTest(convention, input);
-  });
-}
-
 function runFormattingTests<T extends CasingConvention>(
   inputs: Input[],
   convention: T
@@ -286,14 +264,71 @@ describe("formatters", () => {
   });
 });
 
-describe("input mappers", () => {
-  (
-    Object.values(CasingConvention).filter(
-      (k) => typeof k !== "string"
-    ) as CasingConvention[]
-  ).forEach((convention) => {
-    describe(CasingConvention[convention], () => {
-      runInputTests(inputs, convention);
+const normalizeTests: Record<string, string> = {
+  someInput: "some_input",
+  some_input: "some_input",
+  "some-input": "some_input",
+  "Some-Input": "some_input",
+  someMixed_string: "some_mixed_string",
+  "En-Us": "en_us",
+  "Whatever_some-inputMixed": "whatever_some_input_mixed",
+};
+
+describe("normalizer", () => {
+  Object.entries(normalizeTests).forEach(([input, expectation]) => {
+    it(input, () => {
+      expect(normalize(input)).toEqual(expectation);
     });
+  });
+});
+
+type FormatForEnumInput = {
+  [key: string]: {
+    [k in CasingConvention]: string;
+  };
+};
+
+const formatForEnumTests: FormatForEnumInput = {
+  "En-Us": {
+    [CasingConvention.CamelCase]: "enUs",
+    [CasingConvention.PascalCase]: "EnUs",
+    [CasingConvention.SnakeCase]: "en_us",
+    [CasingConvention.KebabCase]: "en-us",
+  },
+  "application/zip": {
+    [CasingConvention.CamelCase]: "applicationZip",
+    [CasingConvention.PascalCase]: "ApplicationZip",
+    [CasingConvention.SnakeCase]: "application_zip",
+    [CasingConvention.KebabCase]: "application-zip",
+  },
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+    [CasingConvention.CamelCase]:
+      "applicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
+    [CasingConvention.PascalCase]:
+      "ApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
+    [CasingConvention.SnakeCase]:
+      "application_vnd_openxmlformats_officedocument_spreadsheetml_sheet",
+    [CasingConvention.KebabCase]:
+      "application-vnd-openxmlformats-officedocument-spreadsheetml-sheet",
+  },
+};
+
+describe("formatForEnum", () => {
+  Object.entries(formatForEnumTests).forEach(([input, formatOutputs]) => {
+    Object.entries(formatOutputs).forEach(
+      ([casingConventionIdx, expectation]) => {
+        const casingConvention = Number.parseInt(
+          casingConventionIdx
+        ) as CasingConvention;
+        it(`${input} (${CasingConvention[casingConvention]})`, () => {
+          const mapper = getOutputMapper(casingConvention);
+          const normalized = normalize(input);
+          const parsed = parseNormalized(normalized);
+          const output = mapper(parsed);
+          const formatted = formatForEnum(output, casingConvention);
+          expect(formatted).toEqual(expectation);
+        });
+      }
+    );
   });
 });

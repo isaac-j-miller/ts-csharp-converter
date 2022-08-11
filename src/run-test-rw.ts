@@ -10,15 +10,12 @@ const main = async () => {
     {
       transforms: {
         [NameType.DeclarationName]: {
-          input: CasingConvention.PascalCase,
           output: CasingConvention.PascalCase,
         },
         [NameType.PropertyName]: {
-          input: CasingConvention.CamelCase,
           output: CasingConvention.PascalCase,
         },
         [NameType.EnumMember]: {
-          input: CasingConvention.CamelCase,
           output: CasingConvention.PascalCase,
         },
       },

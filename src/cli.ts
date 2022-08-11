@@ -16,11 +16,8 @@ type RunConfigBase = {
 };
 
 type RunConfig = RunConfigBase & {
-  classNameSourceCasing?: string;
   classNameTargetCasing?: string;
-  propertyNameSourceCasing?: string;
   propertyNameTargetCasing?: string;
-  enumMemberSourceCasing?: string;
   enumMemberTargetCasing?: string;
   includeNodeModules?: boolean;
   ignoreClasses?: string;
@@ -49,25 +46,13 @@ argParser.add_argument("--output-namespace", {
   required: true,
   dest: "namespace",
 });
-argParser.add_argument("--class-name-source-casing", {
-  required: false,
-  dest: "classNameSourceCasing",
-});
 argParser.add_argument("--class-name-target-casing", {
   required: false,
   dest: "classNameTargetCasing",
 });
-argParser.add_argument("--property-name-source-casing", {
-  required: false,
-  dest: "propertyNameSourceCasing",
-});
 argParser.add_argument("--property-name-target-casing", {
   required: false,
   dest: "propertyNameTargetCasing",
-});
-argParser.add_argument("--enum-member-source-casing", {
-  required: false,
-  dest: "enumNameSourceCasing",
 });
 argParser.add_argument("--enum-member-target-casing", {
   required: false,
@@ -85,11 +70,8 @@ argParser.add_argument("--ignore", {
 });
 const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
   const {
-    classNameSourceCasing,
     classNameTargetCasing,
-    propertyNameSourceCasing,
     propertyNameTargetCasing,
-    enumMemberSourceCasing: enumNameSourceCasing,
     enumMemberTargetCasing: enumNameTargetCasing,
     includeNodeModules,
     ignoreClasses,
@@ -101,25 +83,16 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
   const nameMapperConfig: NameMapperConfig = {
     transforms: {
       [NameType.DeclarationName]: {
-        input:
-          toCasingConvention(classNameSourceCasing) ??
-          CasingConvention.PascalCase,
         output:
           toCasingConvention(classNameTargetCasing) ??
           CasingConvention.PascalCase,
       },
       [NameType.PropertyName]: {
-        input:
-          toCasingConvention(propertyNameSourceCasing) ??
-          CasingConvention.CamelCase,
         output:
           toCasingConvention(propertyNameTargetCasing) ??
           CasingConvention.PascalCase,
       },
       [NameType.EnumMember]: {
-        input:
-          toCasingConvention(enumNameSourceCasing) ??
-          CasingConvention.CamelCase,
         output:
           toCasingConvention(enumNameTargetCasing) ??
           CasingConvention.PascalCase,

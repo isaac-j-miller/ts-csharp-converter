@@ -1,11 +1,6 @@
 import { getNameMapper } from "./factory";
-import {
-  NameMapperConfig,
-  NameType,
-  NameMapperFunction,
-  CasedString,
-  CasingConvention,
-} from "./types";
+import { formatForEnum } from "./mappers";
+import { NameMapperConfig, NameType, NameMapperFunction } from "./types";
 
 type MapperMap = {
   [K in NameType]: NameMapperFunction;
@@ -13,20 +8,24 @@ type MapperMap = {
 
 export class NameMapper {
   private mappers: MapperMap;
-  constructor(config: NameMapperConfig) {
+  constructor(private config: NameMapperConfig) {
     this.mappers = Object.keys(NameType)
       .filter((v) => !isNaN(Number(v)))
       .reduce((acc, curr) => {
         const asNameType = Number.parseInt(curr) as NameType;
         const transform = config.transforms[asNameType];
-        const { input, output } = transform;
-        acc[asNameType] = getNameMapper(input, output);
+        const { output } = transform;
+        acc[asNameType] = getNameMapper(output);
         return acc;
       }, {} as MapperMap);
   }
   transform(name: string, nameType: NameType): string {
     const mapperFn = this.mappers[nameType];
-    const mapped = mapperFn(name as unknown as CasedString<CasingConvention>);
-    return mapped.toString();
+    const mapped = mapperFn(name);
+    const asStr = mapped.toString();
+    if (nameType === NameType.EnumMember) {
+      return formatForEnum(asStr, this.config.transforms[nameType].output);
+    }
+    return asStr;
   }
 }

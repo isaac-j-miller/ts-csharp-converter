@@ -26,9 +26,8 @@ export type NameOutputMapper<T extends CasingConvention> = (
 ) => CasedString<T>;
 
 export type NameMapperFunction<
-  TSource extends CasingConvention = CasingConvention,
   TTarget extends CasingConvention = CasingConvention
-> = (source: CasedString<TSource>) => CasedString<TTarget>;
+> = (source: string) => CasedString<TTarget>;
 
 export enum NameType {
   DeclarationName,
@@ -37,7 +36,6 @@ export enum NameType {
 }
 
 export type NameTypeConfig = {
-  input: CasingConvention;
   output: CasingConvention;
 };
 

@@ -1,7 +1,7 @@
+import { assertNever } from "src/common/util";
 import {
   CasedString,
   CasingConvention,
-  NameInputMapper,
   NameOutputMapper,
   ParsedWord,
 } from "./types";
@@ -127,9 +127,9 @@ export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = (
   return outputWord as unknown as CasedString<CasingConvention.KebabCase>;
 };
 
-function normalizePascalOrCamelCase(str: string): string {
+export function normalize(str: string): string {
   let currentWord = "";
-  const ignoreChars = new Set<string>(["<", " ", ","]);
+  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_"]);
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     const lowerCase = char.toLocaleLowerCase();
@@ -138,32 +138,50 @@ function normalizePascalOrCamelCase(str: string): string {
     }
     currentWord += lowerCase;
   }
-  return currentWord;
+  const replaced = currentWord.replace(/-/g, "_");
+  return replaced;
 }
-
-export const PascalInputMapper: NameInputMapper<CasingConvention.PascalCase> = (
-  str
-) => {
-  const normalized = normalizePascalOrCamelCase(str.toString());
-  return parseNormalized(normalized);
-};
-
-export const CamelInputMapper: NameInputMapper<CasingConvention.CamelCase> = (
-  str
-) => {
-  const normalized = normalizePascalOrCamelCase(str.toString());
-  return parseNormalized(normalized);
-};
-
-export const SnakeInputMapper: NameInputMapper<CasingConvention.SnakeCase> = (
-  str
-) => {
-  return parseNormalized(str.toString());
-};
-
-export const KebabInputMapper: NameInputMapper<CasingConvention.KebabCase> = (
-  str
-) => {
-  const normalized = str.replace(/-/g, "_");
-  return parseNormalized(normalized);
-};
+function isNumberOrLetterOrUnderscore(char: string): boolean {
+  if (char.length !== 1) {
+    throw new Error(`not a char: "${char}"`);
+  }
+  const charCode = char.toUpperCase().charCodeAt(0);
+  const isNumber = charCode >= 48 && charCode <= 57;
+  const isLetter = charCode >= 65 && charCode <= 90;
+  return isNumber || isLetter || char === "_";
+}
+export function formatForEnum(
+  str: string | CasedString<CasingConvention>,
+  casing: CasingConvention
+): string {
+  let word: string = "";
+  let previousCharIsNumberOrLetter: boolean | undefined;
+  for (const char of str) {
+    const charIsNumberOrLetter = isNumberOrLetterOrUnderscore(char);
+    if (charIsNumberOrLetter) {
+      if (
+        previousCharIsNumberOrLetter !== undefined &&
+        !previousCharIsNumberOrLetter
+      ) {
+        switch (casing) {
+          case CasingConvention.CamelCase:
+          case CasingConvention.PascalCase:
+            word += char.toUpperCase();
+            break;
+          case CasingConvention.KebabCase:
+            word += `-${char}`;
+            break;
+          case CasingConvention.SnakeCase:
+            word += `_${char}`;
+            break;
+          default:
+            assertNever(casing);
+        }
+      } else {
+        word += char;
+      }
+    }
+    previousCharIsNumberOrLetter = charIsNumberOrLetter;
+  }
+  return word;
+}
