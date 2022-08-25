@@ -10,7 +10,10 @@ export class Logger implements ILogger {
     }
     const levelKey = LogLevel[level].toLowerCase() as ConsoleLogLevel;
     // eslint-disable-next-line no-console
-    console[levelKey](`${new Date().toISOString()}\t[${this.source}]\t${LogLevel[level]}\t`, ...args);
+    console[levelKey](
+      `${new Date().toISOString()}\t[${this.source}]\t${LogLevel[level]}\t`,
+      ...args
+    );
   }
   debug(...args: any[]) {
     this.log(LogLevel.DEBUG, args);

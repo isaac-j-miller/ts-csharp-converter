@@ -8,27 +8,27 @@ export class LoggerFactory {
   private static getCacheKey(source: string, level: LogLevel) {
     return `${source}.${level}`;
   }
-  private static getLogLevelFromEnv(): LogLevel|undefined {
+  private static getLogLevelFromEnv(): LogLevel | undefined {
     const fromEnv = process.env.LOG_LEVEL;
-    if(fromEnv === undefined) return
+    if (fromEnv === undefined) return;
     const asInt = Number.parseInt(fromEnv, 10);
-    if(!Number.isInteger(asInt)) {
-        const toUppercase = fromEnv.toUpperCase();
-        const levels = ["DEBUG", "INFO", "WARN", "ERROR"];
-        const index = levels.indexOf(toUppercase);
-        if(index === -1) return;
-        return index as LogLevel
+    if (!Number.isInteger(asInt)) {
+      const toUppercase = fromEnv.toUpperCase();
+      const levels = ["DEBUG", "INFO", "WARN", "ERROR"];
+      const index = levels.indexOf(toUppercase);
+      if (index === -1) return;
+      return index as LogLevel;
     }
-    if(asInt >= LogLevel.DEBUG && asInt <= LogLevel.ERROR) {
-        return asInt as LogLevel;
+    if (asInt >= LogLevel.DEBUG && asInt <= LogLevel.ERROR) {
+      return asInt as LogLevel;
     }
-    return
+    return;
   }
   private static getLogLevelFromEnvOrDefault(): LogLevel {
-    return this.getLogLevelFromEnv() ?? LogLevel.INFO
+    return this.getLogLevelFromEnv() ?? LogLevel.INFO;
   }
   static getLogger(source: string, level?: LogLevel): ILogger {
-    level = level ?? this.getLogLevelFromEnvOrDefault()
+    level = level ?? this.getLogLevelFromEnvOrDefault();
     const key = this.getCacheKey(source, level);
     const fromCache = this.cache[key];
     if (fromCache) {

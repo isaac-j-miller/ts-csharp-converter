@@ -123,8 +123,8 @@ export function getIndexAndValueType(
     undefined,
     undefined,
   ];
-  const nodeSymbol = node.getSymbol()
-  const finalSynbol = nodeSymbol ? getFinalSymbol(nodeSymbol).getName() : "<anon>"
+  const nodeSymbol = node.getSymbol();
+  const finalSynbol = nodeSymbol ? getFinalSymbol(nodeSymbol).getName() : "<anon>";
   if (keyItems.length === 1) {
     const toUse = keyItems[0];
     const asTypeParamDec = toUse.asKind(SyntaxKind.TypeParameter);
@@ -141,7 +141,7 @@ export function getIndexAndValueType(
     const toUse = valueItems[0];
     detectedValue[0] = toUse.getType();
     detectedValue[1] = toUse;
-  } else if(valueItems.length>0) {
+  } else if (valueItems.length > 0) {
     logger.warn(`More than one value item detected for ${finalSynbol}:`, valueItems);
   }
   return [detectedIndex, detectedValue];
