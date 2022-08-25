@@ -2,7 +2,7 @@
   "name": "csharp-converter",
   "version": "0.0.1",
   "description": "Convert typescript to C# data classes",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "test": "node node_modules/jest/bin/jest.js",
     "test-inspect": "node --inspect  node_modules/jest/bin/jest.js --no-cache",

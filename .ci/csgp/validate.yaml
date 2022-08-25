@@ -1,0 +1,32 @@
+# Let the trigger be the branch policy
+trigger: none
+pool:
+  name: "linux-01"
+
+steps:
+  - checkout: self
+
+  - task: UseNode@1
+    inputs:
+      version: "16.x"
+
+  - script: packages/build/scripts/install-with-pnpm
+    displayName: "install packages"
+
+  - script: pnpm check-all
+    displayName: "Static type check, prettier, jest, and linting"
+
+  - script: pnpm run-test
+    displayName: "Generate a test C# file"
+
+  - script: mkdir -p ./tmp/tst && cd ./tmp/tst && dotnet new classlib && rm ./Class1.cs
+    displayName: "Generate a csproj"
+
+  - script: mv ./tmp/Output.cs ./tmp/tst/Output.cs
+    displayName: "Move generated C# file"
+
+  - script: cd .tmp/tst && dotnet build
+    displayName: "Dotnet build"
+
+  - script: "pnpm build"
+    displayName: "ensure build works"

@@ -1,0 +1,26 @@
+# Let the trigger be the branch policy
+trigger: none
+pool:
+  name: "linux-01"
+
+steps:
+  - checkout: self
+
+  - task: UseNode@1
+    inputs:
+      version: "16.x"
+
+  - task: CSGP.csgp-pipelines.auth-vault.VaultAuth@0
+    displayName: "Vault - Authentication"
+
+  - script: packages/build/scripts/install-with-pnpm
+    displayName: "install packages"
+
+  - script: pnpm check-all
+    displayName: "Static type check, prettier, jest, and linting"
+
+  - script: "pnpm build"
+    displayName: "build package"
+
+  - script: "yarn publish"
+    displayName: "publish package"
