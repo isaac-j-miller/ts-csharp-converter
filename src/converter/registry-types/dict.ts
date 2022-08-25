@@ -2,12 +2,7 @@ import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
 import { Symbol, Node, Type } from "ts-morph";
 import { NameMapper } from "../name-mapper/mapper";
 import { TypeRegistry } from "../registry";
-import {
-  ISyntheticSymbol,
-  PropertyStringArg,
-  PropertyStringArgs,
-  TypeReference,
-} from "../types";
+import { ISyntheticSymbol, PropertyStringArg, PropertyStringArgs, TypeReference } from "../types";
 import { getGenericTypeName } from "../util";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
@@ -26,19 +21,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     commentString?: string,
     genericParameters?: string[]
   ) {
-    super(
-      registry,
-      "Dictionary",
-      name,
-      sym,
-      internal,
-      !internal,
-      node,
-      type,
-      level,
-      true
-    );
-    this.structure.genericParameters = genericParameters?.map((g) => ({
+    super(registry, "Dictionary", name, sym, internal, !internal, node, type, level, true);
+    this.structure.genericParameters = genericParameters?.map(g => ({
       name: g,
     }));
     this.structure.mappedIndexType = indexType;
@@ -46,10 +30,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     this.structure.commentString = commentString;
     this.baseName = "System.Collections.Generic.Dictionary";
   }
-  private getGenericParamName(
-    defaultRef: TypeReference,
-    override?: PropertyStringArg
-  ): string {
+  private getGenericParamName(defaultRef: TypeReference, override?: PropertyStringArg): string {
     if (!override) {
       return this.resolveAndFormatTypeName(defaultRef);
     }
@@ -84,9 +65,7 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
       return this.getBaseClassName(genericParameterValues);
     }
     const { name } = this.structure;
-    const namesToUse = this.getGenericParametersForPropertyString(
-      genericParameterValues ?? []
-    );
+    const namesToUse = this.getGenericParametersForPropertyString(genericParameterValues ?? []);
     return getGenericTypeName(name, namesToUse);
   }
   getCSharpElement(): CSharpClass {

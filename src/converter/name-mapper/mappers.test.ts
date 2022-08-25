@@ -9,10 +9,7 @@ type Input = {
   };
 };
 
-function runOutputTest<T extends CasingConvention>(
-  convention: T,
-  input: Input
-) {
+function runOutputTest<T extends CasingConvention>(convention: T, input: Input) {
   const key = input.formatted[convention];
   it(`${key} (${CasingConvention[convention]})`, () => {
     const outputMapper = getOutputMapper(convention);
@@ -69,10 +66,7 @@ const inputs: Input[] = [
       {
         base: "generic",
         typeArguments: [
-          [
-            { base: "some" },
-            { base: "generic", typeArguments: [[{ base: "t" }]] },
-          ],
+          [{ base: "some" }, { base: "generic", typeArguments: [[{ base: "t" }]] }],
           [{ base: "v" }],
         ],
       },
@@ -97,14 +91,10 @@ const inputs: Input[] = [
   },
   {
     formatted: {
-      [CasingConvention.CamelCase]:
-        "nestedGenericWitharray<someGeneric<t[]>, v>",
-      [CasingConvention.KebabCase]:
-        "nested-generic-witharray<some-generic<t[]>, v>",
-      [CasingConvention.PascalCase]:
-        "NestedGenericWitharray<SomeGeneric<T[]>, V>",
-      [CasingConvention.SnakeCase]:
-        "nested_generic_witharray<some_generic<t[]>, v>",
+      [CasingConvention.CamelCase]: "nestedGenericWitharray<someGeneric<t[]>, v>",
+      [CasingConvention.KebabCase]: "nested-generic-witharray<some-generic<t[]>, v>",
+      [CasingConvention.PascalCase]: "NestedGenericWitharray<SomeGeneric<T[]>, V>",
+      [CasingConvention.SnakeCase]: "nested_generic_witharray<some_generic<t[]>, v>",
     },
     parsed: [
       {
@@ -132,14 +122,10 @@ const inputs: Input[] = [
   },
   {
     formatted: {
-      [CasingConvention.CamelCase]:
-        "nestedGenericWitharrayWitharray<someGeneric<t[]>, v>[,,]",
-      [CasingConvention.KebabCase]:
-        "nested-generic-witharray-witharray<some-generic<t[]>, v>[,,]",
-      [CasingConvention.PascalCase]:
-        "NestedGenericWitharrayWitharray<SomeGeneric<T[]>, V>[,,]",
-      [CasingConvention.SnakeCase]:
-        "nested_generic_witharray_witharray<some_generic<t[]>, v>[,,]",
+      [CasingConvention.CamelCase]: "nestedGenericWitharrayWitharray<someGeneric<t[]>, v>[,,]",
+      [CasingConvention.KebabCase]: "nested-generic-witharray-witharray<some-generic<t[]>, v>[,,]",
+      [CasingConvention.PascalCase]: "NestedGenericWitharrayWitharray<SomeGeneric<T[]>, V>[,,]",
+      [CasingConvention.SnakeCase]: "nested_generic_witharray_witharray<some_generic<t[]>, v>[,,]",
     },
     parsed: [
       {
@@ -210,10 +196,7 @@ const inputs: Input[] = [
     parsed: [
       {
         base: "map",
-        typeArguments: [
-          [{ base: "string" }],
-          [{ base: "string", arrayPart: "[]" }],
-        ],
+        typeArguments: [[{ base: "string" }], [{ base: "string", arrayPart: "[]" }]],
       },
     ],
   },
@@ -243,21 +226,16 @@ const inputs: Input[] = [
   },
 ];
 
-function runFormattingTests<T extends CasingConvention>(
-  inputs: Input[],
-  convention: T
-) {
-  inputs.forEach((input) => {
+function runFormattingTests<T extends CasingConvention>(inputs: Input[], convention: T) {
+  inputs.forEach(input => {
     runOutputTest(convention, input);
   });
 }
 
 describe("formatters", () => {
   (
-    Object.values(CasingConvention).filter(
-      (k) => typeof k !== "string"
-    ) as CasingConvention[]
-  ).forEach((convention) => {
+    Object.values(CasingConvention).filter(k => typeof k !== "string") as CasingConvention[]
+  ).forEach(convention => {
     describe(CasingConvention[convention], () => {
       runFormattingTests(inputs, convention);
     });
@@ -302,10 +280,8 @@ const formatForEnumTests: FormatForEnumInput = {
     [CasingConvention.KebabCase]: "application-zip",
   },
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
-    [CasingConvention.CamelCase]:
-      "applicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
-    [CasingConvention.PascalCase]:
-      "ApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
+    [CasingConvention.CamelCase]: "applicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
+    [CasingConvention.PascalCase]: "ApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet",
     [CasingConvention.SnakeCase]:
       "application_vnd_openxmlformats_officedocument_spreadsheetml_sheet",
     [CasingConvention.KebabCase]:
@@ -315,20 +291,16 @@ const formatForEnumTests: FormatForEnumInput = {
 
 describe("formatForEnum", () => {
   Object.entries(formatForEnumTests).forEach(([input, formatOutputs]) => {
-    Object.entries(formatOutputs).forEach(
-      ([casingConventionIdx, expectation]) => {
-        const casingConvention = Number.parseInt(
-          casingConventionIdx
-        ) as CasingConvention;
-        it(`${input} (${CasingConvention[casingConvention]})`, () => {
-          const mapper = getOutputMapper(casingConvention);
-          const normalized = normalize(input);
-          const parsed = parseNormalized(normalized);
-          const output = mapper(parsed);
-          const formatted = formatForEnum(output, casingConvention);
-          expect(formatted).toEqual(expectation);
-        });
-      }
-    );
+    Object.entries(formatOutputs).forEach(([casingConventionIdx, expectation]) => {
+      const casingConvention = Number.parseInt(casingConventionIdx) as CasingConvention;
+      it(`${input} (${CasingConvention[casingConvention]})`, () => {
+        const mapper = getOutputMapper(casingConvention);
+        const normalized = normalize(input);
+        const parsed = parseNormalized(normalized);
+        const output = mapper(parsed);
+        const formatted = formatForEnum(output, casingConvention);
+        expect(formatted).toEqual(expectation);
+      });
+    });
   });
 });

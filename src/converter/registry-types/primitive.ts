@@ -1,7 +1,8 @@
 import { CSharpElement } from "src/csharp/elements";
-import { NonPrimitiveType, TypeRegistry } from "../registry";
+import type { TypeRegistry } from "../registry";
 import {
   IRegistryType,
+  NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
   TypeStructure,

@@ -1,6 +1,6 @@
-import { JSDocTagInfo, Symbol, Type, TypeParameter, Node } from "ts-morph";
+import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
 import { assertNever } from "src/common/util";
-import { CSharpPrimitiveType } from "src/csharp/elements";
+import { CSharpPrimitiveType } from "src/csharp/types";
 import {
   BaseTypeReference,
   ConstType,
@@ -14,20 +14,19 @@ import {
   ISyntheticSymbol,
   JsDocNumberType,
   LiteralValue,
+  NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
   PropertyStringArgs,
   TypeReference,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
-import { NonPrimitiveType, TypeRegistry } from "./registry";
+import type { TypeRegistry } from "./registry";
 
 // TODO: make this config-driven
 const DEFAULT_NUMBER_TYPE = "int" as const;
 
-export function toCSharpPrimitive(
-  primitive: PrimitiveTypeName
-): CSharpPrimitiveType {
+export function toCSharpPrimitive(primitive: PrimitiveTypeName): CSharpPrimitiveType {
   switch (primitive) {
     case "Boolean":
     case "boolean":
@@ -115,7 +114,7 @@ export function getJsDocNumberType(
   if (!tags) {
     return;
   }
-  const typeTags = tags.filter((t) => t.getName() === "type");
+  const typeTags = tags.filter(t => t.getName() === "type");
   if (index !== undefined) {
     const tagToUse = typeTags[index];
     if (tagToUse) {
@@ -134,38 +133,22 @@ export function getJsDocNumberType(
   }
   return;
 }
-export function asPrimitiveTypeName(
-  t: Type,
-  tags?: JSDocTagInfo[]
-): PrimitiveTypeName | undefined {
+export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTypeName | undefined {
   const apparentType = t.getApparentType();
   const baseTypeName = apparentType.getBaseTypes()[0]?.getText()?.toLowerCase();
   const apparentTypeName = apparentType.getSymbol()?.getName()?.toLowerCase();
-  const tagsToUse =
-    tags ?? (t.getSymbol() ?? t.getAliasSymbol())?.getJsDocTags();
+  const tagsToUse = tags ?? (t.getSymbol() ?? t.getAliasSymbol())?.getJsDocTags();
   const apparentNumberType = getJsDocNumberType(tagsToUse);
-  if (
-    apparentType.isString() ||
-    baseTypeName === "string" ||
-    apparentTypeName === "string"
-  ) {
+  if (apparentType.isString() || baseTypeName === "string" || apparentTypeName === "string") {
     return "string";
   }
-  if (
-    apparentType.isNumber() ||
-    baseTypeName === "number" ||
-    apparentTypeName === "number"
-  ) {
+  if (apparentType.isNumber() || baseTypeName === "number" || apparentTypeName === "number") {
     if (apparentNumberType) {
       return apparentNumberType;
     }
     return "number";
   }
-  if (
-    apparentType.isBoolean() ||
-    baseTypeName === "boolean" ||
-    apparentTypeName === "boolean"
-  ) {
+  if (apparentType.isBoolean() || baseTypeName === "boolean" || apparentTypeName === "boolean") {
     return "boolean";
   }
   if (baseTypeName === "object" || apparentTypeName === "object") {
@@ -179,7 +162,7 @@ export function asPrimitiveTypeName(
 
 export function literalValueToCSharpLiteralValue(v: LiteralValue): string {
   if (Array.isArray(v)) {
-    const values = v.map((val) => literalValueToCSharpLiteralValue(val));
+    const values = v.map(val => literalValueToCSharpLiteralValue(val));
     return `{ ${values.join(", ")} }`;
   }
   return JSON.stringify(v);
@@ -189,7 +172,7 @@ export function getRefactorName(name: string): string {
   const match = name.match(/\d+$/);
   if (match) {
     const num = match[0];
-    const newNum = Number.parseInt(num) + 1;
+    const newNum = Number.parseInt(num, 10) + 1;
     return name.replace(num, newNum.toString());
   }
   return name + "2";
@@ -229,15 +212,12 @@ export function getGenericParametersFromType(
   const params: PropertyStringArgs = [];
   const genericParameters = type.getAliasTypeArguments();
   if (!typeName) {
-    typeName =
-      (type.getAliasSymbol() ?? type.getSymbol())?.getName() ?? "<anonymous>";
+    typeName = (type.getAliasSymbol() ?? type.getSymbol())?.getName() ?? "<anonymous>";
   }
   genericParameters.forEach((param, i) => {
     const symName = param.getSymbol()?.getName();
     if (symName) {
-      const inParentParams = parentGenericParameters.find(
-        (p) => p.name === symName
-      );
+      const inParentParams = parentGenericParameters.find(p => p.name === symName);
       if (inParentParams) {
         const ref: GenericReference = {
           isGenericReference: true,
@@ -264,15 +244,13 @@ export function getGenericParametersFromType(
     if (!sym) {
       const defaultType = param.getDefault();
       if (!defaultType) {
-        console.warn(
-          `No symbol found for param ${i} of ${typeName} and default value not found`
-        );
+        console.warn(`No symbol found for param ${i} of ${typeName} and default value not found`);
         return;
       }
       const defaultSymbol = getFinalSymbolOfType(defaultType);
       if (!defaultSymbol) {
-        const apparentType = defaultType.getApparentType();
-        const apparentSymbol = getFinalSymbolOfType(apparentType);
+        const defaultApparentType = defaultType.getApparentType();
+        const apparentSymbol = getFinalSymbolOfType(defaultApparentType);
         if (apparentSymbol) {
           sym = apparentSymbol;
         }
@@ -289,9 +267,7 @@ export function getGenericParametersFromType(
     let fromRegistry = registry.getType(sym);
     if (!fromRegistry) {
       const castSym = sym as Symbol;
-      console.warn(
-        `No type found in registry for symbol ${castSym.getName()}, using any`
-      );
+      console.warn(`No type found in registry for symbol ${castSym.getName()}, using any`);
       fromRegistry = registry.getType("any");
     }
     if (fromRegistry.isNonPrimitive()) {
@@ -300,9 +276,7 @@ export function getGenericParametersFromType(
         fromRegistry,
         parentGenericParameters
       );
-      const propString = fromRegistry.getPropertyString(
-        genericParamGenericParameters
-      );
+      const propString = fromRegistry.getPropertyString(genericParamGenericParameters);
       params.push(propString);
     } else {
       params.push(fromRegistry.getPropertyString());
@@ -321,12 +295,7 @@ export function getGenericParameters(
     return [];
   }
   const typeName = registryType.getStructure().name;
-  return getGenericParametersFromType(
-    registry,
-    t,
-    parentGenericParameters,
-    typeName
-  );
+  return getGenericParametersFromType(registry, t, parentGenericParameters, typeName);
 }
 
 export function formatCSharpArrayString(
@@ -343,7 +312,7 @@ export function formatCSharpArrayString(
 export function getComments(node: Node): string | undefined {
   const commentString = node
     ?.getLeadingCommentRanges()
-    .map((c) => c.getText())
+    .map(c => c.getText())
     .join("\n");
   return commentString;
 }

@@ -1,11 +1,7 @@
 import "source-map-support/register";
 import { ArgumentParser } from "argparse";
 import { convertTypescriptToCSharp } from ".";
-import {
-  CasingConvention,
-  NameMapperConfig,
-  NameType,
-} from "./converter/name-mapper";
+import { CasingConvention, NameMapperConfig, NameType } from "./converter/name-mapper";
 import { toCasingConvention } from "./converter/name-mapper/util";
 
 type RunConfigBase = {
@@ -77,25 +73,17 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
     ignoreClasses,
     ...rest
   } = c;
-  const ignoreClassesSet = new Set(
-    ignoreClasses ? ignoreClasses.split(",") : []
-  );
+  const ignoreClassesSet = new Set(ignoreClasses ? ignoreClasses.split(",") : []);
   const nameMapperConfig: NameMapperConfig = {
     transforms: {
       [NameType.DeclarationName]: {
-        output:
-          toCasingConvention(classNameTargetCasing) ??
-          CasingConvention.PascalCase,
+        output: toCasingConvention(classNameTargetCasing) ?? CasingConvention.PascalCase,
       },
       [NameType.PropertyName]: {
-        output:
-          toCasingConvention(propertyNameTargetCasing) ??
-          CasingConvention.PascalCase,
+        output: toCasingConvention(propertyNameTargetCasing) ?? CasingConvention.PascalCase,
       },
       [NameType.EnumMember]: {
-        output:
-          toCasingConvention(enumNameTargetCasing) ??
-          CasingConvention.PascalCase,
+        output: toCasingConvention(enumNameTargetCasing) ?? CasingConvention.PascalCase,
       },
     },
   };

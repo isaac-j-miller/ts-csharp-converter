@@ -52,13 +52,10 @@ export function getIndexAndValueType(
   }
   let inBrackets = false;
   let afterColon = false;
-  let afterInStatement = false;
   let afterSemicolon = false;
   const keyItems: Node[] = [];
   const valueItems: Node[] = [];
-  const declarationDescendantToUse = declaration.getFirstDescendantByKind(
-    SyntaxKind.MappedType
-  );
+  const declarationDescendantToUse = declaration.getFirstDescendantByKind(SyntaxKind.MappedType);
   if (!declarationDescendantToUse) {
     return [
       [undefined, undefined],
@@ -76,7 +73,6 @@ export function getIndexAndValueType(
       case SyntaxKind.CloseBracketToken:
         inBrackets = false;
         afterColon = false;
-        afterInStatement = false;
         break;
       case SyntaxKind.ColonToken:
         afterColon = true;
@@ -117,10 +113,14 @@ export function getIndexAndValueType(
     }
   }
 
-  let detectedIndex: [Type | undefined | PrimitiveTypeName, Node | undefined] =
-    [undefined, undefined];
-  let detectedValue: [Type | undefined | PrimitiveTypeName, Node | undefined] =
-    [undefined, undefined];
+  const detectedIndex: [Type | undefined | PrimitiveTypeName, Node | undefined] = [
+    undefined,
+    undefined,
+  ];
+  const detectedValue: [Type | undefined | PrimitiveTypeName, Node | undefined] = [
+    undefined,
+    undefined,
+  ];
   if (keyItems.length === 1) {
     const toUse = keyItems[0];
     const asTypeParamDec = toUse.asKind(SyntaxKind.TypeParameter);
@@ -128,17 +128,17 @@ export function getIndexAndValueType(
       detectedIndex[0] = asTypeParamDec.getConstraintOrThrow().getType();
       detectedIndex[1] = asTypeParamDec;
     } else {
-      console.warn(`Key item not a type parameter declaration`);
+      console.warn("Key item not a type parameter declaration");
     }
   } else {
-    console.warn(`More than one key item detected`);
+    console.warn("More than one key item detected");
   }
   if (valueItems.length === 1) {
     const toUse = valueItems[0];
     detectedValue[0] = toUse.getType();
     detectedValue[1] = toUse;
   } else {
-    console.warn(`More than one value item detected`);
+    console.warn("More than one value item detected");
   }
   return [detectedIndex, detectedValue];
 }

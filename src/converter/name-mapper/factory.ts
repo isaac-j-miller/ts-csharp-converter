@@ -7,16 +7,9 @@ import {
   normalize,
   parseNormalized,
 } from "./mappers";
-import {
-  CasedString,
-  CasingConvention,
-  NameOutputMapper,
-  NameMapperFunction,
-} from "./types";
+import { CasedString, CasingConvention, NameOutputMapper, NameMapperFunction } from "./types";
 
-export function getOutputMapper<T extends CasingConvention>(
-  target: T
-): NameOutputMapper<T> {
+export function getOutputMapper<T extends CasingConvention>(target: T): NameOutputMapper<T> {
   switch (target) {
     case CasingConvention.SnakeCase:
       return SnakeOutputMapper as NameOutputMapper<T>;

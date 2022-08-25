@@ -1,9 +1,6 @@
 import { TAB_WIDTH } from "./types";
 
-export function formatCommentString(
-  commentString: string | undefined,
-  indent: number
-): string {
+export function formatCommentString(commentString: string | undefined, indent: number): string {
   if (!commentString) {
     return "";
   }
@@ -12,7 +9,7 @@ export function formatCommentString(
   return (
     commentString
       .split("\n")
-      .map((line) => {
+      .map(line => {
         let trimmed = line.trim();
         const startsWithBeginMultilineComment = trimmed.startsWith("/*");
         const startsWithEndMultilineComment = trimmed.match(/^\*+\//);
@@ -22,18 +19,11 @@ export function formatCommentString(
           if (startsWithEndMultilineComment) {
             inComment = false;
           }
-        } else if (
-          startsWithBeginMultilineComment &&
-          !endsWithEndMultilineComment
-        ) {
+        } else if (startsWithBeginMultilineComment && !endsWithEndMultilineComment) {
           inComment = true;
         }
 
-        if (
-          !inComment &&
-          !startsWithSingleLineComment &&
-          !startsWithEndMultilineComment
-        ) {
+        if (!inComment && !startsWithSingleLineComment && !startsWithEndMultilineComment) {
           trimmed = "// " + trimmed;
         }
         return indentString + trimmed;

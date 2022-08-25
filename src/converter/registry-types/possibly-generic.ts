@@ -15,9 +15,7 @@ import {
 import { formatCSharpArrayString, resolveTypeName } from "../util";
 import { RegistryType } from "./base";
 
-export abstract class TypeRegistryPossiblyGenericType<
-  T extends TokenType
-> extends RegistryType<T> {
+export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> extends RegistryType<T> {
   constructor(
     registry: TypeRegistry,
     tokenType: T,
@@ -36,16 +34,7 @@ export abstract class TypeRegistryPossiblyGenericType<
       properties: {},
       genericParameters: [],
     };
-    super(
-      registry,
-      structure,
-      sym,
-      shouldBeRendered,
-      internal,
-      type,
-      level,
-      !!isMappedType
-    );
+    super(registry, structure, sym, shouldBeRendered, internal, type, level, !!isMappedType);
   }
   addGenericParameter(p: GenericParameter) {
     if (!this.structure.genericParameters) {
@@ -57,26 +46,19 @@ export abstract class TypeRegistryPossiblyGenericType<
   private getGenericParametersOfProperty(propName: string): TypeReference[] {
     const property = (this.structure.properties ?? {})[propName];
     if (!property) {
-      throw new Error(
-        `Property ${propName} does not exist on ${this.structure.name}`
-      );
+      throw new Error(`Property ${propName} does not exist on ${this.structure.name}`);
     }
     const { genericParameters } = property;
     const givenGenericParams = genericParameters ?? [];
     return givenGenericParams;
   }
-  protected propertySymbolToString(
-    propName: string,
-    baseType: BaseTypeReference
-  ): string {
+  protected propertySymbolToString(propName: string, baseType: BaseTypeReference): string {
     if (isGenericReference(baseType)) {
       return baseType.genericParamName;
     }
     const fromRegistry = this.registry.getType(baseType);
     if (!fromRegistry) {
-      throw new Error(
-        `Unable to find symbol for ${this.structure.name}.${propName}`
-      );
+      throw new Error(`Unable to find symbol for ${this.structure.name}.${propName}`);
     }
     const genericParameters = this.getGenericParametersOfProperty(propName);
     return fromRegistry.getPropertyString(genericParameters);
@@ -85,9 +67,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     const genericParams = this.structure.genericParameters ?? [];
     return genericParams.reduce((acc, param) => {
       acc[param.name] = {
-        constraint: param?.constraint
-          ? this.resolveAndFormatTypeName(param.constraint)
-          : undefined,
+        constraint: param?.constraint ? this.resolveAndFormatTypeName(param.constraint) : undefined,
       };
       return acc;
     }, {} as Record<string, GenericParam>);
@@ -101,9 +81,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     );
     return formatCSharpArrayString(resolved, t.isArray, t.arrayDepth);
   }
-  protected getGenericParametersForPropertyString(
-    givenValues: PropertyStringArgs
-  ): string[] {
+  protected getGenericParametersForPropertyString(givenValues: PropertyStringArgs): string[] {
     const { name } = this.structure;
     const genericParameters = this.structure.genericParameters ?? [];
     const namesToUse: string[] = [];

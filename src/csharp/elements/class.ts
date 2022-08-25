@@ -72,11 +72,7 @@ export class CSharpClass extends CSharpElement {
     }
     return serialized;
   }
-  protected serializeDeclaration(
-    mapper: NameMapper,
-    indentation: number,
-    addNewline: boolean
-  ) {
+  protected serializeDeclaration(mapper: NameMapper, indentation: number, addNewline: boolean) {
     const indentString = getIndentString(indentation);
     let serialized = indentString + "public ";
     // if (this.isPublic) {
@@ -92,9 +88,7 @@ export class CSharpClass extends CSharpElement {
     }
     const name = mapper.transform(this.name, NameType.DeclarationName);
     serialized += `class ${name} ${
-      this.inheritsFrom
-        ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
-        : ""
+      this.inheritsFrom ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} ` : ""
     }{${addNewline ? "\n" : ""}`;
     return serialized;
   }
@@ -102,9 +96,7 @@ export class CSharpClass extends CSharpElement {
     const propertyIndent = indentation ?? 0;
     let serialized = "";
     const properties = this.properties
-      .map((property) =>
-        this.serializeProperty(mapper, property, propertyIndent)
-      )
+      .map(property => this.serializeProperty(mapper, property, propertyIndent))
       .join("\n");
     // chain nullable annotations contexts
     const propertyLines = properties.split("\n");
@@ -115,10 +107,8 @@ export class CSharpClass extends CSharpElement {
       const nextLineTrimmed = propertyLines[i + 1]?.trim();
       const previousLineTrimmed = previousLine?.trim();
       if (
-        (trimmed === "#nullable disable" &&
-          nextLineTrimmed === "#nullable enable") ||
-        (previousLineTrimmed === "#nullable disable" &&
-          trimmed === "#nullable enable")
+        (trimmed === "#nullable disable" && nextLineTrimmed === "#nullable enable") ||
+        (previousLineTrimmed === "#nullable disable" && trimmed === "#nullable enable")
       ) {
         return;
       }
@@ -135,14 +125,14 @@ export class CSharpClass extends CSharpElement {
       NameType.DeclarationName
     )}(${this.constructorArgs
       .map(
-        (a) =>
-          `${mapper.transform(
-            a.type,
-            NameType.DeclarationName
-          )} ${mapper.transform(a.name, NameType.PropertyName)}`
+        a =>
+          `${mapper.transform(a.type, NameType.DeclarationName)} ${mapper.transform(
+            a.name,
+            NameType.PropertyName
+          )}`
       )
       .join(", ")}) : base(${this.baseClassArgs
-      .map((a) => mapper.transform(a, NameType.PropertyName))
+      .map(a => mapper.transform(a, NameType.PropertyName))
       .join(", ")}) { }\n`;
     return serialized;
   }

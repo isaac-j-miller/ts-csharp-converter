@@ -1,8 +1,10 @@
 import { Symbol, Type } from "ts-morph";
-import { CSharpElement } from "src/csharp/elements";
-import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
-import { NonPrimitiveType } from "./registry";
+import { ICSharpElement } from "src/csharp/elements/types";
+import type { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { primitiveTypeNames, jsDocNumberTypes, CONSTS_KEYWORD } from "./consts";
 
+export type ConstKeyword = typeof CONSTS_KEYWORD;
+export type NonPrimitiveType = Exclude<TokenType, "Primitive" | "Const">;
 export type TokenType =
   | "Type"
   | "StringUnion"
@@ -12,32 +14,9 @@ export type TokenType =
   | "Tuple"
   | "Instance";
 
-const primitiveTypeNames = [
-  "string",
-  "String",
-  "number",
-  "Number",
-  "float",
-  "int",
-  "boolean",
-  "Boolean",
-  "object",
-  "any",
-  "undefined",
-  "null",
-  "unknown",
-] as const;
 export type PrimitiveTypeName = typeof primitiveTypeNames[number];
 
-export type LiteralValue =
-  | string
-  | boolean
-  | number
-  | undefined
-  | null
-  | LiteralValue[];
-
-export const jsDocNumberTypes = ["int", "float"] as const;
+export type LiteralValue = string | boolean | number | undefined | null | LiteralValue[];
 export type JsDocNumberType = typeof jsDocNumberTypes[number];
 
 export type UnionMember = {
@@ -115,9 +94,7 @@ export interface ISyntheticSymbol {
   id: string;
   isSynthetic: true;
 }
-export type UnderlyingType<T extends TokenType> = T extends
-  | "Primitive"
-  | "Const"
+export type UnderlyingType<T extends TokenType> = T extends "Primitive" | "Const"
   ? undefined
   : Type;
 export interface IRegistryType<T extends TokenType = TokenType> {
@@ -131,7 +108,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   getHash(): string;
   getPropertyString(genericParameterValues?: PropertyStringArgs): string;
   getSymbol(): Exclude<BaseTypeReference, GenericReference>;
-  getCSharpElement(): CSharpElement;
+  getCSharpElement(): ICSharpElement;
   getType(): UnderlyingType<T>;
   rename(name: string): void;
   getOriginalName(): string;

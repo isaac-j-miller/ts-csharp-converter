@@ -1,5 +1,5 @@
 import { Node, Symbol, Type } from "ts-morph";
-import { getJSDocTags, SyntaxKind } from "typescript";
+import { SyntaxKind } from "typescript";
 import { getIndexAndValueType } from "./mapped-type";
 import { TypeRegistry } from "./registry";
 import {
@@ -55,10 +55,7 @@ type GenericConstraintOrDefaultOptions = {
 
 const MAX_DEPTH = 50;
 
-function getPropertyOptions(
-  parentNode: Node,
-  propertySymbol: Symbol
-): PropertyInfo {
+function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyInfo {
   const propertyName = propertySymbol.getName();
   const isOptional = propertySymbol.isOptional();
   const dec = propertySymbol.getDeclarations()[0];
@@ -69,10 +66,7 @@ function getPropertyOptions(
   const symbol = baseType.getSymbol();
   const arrayDepth = isArray ? getArrayDepth(type) : 0;
   const tags = propertySymbol.getJsDocTags();
-  const primitiveType = asPrimitiveTypeName(baseType, [
-    ...(symbol?.getJsDocTags() ?? []),
-    ...tags,
-  ]);
+  const primitiveType = asPrimitiveTypeName(baseType, [...(symbol?.getJsDocTags() ?? []), ...tags]);
   const options: PropertyOptions = {
     isArray,
     isOptional,
@@ -87,9 +81,7 @@ function getPropertyOptions(
     options,
   };
 }
-function getGenericConstraintOrDefaultOptions(
-  type: Type
-): GenericConstraintOrDefaultOptions {
+function getGenericConstraintOrDefaultOptions(type: Type): GenericConstraintOrDefaultOptions {
   const baseType = getFinalArrayType(type);
   const symbol = getFinalSymbolOfType(type);
   const primitiveType = asPrimitiveTypeName(baseType);
@@ -101,10 +93,7 @@ function getGenericConstraintOrDefaultOptions(
 }
 
 export class TypeFactory {
-  constructor(
-    private registry: TypeRegistry,
-    private ignoreClasses: Set<string>
-  ) {}
+  constructor(private registry: TypeRegistry, private ignoreClasses: Set<string>) {}
   private createPrimitiveType(options: TypeOptions): IRegistryType | undefined {
     const { type } = options;
     const typeAsPrimitive = asPrimitiveTypeName(type);
@@ -113,31 +102,23 @@ export class TypeFactory {
     }
     return;
   }
-  private createUnionTypeFromUnion(
-    options: TypeOptions
-  ): IRegistryType | undefined {
+  private createUnionTypeFromUnion(options: TypeOptions): IRegistryType | undefined {
     const { name, node, type, internal } = options;
     if (type.isEnum() || !type.isUnion()) {
       return;
     }
     const symbolToUse = createSymbol(name, type);
     const unionTypes = type.getUnionTypes();
-    const nonUndefinedUnionTypes = unionTypes.filter(
-      (u) => !u.isUndefined() && !u.isNull()
-    );
-    if (
-      nonUndefinedUnionTypes.every((unionType) => unionType.isStringLiteral())
-    ) {
+    const nonUndefinedUnionTypes = unionTypes.filter(u => !u.isUndefined() && !u.isNull());
+    if (nonUndefinedUnionTypes.every(unionType => unionType.isStringLiteral())) {
       const members = nonUndefinedUnionTypes.map(
-        (member) =>
-          member.getLiteralValue() ??
-          member.getApparentType().getLiteralValueOrThrow()
+        member => member.getLiteralValue() ?? member.getApparentType().getLiteralValueOrThrow()
       );
       const unionRegType = new TypeRegistryUnionType(
         this.registry,
         name,
         symbolToUse,
-        members.map((member) => ({ name: member.toString() })),
+        members.map(member => ({ name: member.toString() })),
         internal,
         type,
         options.level,
@@ -155,21 +136,17 @@ export class TypeFactory {
         level: options.level,
       });
     }
-    if (
-      nonUndefinedUnionTypes.every((unionType) => unionType.isEnumLiteral())
-    ) {
+    if (nonUndefinedUnionTypes.every(unionType => unionType.isEnumLiteral())) {
       return this.createUnionTypeFromEnum(options, true);
     }
     if (
-      nonUndefinedUnionTypes.every(
-        (unionType) => unionType.isNumberLiteral() || unionType.isNumber()
-      )
+      nonUndefinedUnionTypes.every(unionType => unionType.isNumberLiteral() || unionType.isNumber())
     ) {
       const tags = symbolToUse.getUnderlyingSymbol()?.getJsDocTags();
       const apparentNumberType = getJsDocNumberType(tags);
       return this.registry.getType(apparentNumberType ?? "number");
     }
-    if (nonUndefinedUnionTypes.every((unionType) => unionType.isString())) {
+    if (nonUndefinedUnionTypes.every(unionType => unionType.isString())) {
       return this.registry.getType("string");
     }
     return this.registry.getType("object");
@@ -187,8 +164,7 @@ export class TypeFactory {
     let previousValue = -1;
     const members = unionTypes
       .map((u): UnionMember | undefined => {
-        const memberName =
-          u.getSymbol()?.getName() ?? u.getAliasSymbol()?.getName();
+        const memberName = u.getSymbol()?.getName() ?? u.getAliasSymbol()?.getName();
         if (!memberName) {
           previousValue++;
           return;
@@ -203,7 +179,7 @@ export class TypeFactory {
           value: valueToUse,
         };
       })
-      .filter((u) => u !== undefined) as UnionMember[];
+      .filter(u => u !== undefined) as UnionMember[];
     return new TypeRegistryUnionType(
       this.registry,
       name,
@@ -245,10 +221,10 @@ export class TypeFactory {
           elem,
           tuple.getStructure().genericParameters ?? []
         );
-        genericParams.forEach((g) => tuple.addGenericParameterToMember(i, g));
+        genericParams.forEach(g => tuple.addGenericParameterToMember(i, g));
       }
     });
-    type.getAliasTypeArguments().forEach((alias) => {
+    type.getAliasTypeArguments().forEach(alias => {
       this.addGenericParameter(tuple, options, alias);
     });
     return tuple;
@@ -271,8 +247,7 @@ export class TypeFactory {
     const isArray = type.isArray();
     const typeToUse = getFinalArrayType(type);
     const arrayDepth = getArrayDepth(type);
-    const symbolToUse =
-      symbol ?? typeToUse.getSymbol() ?? typeToUse.getAliasSymbol();
+    const symbolToUse = symbol ?? typeToUse.getSymbol() ?? typeToUse.getAliasSymbol();
     const tags = symbolToUse?.getJsDocTags();
     const asPrimitive = asPrimitiveTypeName(typeToUse, tags);
     if (asPrimitive) {
@@ -284,9 +259,9 @@ export class TypeFactory {
       };
     }
     if (!symbolToUse) {
-      const asPrimitive = this.registry.getType("object").getSymbol();
+      const objectRegistryType = this.registry.getType("object").getSymbol();
       return {
-        ref: asPrimitive,
+        ref: objectRegistryType,
         isArray,
         arrayDepth,
       };
@@ -301,20 +276,9 @@ export class TypeFactory {
         arrayDepth,
       };
     }
-    const regType = this.getFromRegistryOrCreateAnon(
-      node,
-      typeToUse,
-      name,
-      level,
-      symbolToUse
-    );
+    const regType = this.getFromRegistryOrCreateAnon(node, typeToUse, name, level, symbolToUse);
     // TODO: figure out how to get parent generic params
-    const genericParameters = getGenericParametersFromType(
-      this.registry,
-      typeToUse,
-      [],
-      name
-    );
+    const genericParameters = getGenericParametersFromType(this.registry, typeToUse, [], name);
     const sym = regType.getSymbol();
     return {
       ref: sym,
@@ -328,14 +292,11 @@ export class TypeFactory {
     const asMappedType = node.asKind(SyntaxKind.MappedType);
     let originalValueType: Type | undefined;
     let originalIndexType: Type | undefined;
-    const getIndexAndValueTypeRefs = ():
-      | [TypeReference, TypeReference]
-      | undefined => {
+    const getIndexAndValueTypeRefs = (): [TypeReference, TypeReference] | undefined => {
       const stringIndexType = type.getStringIndexType();
       const numberIndexType = type.getNumberIndexType();
       if ((!stringIndexType && !numberIndexType) || asMappedType) {
-        const [[index, indexNode], [value, valueNode]] =
-          getIndexAndValueType(node);
+        const [[index, indexNode], [value, valueNode]] = getIndexAndValueType(node);
         if (index && value && indexNode && valueNode) {
           const indexTypeRef = this.getReferenceOrGetFromRegistry(
             indexNode,
@@ -407,7 +368,7 @@ export class TypeFactory {
       level,
       getComments(node)
     );
-    type.getAliasTypeArguments().forEach((alias) => {
+    type.getAliasTypeArguments().forEach(alias => {
       this.addGenericParameter(mappedType, options, alias);
     });
     if (!isGenericReference(indexType.ref) && originalIndexType) {
@@ -416,7 +377,7 @@ export class TypeFactory {
         originalIndexType,
         mappedType.getStructure().genericParameters ?? []
       );
-      genericParams.forEach((g) => mappedType.addGenericParameterToIndex(g));
+      genericParams.forEach(g => mappedType.addGenericParameterToIndex(g));
     }
     if (!isGenericReference(valueType.ref) && originalValueType) {
       const genericParams = getGenericParametersFromType(
@@ -424,7 +385,7 @@ export class TypeFactory {
         originalValueType,
         mappedType.getStructure().genericParameters ?? []
       );
-      genericParams.forEach((g) => mappedType.addGenericParameterToValue(g));
+      genericParams.forEach(g => mappedType.addGenericParameterToValue(g));
     }
     return mappedType;
   }
@@ -463,7 +424,7 @@ export class TypeFactory {
       console.warn("will fail on next iteration if recursion continues");
     }
     if (level >= MAX_DEPTH) {
-      throw new Error(`Recursion depth exceeded.`);
+      throw new Error("Recursion depth exceeded.");
     }
 
     const fromRegistry = getType();
@@ -475,12 +436,7 @@ export class TypeFactory {
     propertyInfo: PropertyInfo
   ): IRegistryType {
     const { node, name, level } = parentOptions;
-    const {
-      propertyName,
-      options,
-      baseType,
-      symbol: propertyTypeSymbol,
-    } = propertyInfo;
+    const { propertyName, options, baseType, symbol: propertyTypeSymbol } = propertyInfo;
     const { isArray } = options;
     const internalClassName = `${name}${propertyName}Class`;
     const nodeToUse = (
@@ -513,12 +469,8 @@ export class TypeFactory {
       if (regType.getLevel() <= level) {
         const baseTypeSym = getFinalSymbolOfType(baseType);
         if (baseTypeSym && this.registry.has(baseTypeSym)) {
-          baseType.getAliasTypeArguments().forEach((t) => {
-            const param = this.getGenericParameter(
-              parentType,
-              parentOptions,
-              t
-            );
+          baseType.getAliasTypeArguments().forEach(t => {
+            const param = this.getGenericParameter(parentType, parentOptions, t);
             if (!param) {
               return;
             }
@@ -529,15 +481,13 @@ export class TypeFactory {
           });
         }
       } else {
-        regType.getStructure().genericParameters?.forEach((g) => {
+        regType.getStructure().genericParameters?.forEach(g => {
           const fromParent = parentType
             .getStructure()
-            .genericParameters?.find((p) => p.name === g.name);
+            .genericParameters?.find(p => p.name === g.name);
           if (fromParent) {
-            const {
-              isArray: paramIsArray = false,
-              arrayDepth: paramArrayDepth = 0,
-            } = g.apparent ?? g.default ?? {};
+            const { isArray: paramIsArray = false, arrayDepth: paramArrayDepth = 0 } =
+              g.apparent ?? g.default ?? {};
             genericParameters.push({
               ref: {
                 isGenericReference: true,
@@ -576,11 +526,7 @@ export class TypeFactory {
         parentType.getApparentType().getNonNullableType().getText();
 
       if (isRecursive) {
-        registryType.addProperty(
-          propertyName,
-          registryType.getSymbol(),
-          options
-        );
+        registryType.addProperty(propertyName, registryType.getSymbol(), options);
         return;
       }
       if (baseType.isTypeParameter()) {
@@ -595,9 +541,7 @@ export class TypeFactory {
         );
       }
       if (primitiveType) {
-        const primitiveSymbol = this.registry
-          .getType(primitiveType)
-          .getSymbol();
+        const primitiveSymbol = this.registry.getType(primitiveType).getSymbol();
         return registryType.addProperty(propertyName, primitiveSymbol, options);
       }
       const propertyTypeFromRegistry = this.getPropertyTypeFromRegistry(
@@ -608,11 +552,7 @@ export class TypeFactory {
       if (isFnSignature) {
         options.isOptional = true;
       }
-      registryType.addProperty(
-        propertyName,
-        propertyTypeFromRegistry.getSymbol(),
-        options
-      );
+      registryType.addProperty(propertyName, propertyTypeFromRegistry.getSymbol(), options);
       if (isFnSignature) {
         registryType.addCommentStringToProperty(
           propertyName,
@@ -662,9 +602,7 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     parameterType: Type
   ): GenericParameter | undefined {
-    const v = (
-      parameterType.getSymbol() ?? parameterType.getAliasSymbol()
-    )?.getName();
+    const v = (parameterType.getSymbol() ?? parameterType.getAliasSymbol())?.getName();
     if (!v) {
       return;
     }
@@ -677,9 +615,7 @@ export class TypeFactory {
     const sym = parameterType.getSymbol();
     const fromParentGenericParams =
       sym &&
-      parentRegistryType
-        .getStructure()
-        .genericParameters?.find((p) => p.name === sym.getName());
+      parentRegistryType.getStructure().genericParameters?.find(p => p.name === sym.getName());
     if (fromParentGenericParams) {
       const genericRef: GenericReference = {
         isGenericReference: true,
@@ -693,8 +629,7 @@ export class TypeFactory {
     } else {
       const apparentType = parameterType.getApparentType();
       const apparentSym = getFinalSymbolOfType(apparentType);
-      const typeFromRegistry =
-        apparentSym && this.registry.getType(apparentSym);
+      const typeFromRegistry = apparentSym && this.registry.getType(apparentSym);
       if (typeFromRegistry) {
         apparent = {
           ref: typeFromRegistry.getSymbol(),
@@ -734,21 +669,14 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     parameterType: Type
   ) {
-    const p = this.getGenericParameter(
-      registryType,
-      parentOptions,
-      parameterType
-    );
+    const p = this.getGenericParameter(registryType, parentOptions, parameterType);
     if (p && p.name !== "__type") {
       registryType.addGenericParameter(p);
     }
   }
   private handleFunction(options: TypeOptions): IRegistryType | undefined {
     const { name, type } = options;
-    if (
-      type.getCallSignatures().length ||
-      type.getConstructSignatures().length
-    ) {
+    if (type.getCallSignatures().length || type.getConstructSignatures().length) {
       console.warn(
         `Type ${name} has call signatures. I can't handle function types at the moment, so "any" will be used instead`
       );
@@ -772,11 +700,11 @@ export class TypeFactory {
       level,
       getComments(node)
     );
-    type.getAliasTypeArguments().forEach((alias) => {
+    type.getAliasTypeArguments().forEach(alias => {
       this.addGenericParameter(regType, options, alias);
     });
     const propertySignatures = type.getApparentProperties();
-    propertySignatures.forEach((property) =>
+    propertySignatures.forEach(property =>
       this.handlePropertySignature(regType, options, property)
     );
     return regType;
@@ -785,8 +713,7 @@ export class TypeFactory {
     const apparentType = options.type.getApparentType();
     const symbol = apparentType.getAliasSymbol() ?? apparentType.getSymbol();
     const symName = symbol?.getName();
-    const nameToCheck =
-      !!symName && symName !== "__type" ? symName : options.name;
+    const nameToCheck = !!symName && symName !== "__type" ? symName : options.name;
     if (this.ignoreClasses.has(nameToCheck)) {
       console.info(
         `type ${nameToCheck} (given name: ${options.name} is in the list of classes to ignore, returning an object type`

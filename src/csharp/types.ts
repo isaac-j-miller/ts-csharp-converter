@@ -1,3 +1,5 @@
+import { cSharpPrimitives } from "./elements/consts";
+
 export type GenericParam = {
   constraint?: string;
 };
@@ -16,14 +18,6 @@ export type PropertyValue = {
 export type CSharpElementKind = "class" | "enum" | "namespace" | "struct";
 
 export type CSharpAccessLevel = "private" | "protected" | "public";
-export const cSharpPrimitives = [
-  "string",
-  "double",
-  "bool",
-  "object",
-  "int",
-  "null",
-] as const;
 export type CSharpPrimitiveType = typeof cSharpPrimitives[number];
 
 export type CSharpProperty = {

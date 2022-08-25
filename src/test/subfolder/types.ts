@@ -18,9 +18,7 @@ export type GenericWithConstraints2<T extends Foo> = {
   foo: T;
 };
 
-export type GenericWithConstraints3<
-  T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-> = {
+export type GenericWithConstraints3<T extends 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9> = {
   digit: T;
 };
 export type GenericWithConstraints4<T extends ZZZ> = {

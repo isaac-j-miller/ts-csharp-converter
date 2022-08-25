@@ -1,9 +1,5 @@
 import { AstTraverser } from "src/ast";
-import {
-  CasingConvention,
-  NameMapper,
-  NameType,
-} from "src/converter/name-mapper";
+import { CasingConvention, NameMapper, NameType } from "src/converter/name-mapper";
 
 describe("snapshot", () => {
   it("works", () => {
@@ -24,12 +20,7 @@ describe("snapshot", () => {
       },
     };
     const mapper = new NameMapper(config);
-    const traverser = new AstTraverser(
-      "./src/test/index.ts",
-      "./tsconfig.json",
-      false,
-      new Set()
-    );
+    const traverser = new AstTraverser("./src/test/index.ts", "./tsconfig.json", false, new Set());
     traverser.traverse();
     const ns = traverser.createNamespace("TestNamespace");
     const str = ns.serialize(mapper);

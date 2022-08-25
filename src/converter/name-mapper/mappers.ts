@@ -1,11 +1,6 @@
-import { assertNever } from "src/common/util";
-import {
-  CasedString,
-  CasingConvention,
-  NameOutputMapper,
-  ParsedWord,
-} from "./types";
-import { capitalize, isCSharpPrimitive } from "./util";
+import { assertNever, capitalize } from "src/common/util";
+import { CasedString, CasingConvention, NameOutputMapper, ParsedWord } from "./types";
+import { isCSharpPrimitive } from "./util";
 
 export function parseNormalized(word: string): ParsedWord[] {
   const basicWords: string[] = [];
@@ -30,7 +25,7 @@ export function parseNormalized(word: string): ParsedWord[] {
     basicWords.push(currentWord);
     currentWord = "";
   }
-  const parsedWords = basicWords.map((basicWord) => {
+  const parsedWords = basicWords.map(basicWord => {
     let baseWord = basicWord;
     let arrayPart: string | undefined;
     let typeArguments: ParsedWord[][] | undefined;
@@ -46,7 +41,7 @@ export function parseNormalized(word: string): ParsedWord[] {
       baseWord = baseWord.slice(0, genericStart);
       const lastAngleBracketIdx = genericPart.lastIndexOf(">");
       const genericPartToUse = genericPart.slice(1, lastAngleBracketIdx);
-      typeArguments = genericPartToUse.split(", ").map((s) => {
+      typeArguments = genericPartToUse.split(", ").map(s => {
         const trimmed = s.trim();
         return parseNormalized(trimmed);
       });
@@ -71,15 +66,13 @@ function format<T extends CasingConvention>(
   arrayPart: string | undefined,
   mapper: NameOutputMapper<T>
 ): string {
-  const newTypeArgs = (typeArgs ?? []).map((t) => mapper(t));
+  const newTypeArgs = (typeArgs ?? []).map(t => mapper(t));
   const typeSection = newTypeArgs.length ? `<${newTypeArgs.join(", ")}>` : "";
   const formattedWord = `${base}${typeSection}${arrayPart ?? ""}`;
   return formattedWord;
 }
 
-export const PascalOutputMapper: NameOutputMapper<
-  CasingConvention.PascalCase
-> = (words) => {
+export const PascalOutputMapper: NameOutputMapper<CasingConvention.PascalCase> = words => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
@@ -91,9 +84,7 @@ export const PascalOutputMapper: NameOutputMapper<
   return outputWord as unknown as CasedString<CasingConvention.PascalCase>;
 };
 
-export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
-  words
-) => {
+export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = words => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
@@ -105,10 +96,8 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
   return outputWord as unknown as CasedString<CasingConvention.CamelCase>;
 };
 
-export const SnakeOutputMapper: NameOutputMapper<CasingConvention.SnakeCase> = (
-  words
-) => {
-  const formattedWords = words.map((word) => {
+export const SnakeOutputMapper: NameOutputMapper<CasingConvention.SnakeCase> = words => {
+  const formattedWords = words.map(word => {
     const { base, typeArguments, arrayPart } = word;
     return format(base, typeArguments, arrayPart, SnakeOutputMapper);
   });
@@ -116,10 +105,8 @@ export const SnakeOutputMapper: NameOutputMapper<CasingConvention.SnakeCase> = (
   return outputWord as unknown as CasedString<CasingConvention.SnakeCase>;
 };
 
-export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = (
-  words
-) => {
-  const formattedWords = words.map((word) => {
+export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = words => {
+  const formattedWords = words.map(word => {
     const { base, typeArguments, arrayPart } = word;
     return format(base, typeArguments, arrayPart, KebabOutputMapper);
   });
@@ -159,10 +146,7 @@ export function formatForEnum(
   for (const char of str) {
     const charIsNumberOrLetter = isNumberOrLetterOrUnderscore(char);
     if (charIsNumberOrLetter) {
-      if (
-        previousCharIsNumberOrLetter !== undefined &&
-        !previousCharIsNumberOrLetter
-      ) {
+      if (previousCharIsNumberOrLetter !== undefined && !previousCharIsNumberOrLetter) {
         switch (casing) {
           case CasingConvention.CamelCase:
           case CasingConvention.PascalCase:

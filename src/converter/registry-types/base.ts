@@ -8,6 +8,7 @@ import {
   isGenericReference,
   isPrimitiveType,
   ISyntheticSymbol,
+  NonPrimitiveType,
   PrimitiveType,
   PropertyStructure,
   TokenType,
@@ -15,24 +16,17 @@ import {
   TypeStructure,
   UnderlyingType,
 } from "../types";
-import { NonPrimitiveType, TypeRegistry } from "../registry";
-import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { NameMapper } from "../name-mapper/mapper";
+import type { TypeRegistry } from "../registry";
+import type { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
-export abstract class RegistryType<T extends TokenType>
-  implements IRegistryType<T>
-{
+export abstract class RegistryType<T extends TokenType> implements IRegistryType<T> {
   private readonly originalName: string;
   public readonly tokenType: T;
   protected mappedTypeNode?: MappedTypeNode;
   constructor(
     protected registry: TypeRegistry,
     protected structure: TypeStructure<T>,
-    private readonly symbol:
-      | Symbol
-      | PrimitiveType
-      | ISyntheticSymbol
-      | ConstType,
+    private readonly symbol: Symbol | PrimitiveType | ISyntheticSymbol | ConstType,
     public readonly shouldBeRendered: boolean,
     protected readonly internal: boolean,
     protected readonly type: UnderlyingType<T>,
@@ -87,7 +81,7 @@ export abstract class RegistryType<T extends TokenType>
   }
   private hashGenericParameters(property: PropertyStructure): string {
     const hashes: string[] = [];
-    property.genericParameters?.forEach((g) => {
+    property.genericParameters?.forEach(g => {
       let gName: string;
       if (isGenericReference(g.ref)) {
         gName = g.ref.genericParamName;
@@ -102,9 +96,7 @@ export abstract class RegistryType<T extends TokenType>
         }
         gName = fromRegistry.getStructure().name;
       }
-      const foundGenericParam = this.structure.genericParameters?.find(
-        (p) => p.name === gName
-      );
+      const foundGenericParam = this.structure.genericParameters?.find(p => p.name === gName);
       hashes.push(g + "." + this.hash(foundGenericParam));
     });
     return hashes.join(":");
@@ -117,9 +109,7 @@ export abstract class RegistryType<T extends TokenType>
       arrayDepth: arrayDepth ?? 0,
     };
     const baseTypeHash = this.hashTypeRef(typeRef);
-    return `${baseTypeHash}#${isOptional}#${isArray}#${this.hashGenericParameters(
-      property
-    )}`;
+    return `${baseTypeHash}#${isOptional}#${isArray}#${this.hashGenericParameters(property)}`;
   }
   private hashTypeRef(ref: TypeReference | undefined): string {
     if (!ref) {
@@ -143,9 +133,7 @@ export abstract class RegistryType<T extends TokenType>
     }
     return baseTypeHash;
   }
-  private hashProperties(
-    properties: Record<string, PropertyStructure>
-  ): string {
+  private hashProperties(properties: Record<string, PropertyStructure>): string {
     const hashedArray = Object.entries(properties).map(
       ([key, p]) => `${key}:${this.hashProperty(p)}`
     );
@@ -162,26 +150,21 @@ export abstract class RegistryType<T extends TokenType>
       mappedValueType,
     } = this.structure;
     const unionHash = this.hash(unionMembers);
-    const propertiesHash = properties
-      ? this.hashProperties(properties)
-      : "undefined";
+    const propertiesHash = properties ? this.hashProperties(properties) : "undefined";
     const hash = `${tokenType}#${
       tokenType === "Primitive" || tokenType === "Instance" ? `${name}#` : ""
     }${unionHash}#${propertiesHash}#${this.hashTypeRef(
       mappedIndexType
     )}#${mappedIndexType?.genericParameters
-      ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
-      .join(".")}#${this.hashTypeRef(
-      mappedValueType
-    )}#${mappedValueType?.genericParameters
-      ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
+      ?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g)))
+      .join(".")}#${this.hashTypeRef(mappedValueType)}#${mappedValueType?.genericParameters
+      ?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g)))
       .join(".")}#${tupleMembers?.map(
-      (t) =>
+      t =>
         this.hashTypeRef(t) +
         "#" +
-        t.genericParameters
-          ?.map((g) => (typeof g === "string" ? g : this.hashTypeRef(g)))
-          .join(".")
+        // eslint-disable-next-line no-unsafe-optional-chaining
+        t.genericParameters?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g))).join(".")
     )}`;
     return hash;
   }

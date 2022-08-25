@@ -1,13 +1,6 @@
-import { cSharpPrimitives, CSharpPrimitiveType } from "src/csharp/";
+import { cSharpPrimitives } from "src/csharp/elements/consts";
+import type { CSharpPrimitiveType } from "src/csharp/types";
 import { CasingConvention, casingConventions } from "./types";
-
-export const capitalize = (str: string): string => {
-  if (!str) {
-    return "";
-  }
-  const [first, ...rest] = str;
-  return [first.toLocaleUpperCase(), ...rest].join("");
-};
 
 export function isCSharpPrimitive(str: string): boolean {
   const bracketIndex = str.indexOf("[");
@@ -32,7 +25,5 @@ export function toCasingConvention<T extends string | undefined>(
       return convention as T extends string ? CasingConvention : undefined;
     }
   }
-  throw new Error(
-    `Invalid Casing Convention (${t}). Must be one of ${casingConventions}`
-  );
+  throw new Error(`Invalid Casing Convention (${t}). Must be one of ${casingConventions}`);
 }

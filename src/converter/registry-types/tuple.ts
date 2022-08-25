@@ -1,15 +1,7 @@
 import { Node, Symbol, Type } from "ts-morph";
-import {
-  ConstructorParam,
-  CSharpClass,
-  CSharpGenericClass,
-} from "src/csharp/elements";
-import {
-  ISyntheticSymbol,
-  TypeReference,
-  TypeStructure,
-  PropertyStringArg,
-} from "../types";
+import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
+import { ConstructorParam } from "src/csharp/types";
+import { ISyntheticSymbol, TypeReference, TypeStructure, PropertyStringArg } from "../types";
 import { TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { getGenericTypeName } from "../util";
@@ -33,26 +25,13 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       tupleMembers: members,
       commentString,
     };
-    super(
-      registry,
-      "Tuple",
-      name,
-      symbol,
-      internal,
-      true,
-      node,
-      type,
-      level,
-      false
-    );
+    super(registry, "Tuple", name, symbol, internal, true, node, type, level, false);
     this.structure = structure;
     this.baseName = "System.Tuple";
   }
   addGenericParameterToMember(memberIdx: number, parameter: PropertyStringArg) {
     if (!this.structure.tupleMembers ?? {}[memberIdx]) {
-      throw new Error(
-        `No tuple member at index ${memberIdx} on type ${this.structure.name}`
-      );
+      throw new Error(`No tuple member at index ${memberIdx} on type ${this.structure.name}`);
     }
     this.structure.tupleMembers![memberIdx].genericParameters = [
       ...(this.structure.tupleMembers![memberIdx].genericParameters ?? []),
@@ -66,11 +45,11 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     const { name } = this.structure;
     return getGenericTypeName(
       name,
-      genericParameterValues?.map((t) => this.resolveAndFormatTypeName(t))
+      genericParameterValues?.map(t => this.resolveAndFormatTypeName(t))
     );
   }
   private getConstructorParams(): ConstructorParam[] {
-    const typeNames = (this.structure.tupleMembers ?? []).map((m) =>
+    const typeNames = (this.structure.tupleMembers ?? []).map(m =>
       this.resolveAndFormatTypeName(m)
     );
     return typeNames.map((tname, i) => ({
@@ -79,7 +58,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     }));
   }
   private getBaseClassName(): string {
-    const typeNames = (this.structure.tupleMembers ?? []).map((m) =>
+    const typeNames = (this.structure.tupleMembers ?? []).map(m =>
       this.resolveAndFormatTypeName(m)
     );
     return getGenericTypeName(this.baseName, typeNames);
@@ -94,7 +73,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
         [],
         this.generateCSharpGenericParams(),
         baseClass,
-        constructorArgs.map((c) => c.name),
+        constructorArgs.map(c => c.name),
         constructorArgs,
         this.internal,
         this.structure.commentString
@@ -106,7 +85,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       [],
       false,
       baseClass,
-      constructorArgs.map((c) => c.name),
+      constructorArgs.map(c => c.name),
       constructorArgs,
       this.internal,
       this.structure.commentString

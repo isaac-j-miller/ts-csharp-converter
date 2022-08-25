@@ -1,10 +1,11 @@
-import { CSharpClass, CSharpProperty } from "src/csharp/elements";
-import { NameMapper } from "../name-mapper/mapper";
-import { NonPrimitiveType, TypeRegistry } from "../registry";
+import { CSharpClass } from "src/csharp/elements";
+import { CSharpProperty } from "src/csharp/types";
+import type { TypeRegistry } from "../registry";
 import {
   IRegistryType,
   isPrimitiveType,
   LiteralValue,
+  NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
   PropertyStructure,
@@ -37,22 +38,11 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       false
     );
   }
-  private generateCSharpProperty(
-    propName: string,
-    struct: PropertyStructure
-  ): CSharpProperty {
-    const {
-      baseType,
-      defaultLiteralValue,
-      isArray,
-      arrayDepth,
-      isOptional,
-      commentString,
-    } = struct;
+  private generateCSharpProperty(propName: string, struct: PropertyStructure): CSharpProperty {
+    const { baseType, defaultLiteralValue, isArray, arrayDepth, isOptional, commentString } =
+      struct;
     if (!isPrimitiveType(baseType)) {
-      throw new Error(
-        `Const property ${this.structure.name}.${propName} is not a primitive type`
-      );
+      throw new Error(`Const property ${this.structure.name}.${propName} is not a primitive type`);
     }
     const kindType = toCSharpPrimitive(baseType.primitiveType);
     const literalValue = literalValueToCSharpLiteralValue(defaultLiteralValue);
@@ -77,9 +67,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     value: LiteralValue,
     commentString?: string
   ) {
-    const baseType = isPrimitiveType(type)
-      ? type
-      : this.registry.getType(type).getSymbol();
+    const baseType = isPrimitiveType(type) ? type : this.registry.getType(type).getSymbol();
     this.structure.properties![name] = {
       baseType,
       propertyName: name,
@@ -95,8 +83,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
   }
 
   private generateCSharpProperties(): CSharpProperty[] {
-    return Object.entries(this.structure.properties!).map(
-      ([propName, struct]) => this.generateCSharpProperty(propName, struct)
+    return Object.entries(this.structure.properties!).map(([propName, struct]) =>
+      this.generateCSharpProperty(propName, struct)
     );
   }
   getCSharpElement(): CSharpClass {

@@ -28,10 +28,7 @@ import {
   getFinalArrayType,
 } from "src/converter/util";
 
-type DeclarationType =
-  | EnumDeclaration
-  | InterfaceDeclaration
-  | TypeAliasDeclaration;
+type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclaration;
 export class AstTraverser {
   private project: Project;
   private entrySourceFile: SourceFile;
@@ -77,14 +74,13 @@ export class AstTraverser {
     if (structure.initializer && !literal) {
       try {
         // have to call eval like this because esbuild freaks out when I use eval the normal way
+        // eslint-disable-next-line no-eval
         literal = (0, eval)(structure.initializer.toString());
       } catch (e) {
         if (isArray) {
           const arrayTypes = typeToUse.getUnionTypes();
-          if (arrayTypes.every((e) => e.isLiteral())) {
-            literal = arrayTypes.map(
-              (t) => t.getLiteralValue() as LiteralValue
-            );
+          if (arrayTypes.every(err => err.isLiteral())) {
+            literal = arrayTypes.map(t => t.getLiteralValue() as LiteralValue);
           }
         }
       }
@@ -102,21 +98,10 @@ export class AstTraverser {
     if (literal === undefined) {
       literal = null;
       const comment = "Unable to resolve value for type";
-      console.warn(
-        `${comment} for declaration ${name} in ${node
-          .getSourceFile()
-          .getFilePath()}`
-      );
+      console.warn(`${comment} for declaration ${name} in ${node.getSourceFile().getFilePath()}`);
       comments = comments ? comments + `\n// ${comment}` : "// " + comment;
     }
-    constType.addConst(
-      name,
-      literalType,
-      isArray,
-      arrayDepth,
-      literal,
-      comments
-    );
+    constType.addConst(name, literalType, isArray, arrayDepth, literal, comments);
   }
   private createType(
     name: string,
@@ -160,13 +145,9 @@ export class AstTraverser {
   ): string[] | undefined {
     let specs: Array<ExportSpecifier | ImportSpecifier> = [];
     if (node.getKind() === SyntaxKind.ImportDeclaration) {
-      specs = node
-        .asKindOrThrow(SyntaxKind.ImportDeclaration)
-        .getNamedImports();
+      specs = node.asKindOrThrow(SyntaxKind.ImportDeclaration).getNamedImports();
     } else if (node.getKind() === SyntaxKind.ExportDeclaration) {
-      specs = node
-        .asKindOrThrow(SyntaxKind.ExportDeclaration)
-        .getNamedExports();
+      specs = node.asKindOrThrow(SyntaxKind.ExportDeclaration).getNamedExports();
     }
     if (!specs.length) {
       return undefined;
@@ -174,36 +155,31 @@ export class AstTraverser {
     return specs.map((e: ExportSpecifier | ImportSpecifier) => e.getName());
   }
   private traverseNode(node: Node, nodesToInclude?: string[]) {
-    node.forEachDescendant((node) => {
-      const kind = node.getKind();
+    node.forEachDescendant(nd => {
+      const kind = nd.getKind();
       switch (kind) {
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration: {
-          const asKind = node.asKindOrThrow(kind);
-          const explicitlyIncluded =
-            nodesToInclude && nodesToInclude.includes(asKind.getName());
-          if (
-            nodesToInclude &&
-            nodesToInclude.length > 0 &&
-            !explicitlyIncluded
-          ) {
+          const asKind = nd.asKindOrThrow(kind);
+          const explicitlyIncluded = nodesToInclude && nodesToInclude.includes(asKind.getName());
+          if (nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded) {
             return;
           }
           this.processDeclaration(asKind);
           break;
         }
         case SyntaxKind.MappedType: {
-          const k = node.asKindOrThrow(kind);
+          const k = nd.asKindOrThrow(kind);
           this.registry.markMappedType(k);
           break;
         }
         case SyntaxKind.VariableDeclaration:
-          this.processVariableDeclaration(node.asKindOrThrow(kind));
+          this.processVariableDeclaration(nd.asKindOrThrow(kind));
           break;
         case SyntaxKind.ImportDeclaration:
         case SyntaxKind.ExportDeclaration: {
-          const asKind = node.asKindOrThrow(kind);
+          const asKind = nd.asKindOrThrow(kind);
           const sourceFile = asKind.getModuleSpecifierSourceFile();
           if (!sourceFile) {
             return;

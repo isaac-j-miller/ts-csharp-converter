@@ -1,7 +1,8 @@
-import { NameMapper } from "src/converter/name-mapper/mapper";
+import { INameMapper } from "src/converter/name-mapper/types";
 import { CSharpElementKind } from "../types";
+import { ICSharpElement } from "./types";
 
-export abstract class CSharpElement {
+export abstract class CSharpElement implements ICSharpElement {
   private _isInternal: boolean;
   constructor(
     public readonly kind: CSharpElementKind,
@@ -14,5 +15,5 @@ export abstract class CSharpElement {
   public get isPublic() {
     return !this._isInternal;
   }
-  abstract serialize(mapper: NameMapper, indentation?: number): string;
+  abstract serialize(mapper: INameMapper, indentation?: number): string;
 }

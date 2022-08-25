@@ -5,7 +5,7 @@ export enum CasingConvention {
   KebabCase,
 }
 export const casingConventions = Object.values(CasingConvention).filter(
-  (k) => typeof k === "string"
+  k => typeof k === "string"
 ) as string[];
 
 export type ParsedWord = {
@@ -17,17 +17,13 @@ export type ParsedWord = {
 export interface CasedString<T extends CasingConvention> extends String {
   _casing: T;
 }
-export type NameInputMapper<T extends CasingConvention> = (
-  source: CasedString<T>
-) => ParsedWord[];
+export type NameInputMapper<T extends CasingConvention> = (source: CasedString<T>) => ParsedWord[];
 
-export type NameOutputMapper<T extends CasingConvention> = (
-  source: ParsedWord[]
-) => CasedString<T>;
+export type NameOutputMapper<T extends CasingConvention> = (source: ParsedWord[]) => CasedString<T>;
 
-export type NameMapperFunction<
-  TTarget extends CasingConvention = CasingConvention
-> = (source: string) => CasedString<TTarget>;
+export type NameMapperFunction<TTarget extends CasingConvention = CasingConvention> = (
+  source: string
+) => CasedString<TTarget>;
 
 export enum NameType {
   DeclarationName,
@@ -46,3 +42,7 @@ type NameConfigMap = {
 export type NameMapperConfig = {
   transforms: NameConfigMap;
 };
+
+export interface INameMapper {
+  transform(name: string, nameType: NameType): string;
+}
