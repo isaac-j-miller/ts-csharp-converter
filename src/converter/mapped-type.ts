@@ -1,16 +1,17 @@
+import { LoggerFactory } from "src/common/logging/factory";
 import { Node, SyntaxKind, Type } from "ts-morph";
 import { PrimitiveTypeName } from "./types";
 
 function isMappedType(type: Type): boolean {
   return type.getApparentProperties().length === 0;
 }
-
 export function getIndexAndValueType(
   node: Node
 ): [
   [Type | PrimitiveTypeName | undefined, Node | undefined],
   [Type | PrimitiveTypeName | undefined, Node | undefined]
 ] {
+  const logger = LoggerFactory.getLogger("mapped-type-inferrer")
   const type = node.getType().getApparentType();
   if (type.getStringIndexType()) {
     return [
@@ -128,17 +129,17 @@ export function getIndexAndValueType(
       detectedIndex[0] = asTypeParamDec.getConstraintOrThrow().getType();
       detectedIndex[1] = asTypeParamDec;
     } else {
-      console.warn("Key item not a type parameter declaration");
+      logger.warn("Key item not a type parameter declaration");
     }
   } else {
-    console.warn("More than one key item detected");
+    logger.warn("More than one key item detected");
   }
   if (valueItems.length === 1) {
     const toUse = valueItems[0];
     detectedValue[0] = toUse.getType();
     detectedValue[1] = toUse;
   } else {
-    console.warn("More than one value item detected");
+    logger.warn("More than one value item detected");
   }
   return [detectedIndex, detectedValue];
 }

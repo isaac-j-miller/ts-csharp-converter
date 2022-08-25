@@ -27,6 +27,8 @@ import {
   getComments,
   getFinalArrayType,
 } from "src/converter/util";
+import { ILogger } from "src/common/logging/types";
+import { LoggerFactory } from "src/common/logging/factory";
 
 type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclaration;
 export class AstTraverser {
@@ -37,6 +39,7 @@ export class AstTraverser {
   private tsconfig: TsConfigJson;
   private sourceFilesProcessed: Set<string>;
   private rootDir: string;
+  private logger: ILogger;
   constructor(
     entrypoint: string,
     tsconfigPath: string,
@@ -54,6 +57,7 @@ export class AstTraverser {
     const rel = path.dirname(path.resolve(tsconfigPath));
     const baseUrl = this.tsconfig.compilerOptions?.baseUrl ?? "./";
     this.rootDir = path.resolve(rel, baseUrl);
+    this.logger = LoggerFactory.getLogger("ast-traverser")
   }
   private processDeclaration<T extends DeclarationType>(node: T) {
     const name = node.getName();
@@ -89,7 +93,7 @@ export class AstTraverser {
       return;
     }
     if (!literalType) {
-      console.warn(`Invalid literal type (${name})`);
+      this.logger.warn(`Invalid literal type (${name})`);
       return;
     }
     const arrayDepth = getArrayDepth(asType);
@@ -98,7 +102,7 @@ export class AstTraverser {
     if (literal === undefined) {
       literal = null;
       const comment = "Unable to resolve value for type";
-      console.warn(`${comment} for declaration ${name} in ${node.getSourceFile().getFilePath()}`);
+      this.logger.warn(`${comment} for declaration ${name} in ${node.getSourceFile().getFilePath()}`);
       comments = comments ? comments + `\n// ${comment}` : "// " + comment;
     }
     constType.addConst(name, literalType, isArray, arrayDepth, literal, comments);
@@ -188,7 +192,7 @@ export class AstTraverser {
           const inIgnoreDir = this.isInIgnoreDir(fp);
           if (inIgnoreDir) {
             this.sourceFilesProcessed.add(fp);
-            console.debug(`Ignoring file ${fp}, as it is excluded...`);
+            this.logger.debug(`Ignoring file ${fp}, as it is excluded...`);
             return;
           }
           if (!this.sourceFilesProcessed.has(fp)) {

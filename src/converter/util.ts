@@ -1,6 +1,7 @@
 import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/types";
+import { LoggerFactory } from "src/common/logging/factory";
 import {
   BaseTypeReference,
   ConstType,
@@ -209,6 +210,7 @@ export function getGenericParametersFromType(
   parentGenericParameters: GenericParameter[],
   typeName?: string
 ): PropertyStringArgs {
+  const logger = LoggerFactory.getLogger("generic-resolver")
   const params: PropertyStringArgs = [];
   const genericParameters = type.getAliasTypeArguments();
   if (!typeName) {
@@ -244,7 +246,7 @@ export function getGenericParametersFromType(
     if (!sym) {
       const defaultType = param.getDefault();
       if (!defaultType) {
-        console.warn(`No symbol found for param ${i} of ${typeName} and default value not found`);
+        logger.warn(`No symbol found for param ${i} of ${typeName} and default value not found`);
         return;
       }
       const defaultSymbol = getFinalSymbolOfType(defaultType);
@@ -258,7 +260,7 @@ export function getGenericParametersFromType(
         sym = defaultSymbol;
       }
       if (!sym) {
-        console.warn(
+        logger.warn(
           `No symbol found for param ${i} of ${typeName} but default value was found, but with no symbol`
         );
         return;
@@ -267,7 +269,7 @@ export function getGenericParametersFromType(
     let fromRegistry = registry.getType(sym);
     if (!fromRegistry) {
       const castSym = sym as Symbol;
-      console.warn(`No type found in registry for symbol ${castSym.getName()}, using any`);
+      logger.warn(`No type found in registry for symbol ${castSym.getName()}, using any`);
       fromRegistry = registry.getType("any");
     }
     if (fromRegistry.isNonPrimitive()) {

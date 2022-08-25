@@ -1,6 +1,8 @@
 import { MappedTypeNode, Symbol } from "ts-morph";
 import { CSharpNamespace } from "src/csharp/elements";
 import { ICSharpElement } from "src/csharp/elements/types";
+import { LoggerFactory } from "src/common/logging/factory";
+import { ILogger } from "src/common/logging/types";
 import {
   ConstKeyword,
   ConstType,
@@ -34,6 +36,7 @@ export class TypeRegistry {
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
   private mappedTypes: MappedTypeNode[];
+  private logger: ILogger
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
@@ -41,6 +44,7 @@ export class TypeRegistry {
     this.declarations = new Set<string>();
     this.hashes = {};
     this.mappedTypes = [];
+    this.logger = LoggerFactory.getLogger("registry")
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(sym: T): string | undefined {
     const finalSym = getFinalSymbol(sym);
@@ -102,7 +106,7 @@ export class TypeRegistry {
       const refactoredName = getRefactorName(name);
       const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
       if (!this.declarations.has(refactoredName)) {
-        console.warn(
+        this.logger.warn(
           `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
             fpath ? ` (${fpath})` : ""
           }, refactoring output to rename new type as ${refactoredName}`
@@ -111,7 +115,7 @@ export class TypeRegistry {
       type.rename(refactoredName);
       return this.addType(type);
     }
-    console.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
     this.declarations.add(name);
     this.symbolMap[idx] = type;
     this.hashes[hash] = idx;
@@ -128,7 +132,7 @@ export class TypeRegistry {
   }
   findTypeBySymbolText(text: string): IRegistryType | undefined {
     if (text === "__type") {
-      console.warn("Not returning __type");
+      this.logger.warn("Not returning __type");
       return;
     }
     const keyFromCache = this.textCache[text];
@@ -299,7 +303,7 @@ export class TypeRegistry {
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      console.debug(`Stripped ${rest.length} duplicate types with hash ${hash}...`);
+      this.logger.debug(`Stripped ${rest.length} duplicate types with hash ${hash}...`);
       this.redirects = { ...this.redirects, ...replacementMap };
     });
   }
@@ -313,11 +317,11 @@ export class TypeRegistry {
     return elements;
   }
   toNamespace(name: string): CSharpNamespace {
-    console.info("Preparing to create namespace...");
+    this.logger.info("Preparing to create namespace...");
     this.consolidate();
-    console.info("Creating namespace...");
+    this.logger.info("Creating namespace...");
     const ns = new CSharpNamespace(name, this.getElements());
-    console.info(`Created namespace ${name}`);
+    this.logger.info(`Created namespace ${name}`);
     return ns;
   }
 }
