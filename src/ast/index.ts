@@ -57,7 +57,7 @@ export class AstTraverser {
     const rel = path.dirname(path.resolve(tsconfigPath));
     const baseUrl = this.tsconfig.compilerOptions?.baseUrl ?? "./";
     this.rootDir = path.resolve(rel, baseUrl);
-    this.logger = LoggerFactory.getLogger("ast-traverser")
+    this.logger = LoggerFactory.getLogger("ast-traverser");
   }
   private processDeclaration<T extends DeclarationType>(node: T) {
     const name = node.getName();
@@ -102,7 +102,9 @@ export class AstTraverser {
     if (literal === undefined) {
       literal = null;
       const comment = "Unable to resolve value for type";
-      this.logger.warn(`${comment} for declaration ${name} in ${node.getSourceFile().getFilePath()}`);
+      this.logger.warn(
+        `${comment} for declaration ${name} in ${node.getSourceFile().getFilePath()}`
+      );
       comments = comments ? comments + `\n// ${comment}` : "// " + comment;
     }
     constType.addConst(name, literalType, isArray, arrayDepth, literal, comments);

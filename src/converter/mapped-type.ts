@@ -11,7 +11,7 @@ export function getIndexAndValueType(
   [Type | PrimitiveTypeName | undefined, Node | undefined],
   [Type | PrimitiveTypeName | undefined, Node | undefined]
 ] {
-  const logger = LoggerFactory.getLogger("mapped-type-inferrer")
+  const logger = LoggerFactory.getLogger("mapped-type-inferrer");
   const type = node.getType().getApparentType();
   if (type.getStringIndexType()) {
     return [

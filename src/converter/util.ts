@@ -210,7 +210,7 @@ export function getGenericParametersFromType(
   parentGenericParameters: GenericParameter[],
   typeName?: string
 ): PropertyStringArgs {
-  const logger = LoggerFactory.getLogger("generic-resolver")
+  const logger = LoggerFactory.getLogger("generic-resolver");
   const params: PropertyStringArgs = [];
   const genericParameters = type.getAliasTypeArguments();
   if (!typeName) {

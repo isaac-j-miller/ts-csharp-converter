@@ -36,7 +36,7 @@ export class TypeRegistry {
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
   private mappedTypes: MappedTypeNode[];
-  private logger: ILogger
+  private logger: ILogger;
   constructor() {
     this.symbolMap = {};
     this.redirects = {};
@@ -44,7 +44,7 @@ export class TypeRegistry {
     this.declarations = new Set<string>();
     this.hashes = {};
     this.mappedTypes = [];
-    this.logger = LoggerFactory.getLogger("registry")
+    this.logger = LoggerFactory.getLogger("registry");
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(sym: T): string | undefined {
     const finalSym = getFinalSymbol(sym);

@@ -1,3 +1,5 @@
+import { LoggerFactory } from "src/common/logging/factory";
+import { ILogger } from "src/common/logging/types";
 import { Node, Symbol, Type } from "ts-morph";
 import { SyntaxKind } from "typescript";
 import { getIndexAndValueType } from "./mapped-type";
@@ -93,7 +95,10 @@ function getGenericConstraintOrDefaultOptions(type: Type): GenericConstraintOrDe
 }
 
 export class TypeFactory {
-  constructor(private registry: TypeRegistry, private ignoreClasses: Set<string>) {}
+  private logger: ILogger;
+  constructor(private registry: TypeRegistry, private ignoreClasses: Set<string>) {
+    this.logger = LoggerFactory.getLogger("type-factory");
+  }
   private createPrimitiveType(options: TypeOptions): IRegistryType | undefined {
     const { type } = options;
     const typeAsPrimitive = asPrimitiveTypeName(type);
@@ -410,7 +415,7 @@ export class TypeFactory {
       if (isPrimitiveTypeName(propertyText)) {
         return this.registry.getType(propertyText);
       }
-      console.debug(`Creating internal type ${name}`);
+      this.logger.debug(`Creating internal type ${name}`);
       const newNode = symbol?.getDeclarations()[0];
       return this.createType({
         name,
@@ -421,7 +426,7 @@ export class TypeFactory {
       });
     };
     if (level === MAX_DEPTH - 1) {
-      console.warn("will fail on next iteration if recursion continues");
+      this.logger.warn("will fail on next iteration if recursion continues");
     }
     if (level >= MAX_DEPTH) {
       throw new Error("Recursion depth exceeded.");
@@ -515,7 +520,7 @@ export class TypeFactory {
   ) {
     const { node, type: parentType, name: parentName } = parentOptions;
     if (parentName === "ConsumesInterface") {
-      console.debug();
+      this.logger.debug();
     }
     const propertyOptions = getPropertyOptions(node, property);
     const { propertyName, options, baseType, primitiveType } = propertyOptions;
@@ -609,7 +614,7 @@ export class TypeFactory {
     const isArray = parameterType.isArray();
     const arrayDepth = getArrayDepth(parameterType);
     if (arrayDepth > 0) {
-      console.warn("too deep getting generic params");
+      this.logger.warn("too deep getting generic params");
     }
     let apparent: TypeReference | undefined;
     const sym = parameterType.getSymbol();
@@ -677,7 +682,7 @@ export class TypeFactory {
   private handleFunction(options: TypeOptions): IRegistryType | undefined {
     const { name, type } = options;
     if (type.getCallSignatures().length || type.getConstructSignatures().length) {
-      console.warn(
+      this.logger.warn(
         `Type ${name} has call signatures. I can't handle function types at the moment, so "any" will be used instead`
       );
       return this.registry.getType("any");
@@ -688,7 +693,7 @@ export class TypeFactory {
     const { name, node, type, internal, level } = options;
     const symbolToUse = createSymbol(name, type);
     if (type.getCallSignatures().length) {
-      console.warn(`Type ${name} has call signatures`);
+      this.logger.warn(`Type ${name} has call signatures`);
     }
     const regType = new TypeRegistryType(
       this.registry,
@@ -715,7 +720,7 @@ export class TypeFactory {
     const symName = symbol?.getName();
     const nameToCheck = !!symName && symName !== "__type" ? symName : options.name;
     if (this.ignoreClasses.has(nameToCheck)) {
-      console.info(
+      this.logger.info(
         `type ${nameToCheck} (given name: ${options.name} is in the list of classes to ignore, returning an object type`
       );
       return this.registry.getType("any");
@@ -754,7 +759,7 @@ export class TypeFactory {
       return regType;
     } catch (e) {
       const error = e as Error;
-      console.error(
+      this.logger.error(
         `Error creating type ${options.name}, returning any. Error: ${error.name}: ${error.message}`
       );
       return this.registry.getType("any");
