@@ -1,9 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`snapshot works 1`] = `
-"public namespace TestNamespace {
+"namespace TestNamespace {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.Serialization;
     public enum TestEnum1 {
         FooBar,
         Baz,
@@ -15,19 +16,21 @@ exports[`snapshot works 1`] = `
         Value3
     }
     public static class GlobalVars {
-        public const int[] UsingRef = {  };
+        public readonly static int[] UsingRef = {  };
+        #nullable enable
         // Unable to resolve value for type
-        public const string FRef = null;
-        public const string FOO = \\"some string\\";
-        public const string BAR = \\"some string as const\\";
-        public const int Whatever = 1;
+        public readonly static string? FRef = null;
+        #nullable disable
+        public readonly static string FOO = \\"some string\\";
+        public readonly static string BAR = \\"some string as const\\";
+        public readonly static int Whatever = 1;
         /**
         * an array of strings
         */
-        public const string[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
-        public const int[] ANumberArray = { 1, 2, 3, 4 };
+        public readonly static string[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
+        public readonly static int[] ANumberArray = { 1, 2, 3, 4 };
         // a 2D int array
-        public const int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
+        public readonly static int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
     }
     public class Foo {
         // x is a number
@@ -43,16 +46,16 @@ exports[`snapshot works 1`] = `
         [EnumMember(Value = \\"c\\")]
         C
     }
-    public class GenericWithConstraints<T> where T: string {
+    public class GenericWithConstraints<T> {
         public T Str { get; set; }
     }
     public class GenericWithConstraints2<T> where T: Foo {
         public T Foo { get; set; }
     }
-    public class GenericWithConstraints3<T> where T: int {
+    public class GenericWithConstraints3<T> {
         public T Digit { get; set; }
     }
-    public class GenericWithConstraints4<T> where T: object {
+    public class GenericWithConstraints4<T> {
         public T Z { get; set; }
     }
     public class SomeGenericType<T> {
@@ -62,7 +65,7 @@ exports[`snapshot works 1`] = `
     public class DefaultGeneric<Ta> {
         public Ta V { get; set; }
     }
-    internal class SomeLargerTypexClass<U> {
+    public class SomeLargerTypexClass<U> {
         public U Foo { get; set; }
     }
     public class SomeLargerType<U> {
@@ -80,7 +83,7 @@ exports[`snapshot works 1`] = `
         // comment comment comment
         public string Y { get; set; }
     }
-    internal class BlahBlahxClass {
+    public class BlahBlahxClass {
         // x is a number
         public int X { get; set; }
         // comment comment comment
@@ -113,7 +116,7 @@ exports[`snapshot works 1`] = `
         public string Un { get; set; }
         public object Absurd { get; set; }
     }
-    internal class IndexTypeaClass {
+    public class IndexTypeaClass {
         public Abc Foo { get; set; }
     }
     public class IndexType {
@@ -148,7 +151,7 @@ exports[`snapshot works 1`] = `
     }
     public class ConsumesInterface {
         public int Integer { get; set; }
-        public int Float { get; set; }
+        public double Float { get; set; }
     }
     public enum TestEnum3 {
         [EnumMember(Value = \\"x\\")]
@@ -159,19 +162,21 @@ exports[`snapshot works 1`] = `
         Z
     }
     public class UnionIndex {
+        #nullable enable
         public int? A { get; set; }
         public int? B { get; set; }
         public int? C { get; set; }
+        #nullable disable
     }
     public class UnionIndex2 {
         public bool A { get; set; }
         public bool B { get; set; }
         public bool C { get; set; }
     }
-    public class GenericUnionIndex<T, V> where T: object : System.Collections.Generic.Dictionary<T, V> { }
-    public class GenericUnionIndex2<T> where T: object : System.Collections.Generic.Dictionary<T, string> { }
-    public class GenericUnionIndex3<T> where T: object : System.Collections.Generic.Dictionary<T, object> { }
-    public class GenericUnionIndex4<T> where T: object : System.Collections.Generic.Dictionary<T, object> { }
+    public class GenericUnionIndex<T, V> : System.Collections.Generic.Dictionary<T, V> { }
+    public class GenericUnionIndex2<T> : System.Collections.Generic.Dictionary<T, string> { }
+    public class GenericUnionIndex3<T> : System.Collections.Generic.Dictionary<T, object> { }
+    public class GenericUnionIndex4<T> : System.Collections.Generic.Dictionary<T, object> { }
     public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> { }
     // this is a comment that should show up on the GenericConsumerConsumer class
     public class GenericConsumerConsumer {
@@ -179,10 +184,12 @@ exports[`snapshot works 1`] = `
         public GenericConsumer G { get; set; }
     }
     public class FooBar {
+        #nullable enable
         // This property is a function, and it was unable to be translated at this time
         public object? F { get; set; }
         // This property is a function, and it was unable to be translated at this time
         public object? G { get; set; }
+        #nullable disable
     }
     public class Whatever1 {
         public object W { get; set; }
@@ -197,7 +204,9 @@ exports[`snapshot works 1`] = `
     }
     public class RecursiveType3 {
         public int T { get; set; }
+        #nullable enable
         public RecursiveType? R2 { get; set; }
+        #nullable disable
     }
     public class GenericRecursive {
         public SomeGenericType<object> T { get; set; }
@@ -216,15 +225,31 @@ exports[`snapshot works 1`] = `
         [EnumMember(Value = \\"application/foooo.a-b-c.x\\")]
         ApplicationFooooABCX
     }
-    public class ATuple : System.Tuple<string, int> { }
-    public class BTuple : System.Tuple<double, double, double> { }
-    public class CTuple : System.Tuple<string, double, UnionIndex2, object> { }
+    public class ATuple : System.Tuple<string, int> {
+        public ATuple(string Arg0, int Arg1) : base(Arg0, Arg1) { }
+ }
+    public class BTuple : System.Tuple<double, double, double> {
+        public BTuple(double Arg0, double Arg1, double Arg2) : base(Arg0, Arg1, Arg2) { }
+ }
+    public class CTuple : System.Tuple<string, double, UnionIndex2, object> {
+        public CTuple(string Arg0, double Arg1, UnionIndex2 Arg2, object Arg3) : base(Arg0, Arg1, Arg2, Arg3) { }
+ }
     public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> { }
-    public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> { }
-    public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> { }
-    public class TupleMap2 : System.Tuple<string, string[], int[,,]> { }
-    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> { }
-    public class Tuple1 : System.Tuple<string, double, SomeGenericType<double>, DefaultGeneric<double>, SomeGenericType<Abc>> { }
+    public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
+        public GenericTupleMap(T Arg0, U Arg1, V Arg2) : base(Arg0, Arg1, Arg2) { }
+ }
+    public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
+        public GenericTupleMap2(T Arg0, V[] Arg1) : base(Arg0, Arg1) { }
+ }
+    public class TupleMap2 : System.Tuple<string, string[], int[,,]> {
+        public TupleMap2(string Arg0, string[] Arg1, int[,,] Arg2) : base(Arg0, Arg1, Arg2) { }
+ }
+    public class TupleMap3 : System.Tuple<ATuple[], BTuple[,]> {
+        public TupleMap3(ATuple[] Arg0, BTuple[,] Arg1) : base(Arg0, Arg1) { }
+ }
+    public class Tuple1 : System.Tuple<string, double, SomeGenericType<double>, DefaultGeneric<double>, SomeGenericType<Abc>> {
+        public Tuple1(string Arg0, double Arg1, SomeGenericType<double> Arg2, DefaultGeneric<double> Arg3, SomeGenericType<Abc> Arg4) : base(Arg0, Arg1, Arg2, Arg3, Arg4) { }
+ }
     public class A {
         public int Foo { get; set; }
     }
@@ -235,11 +260,11 @@ exports[`snapshot works 1`] = `
     // Source code:
     // 
     // export type Inverse<T extends A | B> = T extends A ? B : A;
-    public class Inverse<T> where T: object { }
+    public class Inverse<T> { }
     public class ConsumesConditional {
         public B Prop1 { get; set; }
     }
-    public class ConditionalMappedType<T, V> where T: string : System.Collections.Generic.Dictionary<string, object> { }
+    public class ConditionalMappedType<T, V> : System.Collections.Generic.Dictionary<string, object> { }
     public class ConsumesConditionalMappedType {
         public System.Collections.Generic.Dictionary<object, A> X { get; set; }
         public System.Collections.Generic.Dictionary<object, B> Y { get; set; }

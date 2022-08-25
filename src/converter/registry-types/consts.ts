@@ -55,14 +55,15 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       );
     }
     const kindType = toCSharpPrimitive(baseType.primitiveType);
+    const literalValue = literalValueToCSharpLiteralValue(defaultLiteralValue);
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
       getter: false,
       setter: false,
       isConst: true,
-      defaultValue: literalValueToCSharpLiteralValue(defaultLiteralValue),
-      optional: isOptional,
+      defaultValue: literalValue,
+      optional: isOptional || literalValue === "null",
       commentString,
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };

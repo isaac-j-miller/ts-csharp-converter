@@ -1,5 +1,5 @@
 import { Node, Symbol, Type } from "ts-morph";
-import { SyntaxKind } from "typescript";
+import { getJSDocTags, SyntaxKind } from "typescript";
 import { getIndexAndValueType } from "./mapped-type";
 import { TypeRegistry } from "./registry";
 import {
@@ -64,14 +64,15 @@ function getPropertyOptions(
   const dec = propertySymbol.getDeclarations()[0];
   const commentString = getComments(dec);
   const type = propertySymbol.getTypeAtLocation(parentNode);
-  // .getApparentType()
-  // .getNonNullableType();
   const isArray = type.isArray();
   const baseType = getFinalArrayType(type);
   const symbol = baseType.getSymbol();
   const arrayDepth = isArray ? getArrayDepth(type) : 0;
   const tags = propertySymbol.getJsDocTags();
-  const primitiveType = asPrimitiveTypeName(baseType, tags);
+  const primitiveType = asPrimitiveTypeName(baseType, [
+    ...(symbol?.getJsDocTags() ?? []),
+    ...tags,
+  ]);
   const options: PropertyOptions = {
     isArray,
     isOptional,
@@ -563,6 +564,9 @@ export class TypeFactory {
     property: Symbol
   ) {
     const { node, type: parentType, name: parentName } = parentOptions;
+    if (parentName === "ConsumesInterface") {
+      console.debug();
+    }
     const propertyOptions = getPropertyOptions(node, property);
     const { propertyName, options, baseType, primitiveType } = propertyOptions;
     const handle = () => {

@@ -3,7 +3,7 @@ import { NameMapper } from "src/converter/name-mapper/mapper";
 import { getGenericTypeName } from "src/converter/util";
 import { getIndentString } from "../util";
 import { CSharpClass } from "./class";
-import { CSharpProperty, GenericParam } from "../types";
+import { ConstructorParam, CSharpProperty, GenericParam } from "../types";
 import { isCSharpPrimitive } from "src/converter/name-mapper/util";
 
 export class CSharpGenericClass extends CSharpClass {
@@ -13,6 +13,8 @@ export class CSharpGenericClass extends CSharpClass {
     properties: CSharpProperty[],
     public readonly genericOptions: Record<string, GenericParam>,
     inheritsFrom?: string,
+    baseClassArgs?: string[],
+    constructorArgs?: ConstructorParam[],
     isInternal?: boolean,
     commentString?: string
   ) {
@@ -22,6 +24,8 @@ export class CSharpGenericClass extends CSharpClass {
       properties,
       false,
       inheritsFrom,
+      baseClassArgs,
+      constructorArgs,
       isInternal,
       commentString
     );

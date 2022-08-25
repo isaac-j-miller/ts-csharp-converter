@@ -2,6 +2,11 @@ export type GenericParam = {
   constraint?: string;
 };
 
+export type ConstructorParam = {
+  name: string;
+  type: string;
+};
+
 export type PropertyValue = {
   value: string;
   isDictionary?: boolean;

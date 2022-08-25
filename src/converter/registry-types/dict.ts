@@ -102,6 +102,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
         [],
         genericParams,
         baseClassName,
+        [],
+        [],
         this.internal,
         this.structure.commentString
       );
@@ -112,6 +114,8 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
       [],
       false,
       baseClassName,
+      [],
+      [],
       this.internal,
       this.structure.commentString
     );

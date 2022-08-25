@@ -1,5 +1,9 @@
 import { Node, Symbol, Type } from "ts-morph";
-import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
+import {
+  ConstructorParam,
+  CSharpClass,
+  CSharpGenericClass,
+} from "src/csharp/elements";
 import {
   ISyntheticSymbol,
   TypeReference,
@@ -65,6 +69,15 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       genericParameterValues?.map((t) => this.resolveAndFormatTypeName(t))
     );
   }
+  private getConstructorParams(): ConstructorParam[] {
+    const typeNames = (this.structure.tupleMembers ?? []).map((m) =>
+      this.resolveAndFormatTypeName(m)
+    );
+    return typeNames.map((tname, i) => ({
+      name: `arg${i}`,
+      type: tname,
+    }));
+  }
   private getBaseClassName(): string {
     const typeNames = (this.structure.tupleMembers ?? []).map((m) =>
       this.resolveAndFormatTypeName(m)
@@ -73,6 +86,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
   }
   getCSharpElement(): CSharpClass {
     const baseClass = this.getBaseClassName();
+    const constructorArgs = this.getConstructorParams();
     if ((this.structure.genericParameters ?? []).length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
@@ -80,6 +94,8 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
         [],
         this.generateCSharpGenericParams(),
         baseClass,
+        constructorArgs.map((c) => c.name),
+        constructorArgs,
         this.internal,
         this.structure.commentString
       );
@@ -90,6 +106,8 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       [],
       false,
       baseClass,
+      constructorArgs.map((c) => c.name),
+      constructorArgs,
       this.internal,
       this.structure.commentString
     );

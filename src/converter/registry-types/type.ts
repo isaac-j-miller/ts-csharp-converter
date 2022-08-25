@@ -151,6 +151,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         props,
         this.generateCSharpGenericParams(),
         undefined,
+        [],
+        [],
         this.internal,
         this.structure.commentString
       );
@@ -161,6 +163,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       props,
       false,
       undefined,
+      [],
+      [],
       this.internal,
       this.structure.commentString
     );
