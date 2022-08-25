@@ -97,9 +97,9 @@ exports[`snapshot works 1`] = `
     }
     public class ZZZ {
         public string Z { get; set; }
-        public System.Collections.Generic.Dictionary<K, T> V { get; set; }
-        public System.Collections.Generic.Dictionary<K, T> Y { get; set; }
-        public System.Collections.Generic.Dictionary<K, T> X { get; set; }
+        public System.Collections.Generic.Dictionary<string, string> V { get; set; }
+        public System.Collections.Generic.Dictionary<string, DefaultGeneric<int>> Y { get; set; }
+        public System.Collections.Generic.Dictionary<string, SomeGenericType<Abc>> X { get; set; }
     }
     public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> { }
     public enum SomeStupidSubEnum {
@@ -120,7 +120,7 @@ exports[`snapshot works 1`] = `
         public Abc Foo { get; set; }
     }
     public class IndexType {
-        public System.Collections.Generic.Dictionary<K, T> Abc { get; set; }
+        public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
         public IndexTypeAClass A { get; set; }
     }
     public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<object, T> {
@@ -266,8 +266,8 @@ exports[`snapshot works 1`] = `
     }
     public class ConditionalMappedType<T, V> : System.Collections.Generic.Dictionary<string, object> { }
     public class ConsumesConditionalMappedType {
-        public System.Collections.Generic.Dictionary<string, object> X { get; set; }
-        public System.Collections.Generic.Dictionary<string, object> Y { get; set; }
+        public System.Collections.Generic.Dictionary<object, A> X { get; set; }
+        public System.Collections.Generic.Dictionary<object, B> Y { get; set; }
     }
 }"
 `;
