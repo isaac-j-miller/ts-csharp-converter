@@ -71,13 +71,20 @@ function format<T extends CasingConvention>(
   const formattedWord = `${base}${typeSection}${arrayPart ?? ""}`;
   return formattedWord;
 }
+const capitalizeWithPeriods = (str: string): string => {
+  if (!str.includes(".")) {
+    return capitalize(str);
+  }
+  const split = str.split(".");
+  return split.map(capitalize).join(".");
+};
 
 export const PascalOutputMapper: NameOutputMapper<CasingConvention.PascalCase> = words => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
     const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = isPrimitive ? base : capitalize(base);
+    const newBase = isPrimitive ? base : capitalizeWithPeriods(base);
     return format(newBase, typeArguments, arrayPart, PascalOutputMapper);
   });
   const outputWord = formattedWords.join("");
@@ -89,7 +96,7 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = w
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
     const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = i > 0 && !isPrimitive ? capitalize(base) : base;
+    const newBase = i > 0 && !isPrimitive ? capitalizeWithPeriods(base) : base;
     return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
   });
   const outputWord = formattedWords.join("");
@@ -116,7 +123,7 @@ export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = w
 
 export function normalize(str: string): string {
   let currentWord = "";
-  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_"]);
+  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_", "."]);
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     const lowerCase = char.toLocaleLowerCase();
@@ -143,7 +150,7 @@ export function formatForEnum(
 ): string {
   let word: string = "";
   let previousCharIsNumberOrLetter: boolean | undefined;
-  for (const char of str) {
+  Array.from(str).forEach(char => {
     const charIsNumberOrLetter = isNumberOrLetterOrUnderscore(char);
     if (charIsNumberOrLetter) {
       if (previousCharIsNumberOrLetter !== undefined && !previousCharIsNumberOrLetter) {
@@ -166,6 +173,6 @@ export function formatForEnum(
       }
     }
     previousCharIsNumberOrLetter = charIsNumberOrLetter;
-  }
+  });
   return word;
 }

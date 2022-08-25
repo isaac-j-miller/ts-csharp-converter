@@ -16,8 +16,8 @@
     "prettier-check": "prettier .",
     "check-ts": "tsc --noEmit",
     "lint": "./node_modules/.bin/eslint ./src/**/*.ts",
-    "generate-types": "tsc --outDir ./dist/types",
-    "build": "node -r ts-node/register -r tsconfig-paths/register ./esbuild.config.ts",
+    "generate-types": "rm -rf ./dist/types && tsc --declarationDir ./dist/types --outDir ./tmp/dist && rm -rf ./tmp/dist",
+    "build": "node -r ts-node/register -r tsconfig-paths/register ./esbuild.config.ts && pnpm generate-types",
     "check-all": "pnpm prettier-check && pnpm check-ts && pnpm lint && pnpm test"
   },
   "author": "Isaac Miller",

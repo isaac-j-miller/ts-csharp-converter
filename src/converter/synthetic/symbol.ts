@@ -15,13 +15,13 @@ export class SyntheticSymbol implements ISyntheticSymbol {
     return false;
   }
   isSynthetic = true as const;
-  getName() {
+  getName(): string {
     return this.name;
   }
-  getUnderlyingSymbol() {
+  getUnderlyingSymbol(): Symbol | undefined {
     return this.underlyingSymbol;
   }
-  getDeclaredType() {
+  getDeclaredType(): Type {
     return this.type;
   }
   getSourceFilePath(): string | undefined {

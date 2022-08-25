@@ -4,6 +4,7 @@ import { AstTraverser } from "./ast";
 import { CasingConvention, NameMapperConfig } from "./converter/name-mapper";
 import { NameMapper } from "./converter/name-mapper/mapper";
 
+export { NameType } from "./converter/name-mapper/types";
 export { CasingConvention, NameMapperConfig };
 
 export async function convertTypescriptToCSharp(

@@ -60,8 +60,11 @@ export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> exten
     if (!fromRegistry) {
       throw new Error(`Unable to find symbol for ${this.structure.name}.${propName}`);
     }
-    const genericParameters = this.getGenericParametersOfProperty(propName);
-    return fromRegistry.getPropertyString(genericParameters);
+    if (fromRegistry.getStructure().genericParameters) {
+      const genericParameters = this.getGenericParametersOfProperty(propName);
+      return fromRegistry.getPropertyString(genericParameters);
+    }
+    return fromRegistry.getPropertyString();
   }
   protected generateCSharpGenericParams(): Record<string, GenericParam> {
     const genericParams = this.structure.genericParameters ?? [];

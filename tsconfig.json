@@ -33,5 +33,5 @@
     "lib": ["ES2022"],
     "types": ["node", "jest"]
   },
-  "exclude": ["**/dist/**", "**/node_modules"]
+  "exclude": ["**/dist/**", "**/node_modules", "esbuild.config.ts", "jest.setup.ts", "*.js"]
 }

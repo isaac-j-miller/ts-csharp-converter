@@ -1,6 +1,6 @@
 import { getOutputMapper } from "./factory";
 import { formatForEnum, normalize, parseNormalized } from "./mappers";
-import { CasedString, CasingConvention, ParsedWord } from "./types";
+import { CasingConvention, ParsedWord } from "./types";
 
 type Input = {
   parsed: ParsedWord[];
@@ -224,10 +224,36 @@ const inputs: Input[] = [
       },
     ],
   },
+  {
+    formatted: {
+      [CasingConvention.CamelCase]:
+        "system.collections.generic.dictionary<system.collections.generic.dictionary<string, object>, object>",
+      [CasingConvention.PascalCase]:
+        "System.Collections.Generic.Dictionary<System.Collections.Generic.Dictionary<string, object>, object>",
+      [CasingConvention.KebabCase]:
+        "system.collections.generic.dictionary<system.collections.generic.dictionary<string, object>, object>",
+      [CasingConvention.SnakeCase]:
+        "system.collections.generic.dictionary<system.collections.generic.dictionary<string, object>, object>",
+    },
+    parsed: [
+      {
+        base: "system.collections.generic.dictionary",
+        typeArguments: [
+          [
+            {
+              base: "system.collections.generic.dictionary",
+              typeArguments: [[{ base: "string" }], [{ base: "object" }]],
+            },
+          ],
+          [{ base: "object" }],
+        ],
+      },
+    ],
+  },
 ];
 
-function runFormattingTests<T extends CasingConvention>(inputs: Input[], convention: T) {
-  inputs.forEach(input => {
+function runFormattingTests<T extends CasingConvention>(inpts: Input[], convention: T) {
+  inpts.forEach(input => {
     runOutputTest(convention, input);
   });
 }
@@ -250,6 +276,8 @@ const normalizeTests: Record<string, string> = {
   someMixed_string: "some_mixed_string",
   "En-Us": "en_us",
   "Whatever_some-inputMixed": "whatever_some_input_mixed",
+  "System.Collections.Generic.Dictionary<System.Collections.Generic.Dictionary<string, object>, object>":
+    "system.collections.generic.dictionary<system.collections.generic.dictionary<string, object>, object>",
 };
 
 describe("normalizer", () => {
@@ -292,7 +320,7 @@ const formatForEnumTests: FormatForEnumInput = {
 describe("formatForEnum", () => {
   Object.entries(formatForEnumTests).forEach(([input, formatOutputs]) => {
     Object.entries(formatOutputs).forEach(([casingConventionIdx, expectation]) => {
-      const casingConvention = Number.parseInt(casingConventionIdx) as CasingConvention;
+      const casingConvention = Number.parseInt(casingConventionIdx, 10) as CasingConvention;
       it(`${input} (${CasingConvention[casingConvention]})`, () => {
         const mapper = getOutputMapper(casingConvention);
         const normalized = normalize(input);

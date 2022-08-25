@@ -1,5 +1,6 @@
 import { LoggerFactory } from "src/common/logging/factory";
 import { ILogger } from "src/common/logging/types";
+import { capitalize } from "src/common/util";
 import { Node, Symbol, Type } from "ts-morph";
 import { SyntaxKind } from "typescript";
 import { getIndexAndValueType } from "./mapped-type";
@@ -306,7 +307,7 @@ export class TypeFactory {
           const indexTypeRef = this.getReferenceOrGetFromRegistry(
             indexNode,
             index,
-            `${name}IndexType`,
+            `${capitalize(name)}IndexType`,
             level
           );
           if (!isPrimitiveTypeName(index)) {
@@ -315,7 +316,7 @@ export class TypeFactory {
           const valueTypeRef = this.getReferenceOrGetFromRegistry(
             valueNode,
             value,
-            `${name}ValueType`,
+            `${capitalize(name)}ValueType`,
             level
           );
           if (!isPrimitiveTypeName(value)) {
@@ -340,7 +341,7 @@ export class TypeFactory {
       const arrayDepth = getArrayDepth(valueType);
       const valueToUse = getFinalArrayType(valueType);
       const indexType = this.registry.getType(indexTypeString).getSymbol();
-      const valueTypeName = `${name}Value`;
+      const valueTypeName = `${capitalize(name)}Value`;
       const vType = this.getFromRegistryOrCreateAnon(
         node,
         valueToUse,
@@ -443,7 +444,7 @@ export class TypeFactory {
     const { node, name, level } = parentOptions;
     const { propertyName, options, baseType, symbol: propertyTypeSymbol } = propertyInfo;
     const { isArray } = options;
-    const internalClassName = `${name}${propertyName}Class`;
+    const internalClassName = `${name}${capitalize(propertyName)}Class`;
     const nodeToUse = (
       propertyTypeSymbol ??
       baseType.getSymbol() ??
@@ -585,7 +586,7 @@ export class TypeFactory {
   ): TypeReference {
     const { node, name, level } = parentOptions;
     const { baseType, symbol } = constraintOptions;
-    const internalClassName = `${name}${paramName}${type}Class`;
+    const internalClassName = `${name}${capitalize(paramName)}${type}Class`;
     const isArray = baseType.isArray();
     const arrayDepth = getArrayDepth(baseType);
     const typeToUse = getFinalArrayType(baseType);
@@ -720,7 +721,7 @@ export class TypeFactory {
     const symName = symbol?.getName();
     const nameToCheck = !!symName && symName !== "__type" ? symName : options.name;
     if (this.ignoreClasses.has(nameToCheck)) {
-      this.logger.info(
+      this.logger.debug(
         `type ${nameToCheck} (given name: ${options.name} is in the list of classes to ignore, returning an object type`
       );
       return this.registry.getType("any");
