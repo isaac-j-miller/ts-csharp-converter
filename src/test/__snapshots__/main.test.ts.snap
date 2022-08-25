@@ -65,14 +65,14 @@ exports[`snapshot works 1`] = `
     public class DefaultGeneric<Ta> {
         public Ta V { get; set; }
     }
-    public class SomeLargerTypexClass<U> {
+    public class SomeLargerTypeXClass<U> {
         public U Foo { get; set; }
     }
     public class SomeLargerType<U> {
         public string A { get; set; }
         public Abc Y { get; set; }
         public int V { get; set; }
-        public SomeLargerTypexClass<U> X { get; set; }
+        public SomeLargerTypeXClass<U> X { get; set; }
     }
     public class Composite {
         public int V { get; set; }
@@ -83,7 +83,7 @@ exports[`snapshot works 1`] = `
         // comment comment comment
         public string Y { get; set; }
     }
-    public class BlahBlahxClass {
+    public class BlahBlahXClass {
         // x is a number
         public int X { get; set; }
         // comment comment comment
@@ -92,14 +92,14 @@ exports[`snapshot works 1`] = `
         public Abc Bar { get; set; }
     }
     public class BlahBlah {
-        public BlahBlahxClass[] X { get; set; }
+        public BlahBlahXClass[] X { get; set; }
         public SomeLargerType<DefaultGeneric<int>>[] Y { get; set; }
     }
     public class ZZZ {
         public string Z { get; set; }
-        public System.Collections.Generic.Dictionary<string, string> V { get; set; }
-        public System.Collections.Generic.Dictionary<string, DefaultGeneric<int>> Y { get; set; }
-        public System.Collections.Generic.Dictionary<string, SomeGenericType<Abc>> X { get; set; }
+        public System.Collections.Generic.Dictionary<K, T> V { get; set; }
+        public System.Collections.Generic.Dictionary<K, T> Y { get; set; }
+        public System.Collections.Generic.Dictionary<K, T> X { get; set; }
     }
     public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> { }
     public enum SomeStupidSubEnum {
@@ -116,12 +116,12 @@ exports[`snapshot works 1`] = `
         public string Un { get; set; }
         public object Absurd { get; set; }
     }
-    public class IndexTypeaClass {
+    public class IndexTypeAClass {
         public Abc Foo { get; set; }
     }
     public class IndexType {
-        public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
-        public IndexTypeaClass A { get; set; }
+        public System.Collections.Generic.Dictionary<K, T> Abc { get; set; }
+        public IndexTypeAClass A { get; set; }
     }
     public class GenericIndexType<T> where T: System.Collections.Generic.Dictionary<object, T> {
         public IndexType I { get; set; }
@@ -266,8 +266,8 @@ exports[`snapshot works 1`] = `
     }
     public class ConditionalMappedType<T, V> : System.Collections.Generic.Dictionary<string, object> { }
     public class ConsumesConditionalMappedType {
-        public System.Collections.Generic.Dictionary<object, A> X { get; set; }
-        public System.Collections.Generic.Dictionary<object, B> Y { get; set; }
+        public System.Collections.Generic.Dictionary<string, object> X { get; set; }
+        public System.Collections.Generic.Dictionary<string, object> Y { get; set; }
     }
 }"
 `;

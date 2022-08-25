@@ -1,6 +1,8 @@
 import { createHash } from "crypto";
 import { MappedTypeNode, Symbol } from "ts-morph";
 import { CSharpElement } from "src/csharp/elements";
+import { LoggerFactory } from "src/common/logging/factory";
+import { ILogger } from "src/common/logging/types";
 import {
   ConstType,
   IRegistryType,
@@ -22,6 +24,7 @@ import type { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 export abstract class RegistryType<T extends TokenType> implements IRegistryType<T> {
   private readonly originalName: string;
   public readonly tokenType: T;
+  protected logger: ILogger;
   protected mappedTypeNode?: MappedTypeNode;
   constructor(
     protected registry: TypeRegistry,
@@ -35,6 +38,7 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
   ) {
     this.tokenType = structure.tokenType;
     this.originalName = structure.name;
+    this.logger = LoggerFactory.getLogger("registry-type");
   }
   addCommentString(commentString: string) {
     if (this.structure.commentString) {

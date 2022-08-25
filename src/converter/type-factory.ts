@@ -374,7 +374,10 @@ export class TypeFactory {
       level,
       getComments(node)
     );
-    type.getAliasTypeArguments().forEach(alias => {
+    const typeArgs =
+      type.getAliasSymbol()?.getDeclarations()[0]?.getType().getAliasTypeArguments() ??
+      type.getAliasTypeArguments();
+    typeArgs.forEach(alias => {
       this.addGenericParameter(mappedType, options, alias);
     });
     if (!isGenericReference(indexType.ref) && originalIndexType) {
@@ -608,7 +611,7 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     parameterType: Type
   ): GenericParameter | undefined {
-    const v = (parameterType.getSymbol() ?? parameterType.getAliasSymbol())?.getName();
+    const v = getFinalSymbolOfType(parameterType)?.getName();
     if (!v) {
       return;
     }
