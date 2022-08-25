@@ -1,6 +1,7 @@
 import { LoggerFactory } from "src/common/logging/factory";
 import { Node, SyntaxKind, Type } from "ts-morph";
 import { PrimitiveTypeName } from "./types";
+import { getFinalSymbol } from "./util";
 
 function isMappedType(type: Type): boolean {
   return type.getApparentProperties().length === 0;
@@ -122,6 +123,8 @@ export function getIndexAndValueType(
     undefined,
     undefined,
   ];
+  const nodeSymbol = node.getSymbol()
+  const finalSynbol = nodeSymbol ? getFinalSymbol(nodeSymbol).getName() : "<anon>"
   if (keyItems.length === 1) {
     const toUse = keyItems[0];
     const asTypeParamDec = toUse.asKind(SyntaxKind.TypeParameter);
@@ -131,15 +134,15 @@ export function getIndexAndValueType(
     } else {
       logger.warn("Key item not a type parameter declaration");
     }
-  } else {
-    logger.warn("More than one key item detected");
+  } else if (keyItems.length > 0) {
+    logger.warn(`More than one key item detected for ${finalSynbol}:`, keyItems);
   }
   if (valueItems.length === 1) {
     const toUse = valueItems[0];
     detectedValue[0] = toUse.getType();
     detectedValue[1] = toUse;
-  } else {
-    logger.warn("More than one value item detected");
+  } else if(valueItems.length>0) {
+    logger.warn(`More than one value item detected for ${finalSynbol}:`, valueItems);
   }
   return [detectedIndex, detectedValue];
 }
