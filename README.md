@@ -83,6 +83,9 @@ const main = async () => {
 void main();
 ```
 
+The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2,3 or `DEBUG`,
+`INFO`, `WARN`, or `ERROR`.
+
 # TODO:
 
 - make default number type config driven
