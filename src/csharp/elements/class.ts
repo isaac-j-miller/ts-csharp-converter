@@ -82,11 +82,6 @@ export class CSharpClass extends CSharpElement {
   protected serializeDeclaration(mapper: NameMapper, indentation: number, addNewline: boolean) {
     const indentString = getIndentString(indentation);
     let serialized = indentString + "public ";
-    // if (this.isPublic) {
-    //   serialized += "public ";
-    // } else {
-    //   serialized += "internal ";
-    // }
     if (this.isStatic) {
       serialized += "static ";
     }

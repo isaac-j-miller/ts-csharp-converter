@@ -307,9 +307,25 @@ export class TypeFactory {
       };
     }
     if (!symbolToUse) {
-      const objectRegistryType = this.registry.getType("object").getSymbol();
+      const text = typeToUse.getText();
+      const fromRegistryUsingText = this.registry.findTypeBySymbolText(text);
+      if (fromRegistryUsingText) {
+        return {
+          ref: fromRegistryUsingText.getSymbol(),
+          isArray,
+          arrayDepth,
+        };
+      }
+      const asType = this.createType({
+        type: typeToUse,
+        node,
+        name,
+        internal: true,
+        descendsFromPublic,
+        level: level + 1,
+      });
       return {
-        ref: objectRegistryType,
+        ref: asType.getSymbol(),
         isArray,
         arrayDepth,
       };
@@ -756,6 +772,9 @@ export class TypeFactory {
     const symbolToUse = createSymbol(name, type);
     if (type.getCallSignatures().length) {
       this.logger.warn(`Type ${name} has call signatures`);
+    }
+    if (name === "ProductCategory") {
+      console.debug();
     }
     const regType = new TypeRegistryType(
       this.registry,
