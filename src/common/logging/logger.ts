@@ -1,6 +1,6 @@
 import { ILogger, LogLevel } from "./types";
 
-type ConsoleLogLevel = "debug" | "info" | "warn" | "error";
+type ConsoleLogLevel = "trace" | "debug" | "info" | "warn" | "error";
 
 export class Logger implements ILogger {
   constructor(private source: string, private level: LogLevel) {}
@@ -8,12 +8,18 @@ export class Logger implements ILogger {
     if (this.level > level) {
       return;
     }
-    const levelKey = LogLevel[level].toLowerCase() as ConsoleLogLevel;
+    let levelKey = LogLevel[level].toLowerCase() as ConsoleLogLevel;
+    if(levelKey === "trace") {
+      levelKey = "debug"
+    }
     // eslint-disable-next-line no-console
     console[levelKey](
       `${new Date().toISOString()}\t[${this.source}]\t${LogLevel[level]}\t`,
       ...args
     );
+  }
+  trace(...args: any[]) {
+    this.log(LogLevel.TRACE, args);
   }
   debug(...args: any[]) {
     this.log(LogLevel.DEBUG, args);

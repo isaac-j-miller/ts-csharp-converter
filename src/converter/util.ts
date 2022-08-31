@@ -140,6 +140,7 @@ export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTy
   const apparentTypeName = apparentType.getSymbol()?.getName()?.toLowerCase();
   const tagsToUse = tags ?? (t.getSymbol() ?? t.getAliasSymbol())?.getJsDocTags();
   const apparentNumberType = getJsDocNumberType(tagsToUse);
+  
   if (apparentType.isString() || baseTypeName === "string" || apparentTypeName === "string") {
     return "string";
   }
@@ -152,7 +153,7 @@ export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTy
   if (apparentType.isBoolean() || baseTypeName === "boolean" || apparentTypeName === "boolean") {
     return "boolean";
   }
-  if (baseTypeName === "object" || apparentTypeName === "object") {
+  if (baseTypeName === "object" || apparentTypeName === "object" || t.getText() === "object") {
     return "object";
   }
   if (apparentType.isAny()) {
@@ -161,7 +162,8 @@ export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTy
   return;
 }
 
-export function literalValueToCSharpLiteralValue(v: LiteralValue): string {
+export function literalValueToCSharpLiteralValue(v: LiteralValue): string | undefined {
+  if(v===undefined) return undefined
   if (Array.isArray(v)) {
     const values = v.map(val => literalValueToCSharpLiteralValue(val));
     return `{ ${values.join(", ")} }`;

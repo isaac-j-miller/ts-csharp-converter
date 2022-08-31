@@ -32,7 +32,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
         isConstType: true,
       },
       true,
-      true,
+      false,
+      false,
       undefined,
       0,
       false
@@ -93,5 +94,8 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
   }
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
     return false;
+  }
+  usesRef(): boolean {
+    return false
   }
 }

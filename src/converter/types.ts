@@ -113,6 +113,11 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   rename(name: string): void;
   getOriginalName(): string;
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType>;
+  usesRef(ref: Exclude<BaseTypeReference, GenericReference>): boolean
+  usesType(type: IRegistryType): boolean
+  equals(ref: IRegistryType): boolean
+  registerRefs(): void
+  getRefHashes(): string[]
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;

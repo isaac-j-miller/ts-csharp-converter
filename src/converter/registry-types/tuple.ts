@@ -14,6 +14,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
     symbol: Symbol | ISyntheticSymbol,
     members: TypeReference[],
     internal: boolean,
+    isDescendantOfPublic: boolean,
     type: Type,
     level: number,
     node: Node,
@@ -25,7 +26,7 @@ export class TypeRegistryTupleType extends TypeRegistryPossiblyGenericType<"Tupl
       tupleMembers: members,
       commentString,
     };
-    super(registry, "Tuple", name, symbol, internal, true, node, type, level, false);
+    super(registry, "Tuple", name, symbol, internal, isDescendantOfPublic, true, node, type, level, false);
     this.structure = structure;
     this.baseName = "System.Tuple";
   }

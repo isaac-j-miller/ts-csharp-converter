@@ -53,6 +53,10 @@ const main = async () => {
       },
     },
     false,
+    /*
+    This is a set of classes/types/interfaces/etc to exclude from generation. The generator automatically registers and renders all classes/types/interfaces/etc which it encounters, so sometimes it will encounter tokens which don't really need to be
+    included. You can provide the converter with a set of tokens to ignore in order to clean up the output that you get.
+    */
     new Set([
       "JsonSchema",
       "DeepPartial",
@@ -77,6 +81,10 @@ const main = async () => {
       "S3Tree",
       "RuntimeConfig",
       "ParsedLoggable",
+      "DataFetchRequest",
+      "DataBindingRequest",
+      "ReportRequestDetails",
+      "SchemaType"
     ])
   );
 };
@@ -93,3 +101,9 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 - clean up messy code (constructor args, etc)
 - evaluate const declarations to use local variables
 - more unit tests using generated code
+- add JsonPropertyName to attributes
+
+# RW-Specific:
+- Figure out why some class names aren't being resolved/merged. For example, DataFetchRequest.Report should resolve to ReportRequestDetails, but it creates a new type. This might have something to do with default parameters
+- figure out why ReportRequestDetails.ReportSections is being rendered as `Dictionary<int, string>` instead of `string[]`
+- figure out why ReportRequestDetails.Options is being rendered as `Dictionary<object, object>` instead of `Dictionary<string, object>` (this is actually definitely because of the type in RW)

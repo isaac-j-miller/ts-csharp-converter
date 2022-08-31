@@ -96,7 +96,7 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = w
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
     const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = i > 0 && !isPrimitive ? capitalizeWithPeriods(base) : base;
+    const newBase = (i > 0 && !isPrimitive) ? capitalizeWithPeriods(base) : base;
     return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
   });
   const outputWord = formattedWords.join("");
@@ -123,7 +123,7 @@ export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = w
 
 export function normalize(str: string): string {
   let currentWord = "";
-  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_", "."]);
+  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_", ".", ":", "/"]);
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     const lowerCase = char.toLocaleLowerCase();
@@ -132,7 +132,7 @@ export function normalize(str: string): string {
     }
     currentWord += lowerCase;
   }
-  const replaced = currentWord.replace(/-/g, "_");
+  const replaced = currentWord.replace(/-|:|\//g, "_");
   return replaced;
 }
 function isNumberOrLetterOrUnderscore(char: string): boolean {

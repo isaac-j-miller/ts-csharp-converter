@@ -25,10 +25,15 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
       },
       false,
       true,
+      false,
       undefined,
       0,
       false
     );
+  }
+
+  usesRef(): boolean {
+    return false
   }
   getPropertyString(): string {
     return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);

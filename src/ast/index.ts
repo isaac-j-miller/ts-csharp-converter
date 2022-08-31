@@ -4,6 +4,7 @@ import { TsConfigJson } from "type-fest";
 import minimatch from "minimatch";
 import deepmerge from "deepmerge";
 import {
+  AsExpression,
   EnumDeclaration,
   ExportDeclaration,
   ExportSpecifier,
@@ -17,6 +18,7 @@ import {
   Type,
   TypeAliasDeclaration,
   VariableDeclaration,
+  VariableStatement,
 } from "ts-morph";
 import { TypeRegistry } from "src/converter/registry";
 import { IRegistryType, LiteralValue } from "src/converter/types";
@@ -31,6 +33,27 @@ import { ILogger } from "src/common/logging/types";
 import { LoggerFactory } from "src/common/logging/factory";
 
 type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclaration;
+
+function getExpr(node: AsExpression): string {
+  const expr = node.getExpression();
+  if(expr.asKind(SyntaxKind.AsExpression)) {
+    return getExpr(expr.asKindOrThrow(SyntaxKind.AsExpression));
+  }
+  return expr.getText(false);
+}
+
+function getFinalExpression(statement?: VariableStatement): string | undefined {
+  if(!statement) return;
+  const dec = statement.getDeclarations()[0];
+  if(!dec) return;
+  const init = dec.getInitializer();
+  if(!init) return;
+  const asExpr = init.asKind(SyntaxKind.AsExpression);
+  if(asExpr) {
+    return getExpr(asExpr);
+  }
+  return init.getText(false);
+}
 export class AstTraverser {
   private project: Project;
   private entrySourceFile: SourceFile;
@@ -50,7 +73,7 @@ export class AstTraverser {
       tsConfigFilePath: tsconfigPath,
     });
     this.entrySourceFile = this.project.getSourceFileOrThrow(entrypoint);
-    this.registry = new TypeRegistry();
+    this.registry = new TypeRegistry(ignoreClasses);
     this.typeFactory = new TypeFactory(this.registry, ignoreClasses);
     this.sourceFilesProcessed = new Set<string>();
     this.tsconfig = this.getTsConfig(tsconfigPath);
@@ -59,27 +82,28 @@ export class AstTraverser {
     this.rootDir = path.resolve(rel, baseUrl);
     this.logger = LoggerFactory.getLogger("ast-traverser");
   }
-  private processDeclaration<T extends DeclarationType>(node: T) {
+  private processDeclaration<T extends DeclarationType>(node: T, internal: boolean) {
     const name = node.getName();
     const asType = node.getType();
-    return this.createType(name, node, asType);
+    this.logger.trace(`Processing declaration for ${name}`)
+    return this.createType(name, node, asType, internal);
   }
-  private processVariableDeclaration(node: VariableDeclaration) {
+  private processVariableDeclaration(node: VariableDeclaration, isPublic: boolean) {
     const name = node.getName();
     const asType = node.getType();
     const isArray = asType.isArray();
-
     const constType = this.registry.getConstValueType();
     const typeToUse = getFinalArrayType(asType).getApparentType();
     const literalType = asPrimitiveTypeName(typeToUse);
     let literal = asType.getLiteralValue() as LiteralValue;
     const structure = node.getStructure();
-    // TODO: make this work better
-    if (structure.initializer && !literal) {
+    const varStatement = node.getVariableStatement();
+    const initializer = getFinalExpression(varStatement) ?? structure.initializer;
+    if (initializer && !literal) {
       try {
         // have to call eval like this because esbuild freaks out when I use eval the normal way
         // eslint-disable-next-line no-eval
-        literal = (0, eval)(structure.initializer.toString());
+        literal = (0, eval)(initializer.toString());
       } catch (e) {
         if (isArray) {
           const arrayTypes = typeToUse.getUnionTypes();
@@ -89,15 +113,15 @@ export class AstTraverser {
         }
       }
     }
-    if (!node.isExported() || !literalType) {
+    if (!name || !literalType || !node.isExported() || !isPublic ) {
       return;
     }
+    this.logger.trace(`Processing variable declaration for ${name}`)
     if (!literalType) {
       this.logger.warn(`Invalid literal type (${name})`);
       return;
     }
     const arrayDepth = getArrayDepth(asType);
-    const varStatement = node.getVariableStatement();
     let comments = varStatement ? getComments(varStatement) : undefined;
     if (literal === undefined) {
       literal = null;
@@ -113,9 +137,9 @@ export class AstTraverser {
     name: string,
     node: Node,
     asType: Type,
-    internal: boolean = false
+    internal: boolean
   ): IRegistryType {
-    const options = { name, node, type: asType, internal, level: 0 };
+    const options = { name, node, type: asType, internal, level: 0, descendsFromPublic: false };
     const regType = this.typeFactory.createType(options);
     return regType;
   }
@@ -160,47 +184,52 @@ export class AstTraverser {
     }
     return specs.map((e: ExportSpecifier | ImportSpecifier) => e.getName());
   }
-  private traverseNode(node: Node, nodesToInclude?: string[]) {
+  private traverseNode(node: Node, isFromRoot: boolean,  nodesToInclude?: string[]) {
+    this.logger.trace(`Traversing node ${node.getSymbol()?.getName()}${nodesToInclude?`, including ${nodesToInclude}`:""}`)
     node.forEachDescendant(nd => {
       const kind = nd.getKind();
+      const isRoot =nd.getSourceFile() === this.entrySourceFile
+      const isRootOrFromRoot = isFromRoot || isRoot
       switch (kind) {
+        case SyntaxKind.VariableDeclaration:
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration: {
-          const asKind = nd.asKindOrThrow(kind);
-          const explicitlyIncluded = nodesToInclude && nodesToInclude.includes(asKind.getName());
-          if (nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded) {
-            return;
+          if(isRoot) {
+            console.debug()
           }
-          this.processDeclaration(asKind);
+          const asKind = nd.asKindOrThrow(kind);
+          const explicitlyIncluded = isRootOrFromRoot || (nodesToInclude && nodesToInclude.includes(asKind.getName()));
+          const explicitlyExcluded = !!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded
+          if(explicitlyExcluded) return
+          if(kind === SyntaxKind.VariableDeclaration) {
+            this.processVariableDeclaration(nd.asKindOrThrow(kind), isRootOrFromRoot);
+          } else {
+            this.processDeclaration(asKind as TypeAliasDeclaration | InterfaceDeclaration | EnumDeclaration, !explicitlyIncluded);
+          }
           break;
         }
-        case SyntaxKind.MappedType: {
-          const k = nd.asKindOrThrow(kind);
-          this.registry.markMappedType(k);
-          break;
-        }
-        case SyntaxKind.VariableDeclaration:
-          this.processVariableDeclaration(nd.asKindOrThrow(kind));
-          break;
         case SyntaxKind.ImportDeclaration:
         case SyntaxKind.ExportDeclaration: {
           const asKind = nd.asKindOrThrow(kind);
           const sourceFile = asKind.getModuleSpecifierSourceFile();
           if (!sourceFile) {
+            this.logger.trace(`Ignoring export/import declaration in ${nd.getSourceFile().getFilePath()} with text ${asKind.getText()} because source file was not found`)
             return;
           }
           const fp = sourceFile.getFilePath();
           const inIgnoreDir = this.isInIgnoreDir(fp);
           if (inIgnoreDir) {
             this.sourceFilesProcessed.add(fp);
-            this.logger.debug(`Ignoring file ${fp}, as it is excluded...`);
+            this.logger.trace(`Ignoring file ${fp} because it is excluded`);
             return;
           }
-          if (!this.sourceFilesProcessed.has(fp)) {
+          if (isRoot || !this.sourceFilesProcessed.has(fp)) {
             this.sourceFilesProcessed.add(fp);
             const nodes = this.getNodesToInclude(asKind);
-            this.traverseNode(sourceFile, nodes);
+            this.traverseNode(sourceFile, isRoot, nodes);
+          } else {
+            this.logger.trace(`Ignoring ${fp} because it has already been processed`)
           }
           break;
         }
@@ -210,7 +239,7 @@ export class AstTraverser {
     });
   }
   traverse() {
-    this.traverseNode(this.entrySourceFile);
+    this.traverseNode(this.entrySourceFile, true);
   }
   createNamespace(name: string) {
     return this.registry.toNamespace(name);

@@ -10,7 +10,7 @@ import {
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { formatCSharpArrayString, getGenericTypeName } from "../util";
+import { formatCSharpArrayString, getGenericTypeName, literalValueToCSharpLiteralValue } from "../util";
 
 export type PropertyOptions = Omit<PropertyStructure, "propertyName" | "baseType">;
 
@@ -20,12 +20,13 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     name: string,
     symbol: Symbol | ISyntheticSymbol,
     internal: boolean,
+    isDescendantOfPublic: boolean,
     node: Node,
     type: Type,
     level: number,
     commentString?: string
   ) {
-    super(registry, "Type", name, symbol, internal, true, node, type, level);
+    super(registry, "Type", name, symbol, internal, isDescendantOfPublic, true, node, type, level);
     this.structure.commentString = commentString;
   }
   addCommentStringToProperty(propertyName: string, newCommentString: string): void {
@@ -80,16 +81,17 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   }
 
   private generateCSharpProperty(propName: string, struct: PropertyStructure): CSharpProperty {
-    const { baseType, isOptional, isArray, arrayDepth, commentString } = struct;
+    const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } = struct;
     const kindType = this.propertySymbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
       getter: true,
-      setter: true,
+      setter: !defaultLiteralValue,
       isConst: false,
       optional: isOptional,
       commentString,
+      defaultValue: literalValueToCSharpLiteralValue(defaultLiteralValue),
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;

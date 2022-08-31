@@ -1,6 +1,5 @@
 import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
 import { Symbol, Node, Type } from "ts-morph";
-import { NameMapper } from "../name-mapper/mapper";
 import { TypeRegistry } from "../registry";
 import { ISyntheticSymbol, PropertyStringArg, PropertyStringArgs, TypeReference } from "../types";
 import { getGenericTypeName } from "../util";
@@ -15,13 +14,14 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     public readonly indexType: TypeReference,
     public readonly valueType: TypeReference,
     internal: boolean,
+    isDescendantOfPublic: boolean,
     node: Node,
     type: Type,
     level: number,
     commentString?: string,
     genericParameters?: string[]
   ) {
-    super(registry, "Dictionary", name, sym, internal, !internal, node, type, level, true);
+    super(registry, "Dictionary", name, sym, internal, isDescendantOfPublic, !internal, node, type, level, true);
     this.structure.genericParameters = genericParameters?.map(g => ({
       name: g,
     }));

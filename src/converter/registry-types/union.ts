@@ -11,6 +11,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     symbol: Symbol | ISyntheticSymbol,
     members: UnionMember[],
     internal: boolean,
+    isDescendantOfPublic: boolean,
     type: Type,
     level: number,
     private readonly isStringEnum: boolean,
@@ -22,7 +23,10 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
       unionMembers: members,
       commentString,
     };
-    super(registry, structure, symbol, true, internal, type, level, false);
+    super(registry, structure, symbol, true, internal, isDescendantOfPublic, type, level, false);
+  }
+  usesRef(): boolean {
+    return false
   }
   getPropertyString(): string {
     return this.structure.name;

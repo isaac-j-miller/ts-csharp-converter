@@ -22,6 +22,7 @@ export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> exten
     name: string,
     sym: Symbol | ISyntheticSymbol,
     internal: boolean,
+    isDescendantOfPublic: boolean,
     shouldBeRendered: boolean,
     protected readonly node: Node,
     type: UnderlyingType<T>,
@@ -34,7 +35,7 @@ export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> exten
       properties: {},
       genericParameters: [],
     };
-    super(registry, structure, sym, shouldBeRendered, internal, type, level, !!isMappedType);
+    super(registry, structure, sym, shouldBeRendered, internal, isDescendantOfPublic, type, level, !!isMappedType);
   }
   addGenericParameter(p: GenericParameter) {
     if (!this.structure.genericParameters) {

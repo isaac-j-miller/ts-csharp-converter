@@ -46,8 +46,11 @@ export class CSharpClass extends CSharpElement {
     } = property;
     let serialized = formatCommentString(commentString, indent);
     serialized += `${getIndentString(indent)}${accessLevel} `;
+    if(defaultValue) {
+      serialized+="readonly "
+    }
     if (isConst) {
-      serialized += "readonly static ";
+      serialized += "static ";
     }
     serialized += `${mapper.transform(kind, NameType.DeclarationName)}`;
     if (optional) {

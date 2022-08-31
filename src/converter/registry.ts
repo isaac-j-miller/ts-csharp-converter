@@ -1,4 +1,4 @@
-import { MappedTypeNode, Symbol } from "ts-morph";
+import { Symbol } from "ts-morph";
 import { CSharpNamespace } from "src/csharp/elements";
 import { ICSharpElement } from "src/csharp/elements/types";
 import { LoggerFactory } from "src/common/logging/factory";
@@ -35,15 +35,13 @@ export class TypeRegistry {
   private textCache: Record<string, string | undefined>;
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
-  private mappedTypes: MappedTypeNode[];
   private logger: ILogger;
-  constructor() {
+  constructor(private ignoreClasses: Set<string>) {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
     this.declarations = new Set<string>();
     this.hashes = {};
-    this.mappedTypes = [];
     this.logger = LoggerFactory.getLogger("registry");
   }
   private symbolToIndex<T extends Symbol | ISyntheticSymbol>(sym: T): string | undefined {
@@ -73,9 +71,6 @@ export class TypeRegistry {
     }
     return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
   }
-  markMappedType(node: MappedTypeNode) {
-    this.mappedTypes.push(node);
-  }
   addType(type: IRegistryType): void {
     const sym = type.getSymbol();
     const typeIsPrimitive = isPrimitiveType(sym);
@@ -91,34 +86,26 @@ export class TypeRegistry {
     if (!idx) {
       throw new Error(`Unable to construct unique identifier for type ${type.getStructure().name}`);
     }
-    const hash = type.getHash();
-    const fromHashCache = this.hashes[hash];
-    const symbolRegistered = this.declarations.has(type.getOriginalName());
-    if (this.symbolMap[idx] || (fromHashCache && symbolRegistered)) {
-      if (fromHashCache) {
-        this.redirects[idx] = fromHashCache;
-      }
-      return;
-    }
     const { name } = type.getStructure();
     const namespaceAlreadyHasTypeWithName = this.declarations.has(name);
     if (namespaceAlreadyHasTypeWithName) {
       const refactoredName = getRefactorName(name);
-      const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
-      if (!this.declarations.has(refactoredName)) {
-        this.logger.warn(
-          `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
-            fpath ? ` (${fpath})` : ""
-          }, refactoring output to rename new type as ${refactoredName}`
-        );
+      if(type.isNonPrimitive() && isSyntheticSymbol(sym)) {
+        const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
+        if (!this.declarations.has(refactoredName)) {
+          this.logger.warn(
+            `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
+              fpath ? ` (${fpath})` : ""
+            }, refactoring output to rename new type as ${refactoredName}`
+          );
+        }
+        type.rename(refactoredName);
+        return this.addType(type);
       }
-      type.rename(refactoredName);
-      return this.addType(type);
     }
     this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
     this.declarations.add(name);
     this.symbolMap[idx] = type;
-    this.hashes[hash] = idx;
     const underlyingSym = isSyntheticSymbol(sym) ? sym.getUnderlyingSymbol() : undefined;
     if (underlyingSym) {
       const symIdx = this.symbolToIndex(underlyingSym);
@@ -243,7 +230,7 @@ export class TypeRegistry {
       return fromMap as GetTypeReturn<T>;
     }
     if (!isSyntheticSymbol(sym)) {
-      const primitiveTypeName = asPrimitiveTypeName(sym.getDeclaredType());
+      const primitiveTypeName = asPrimitiveTypeName(sym.getDeclarations()[0]?.getType());
       if (primitiveTypeName) {
         return this.getType(primitiveTypeName) as GetTypeReturn<T>;
       }
@@ -276,6 +263,7 @@ export class TypeRegistry {
       if (!regType.shouldBeRendered) {
         return;
       }
+      regType.registerRefs()
       const hash = regType.getHash();
       if (!hashMap[hash]) {
         hashMap[hash] = [idx];
@@ -287,34 +275,66 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      const [firstIdx, ...rest] = indices
-        .filter(v => {
-          const entry = this.getWithKey(v);
-          return !!entry?.shouldBeRendered;
-        })
-        .sort((a, b) => {
-          const aEntry = this.getWithKey(a);
-          const bEntry = this.getWithKey(b);
-          const aValue = calculateValue(aEntry);
-          const bValue = calculateValue(bEntry);
-          return bValue - aValue;
-        });
+      const sortedIndices = indices.filter(v => {
+        const entry = this.getWithKey(v);
+        return !!entry?.shouldBeRendered;
+      })
+      .sort((a, b) => {
+        const aEntry = this.getWithKey(a);
+        const bEntry = this.getWithKey(b);
+        const aValue = calculateValue(aEntry);
+        const bValue = calculateValue(bEntry);
+        return bValue - aValue;
+      });
+      const [firstIdx, ...rest] = sortedIndices
+        
+      const names: Array<string|undefined> = []
       rest.forEach(idx => {
+        const str = this.symbolMap[idx]
+        names.push(str?.getStructure().name)
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      this.logger.debug(`Stripped ${rest.length} duplicate types with hash ${hash}...`);
+      const kept = this.symbolMap[firstIdx]?.getStructure().name
+      this.logger.debug(`Stripped ${rest.length} (${names} -> ${kept}), duplicate types with hash ${hash}`);
       this.redirects = { ...this.redirects, ...replacementMap };
+      
     });
   }
   private getElements(): ICSharpElement[] {
-    const elements: ICSharpElement[] = [];
-    Object.values(this.symbolMap).forEach(elem => {
-      if (elem && elem.shouldBeRendered) {
-        elements.push(elem.getCSharpElement());
+    const symbolMapValues = Object.values(this.symbolMap)
+    const elemsToKeep: IRegistryType[] = []
+    const allNames = new Set<string>()
+    symbolMapValues.forEach((elem, i) => {
+      if(!elem || !elem.shouldBeRendered) return;
+      const { name } = elem.getStructure()
+      if(this.ignoreClasses.has(name)) {
+        this.logger.trace(`Filtering out ${name} because it is marked to be ignored`)
+        return 
+      }
+      if (elem.shouldBeRendered) {
+        elemsToKeep.push(elem)
+        allNames.add(name)
       }
     });
-    return elements;
+    elemsToKeep.forEach(value => {
+      if(!value) {
+        return
+      }
+      const {name} =value.getStructure()
+      const match = name.match(/\d+$/);
+      if(!match) return
+        const numStr = match[0];
+        const idx = name.lastIndexOf(numStr);
+        if(idx === -1) return;
+        const newName = name.slice(0, idx)
+        if(!newName) return
+        if(allNames.has(newName)) return;
+        this.logger.debug(`Renaming ${name}->${newName}`)
+        value.rename(newName)
+    })
+    const cSharpElems = elemsToKeep.map(e=>e.getCSharpElement())
+    return cSharpElems;
   }
   toNamespace(name: string): CSharpNamespace {
     this.logger.info("Preparing to create namespace...");
@@ -332,8 +352,14 @@ function calculateValue(t: IRegistryType | undefined): number {
   }
   let v = 0;
   if (t.isPublic()) {
-    v += 1;
+    v += 100;
   }
   v -= t.getLevel();
+  const match = t.getStructure().name.match(/\d+$/);
+  if (match) {
+    const numStr = match[0];
+    const numParsed = Number.parseInt(numStr, 10);
+    v-=numParsed;
+  }
   return v;
 }

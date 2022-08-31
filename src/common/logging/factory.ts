@@ -14,12 +14,12 @@ export class LoggerFactory {
     const asInt = Number.parseInt(fromEnv, 10);
     if (!Number.isInteger(asInt)) {
       const toUppercase = fromEnv.toUpperCase();
-      const levels = ["DEBUG", "INFO", "WARN", "ERROR"];
+      const levels = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"];
       const index = levels.indexOf(toUppercase);
       if (index === -1) return;
       return index as LogLevel;
     }
-    if (asInt >= LogLevel.DEBUG && asInt <= LogLevel.ERROR) {
+    if (asInt >= LogLevel.TRACE && asInt <= LogLevel.ERROR) {
       return asInt as LogLevel;
     }
     return;
