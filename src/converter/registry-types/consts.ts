@@ -96,6 +96,6 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     return false;
   }
   usesRef(): boolean {
-    return false
+    return false;
   }
 }

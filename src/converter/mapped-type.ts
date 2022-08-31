@@ -1,57 +1,60 @@
 import { LoggerFactory } from "src/common/logging/factory";
 import { Node, SyntaxKind, Type } from "ts-morph";
 import { PrimitiveTypeName } from "./types";
-import { getFinalSymbol } from "./util";
+import { getArrayDepth, getFinalArrayType, getFinalSymbol, getFinalSymbolOfType } from "./util";
 
 function isMappedType(type: Type): boolean {
   return type.getApparentProperties().length === 0;
 }
-export function getIndexAndValueType(
-  node: Node
-): [
-  [Type | PrimitiveTypeName | undefined, Node | undefined],
-  [Type | PrimitiveTypeName | undefined, Node | undefined]
-] {
+type IndexAndValueTypeInfo = {
+  index: MappedTypeInfo;
+  value: MappedTypeInfo;
+};
+
+export type MappedTypeInfo = {
+  type?: Type | PrimitiveTypeName;
+  node?: Node;
+  isArray: boolean;
+  arrayDepth?: number;
+};
+export function getIndexAndValueType(node: Node): IndexAndValueTypeInfo | undefined {
   const logger = LoggerFactory.getLogger("mapped-type-inferrer");
   const type = node.getType().getApparentType();
   if (type.getStringIndexType()) {
-    return [
-      ["string", undefined],
-      [type.getStringIndexType(), undefined],
-    ];
+    const stringIndexType = getFinalArrayType(type.getStringIndexType()!);
+    return {
+      index: {
+        type: "string",
+        node,
+        isArray: false,
+      },
+      value: {
+        type: stringIndexType,
+        isArray: !!stringIndexType!.isArray(),
+        arrayDepth: getArrayDepth(stringIndexType!),
+      },
+    };
   }
   if (type.getNumberIndexType()) {
-    return [
-      ["number", undefined],
-      [type.getNumberIndexType(), undefined],
-    ];
+    const numIndexType = getFinalArrayType(type.getNumberIndexType()!);
+    return {
+      index: {
+        type: "number",
+        node,
+        isArray: false,
+      },
+      value: {
+        type: numIndexType,
+        isArray: !!numIndexType!.isArray(),
+        arrayDepth: getArrayDepth(numIndexType!),
+      },
+    };
   }
-  if (!type.isObject()) {
-    return [
-      [undefined, undefined],
-      [undefined, undefined],
-    ];
+  const sym = getFinalSymbolOfType(type);
+  if (!type.isObject() || !isMappedType(type) || !sym || !sym.getDeclarations()[0]) {
+    return;
   }
-  if (!isMappedType(type)) {
-    return [
-      [undefined, undefined],
-      [undefined, undefined],
-    ];
-  }
-  const symbol = type.getAliasSymbol() ?? type.getSymbol();
-  if (!symbol) {
-    return [
-      [undefined, undefined],
-      [undefined, undefined],
-    ];
-  }
-  const declaration = symbol.getDeclarations()[0];
-  if (!declaration) {
-    return [
-      [undefined, undefined],
-      [undefined, undefined],
-    ];
-  }
+  const declaration = sym.getDeclarations()[0];
   let inBrackets = false;
   let afterColon = false;
   let afterSemicolon = false;
@@ -59,10 +62,7 @@ export function getIndexAndValueType(
   const valueItems: Node[] = [];
   const declarationDescendantToUse = declaration.getFirstDescendantByKind(SyntaxKind.MappedType);
   if (!declarationDescendantToUse) {
-    return [
-      [undefined, undefined],
-      [undefined, undefined],
-    ];
+    return;
   }
   const descendants = declarationDescendantToUse.getChildren();
   for (const descendant of descendants) {
@@ -115,34 +115,36 @@ export function getIndexAndValueType(
     }
   }
 
-  const detectedIndex: [Type | undefined | PrimitiveTypeName, Node | undefined] = [
-    undefined,
-    undefined,
-  ];
-  const detectedValue: [Type | undefined | PrimitiveTypeName, Node | undefined] = [
-    undefined,
-    undefined,
-  ];
+  const detectedIndex: MappedTypeInfo = {
+    isArray: false,
+  };
+  const detectedValue: MappedTypeInfo = {
+    isArray: false,
+  };
   const nodeSymbol = node.getSymbol();
   const finalSynbol = nodeSymbol ? getFinalSymbol(nodeSymbol).getName() : "<anon>";
   if (keyItems.length === 1) {
     const toUse = keyItems[0];
     const asTypeParamDec = toUse.asKind(SyntaxKind.TypeParameter);
     if (asTypeParamDec) {
-      detectedIndex[0] = asTypeParamDec.getConstraintOrThrow().getType();
-      detectedIndex[1] = asTypeParamDec;
+      detectedIndex.type = asTypeParamDec.getConstraintOrThrow().getType();
+      detectedIndex.node = asTypeParamDec;
     } else {
       logger.warn("Key item not a type parameter declaration");
     }
   } else if (keyItems.length > 0) {
     logger.warn(`More than one key item detected for ${finalSynbol}:`, keyItems);
   }
+  // TODO: this probably doesn't work correctly
   if (valueItems.length === 1) {
     const toUse = valueItems[0];
-    detectedValue[0] = toUse.getType();
-    detectedValue[1] = toUse;
+    detectedValue.type = toUse.getType();
+    detectedValue.node = toUse;
   } else if (valueItems.length > 0) {
     logger.warn(`More than one value item detected for ${finalSynbol}:`, valueItems);
   }
-  return [detectedIndex, detectedValue];
+  return {
+    index: detectedIndex,
+    value: detectedValue,
+  };
 }

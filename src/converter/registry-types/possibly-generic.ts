@@ -35,7 +35,17 @@ export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> exten
       properties: {},
       genericParameters: [],
     };
-    super(registry, structure, sym, shouldBeRendered, internal, isDescendantOfPublic, type, level, !!isMappedType);
+    super(
+      registry,
+      structure,
+      sym,
+      shouldBeRendered,
+      internal,
+      isDescendantOfPublic,
+      type,
+      level,
+      !!isMappedType
+    );
   }
   addGenericParameter(p: GenericParameter) {
     if (!this.structure.genericParameters) {

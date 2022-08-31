@@ -26,7 +26,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     super(registry, structure, symbol, true, internal, isDescendantOfPublic, type, level, false);
   }
   usesRef(): boolean {
-    return false
+    return false;
   }
   getPropertyString(): string {
     return this.structure.name;

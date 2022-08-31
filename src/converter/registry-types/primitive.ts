@@ -33,7 +33,7 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
   }
 
   usesRef(): boolean {
-    return false
+    return false;
   }
   getPropertyString(): string {
     return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);

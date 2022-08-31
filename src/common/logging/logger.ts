@@ -9,8 +9,8 @@ export class Logger implements ILogger {
       return;
     }
     let levelKey = LogLevel[level].toLowerCase() as ConsoleLogLevel;
-    if(levelKey === "trace") {
-      levelKey = "debug"
+    if (levelKey === "trace") {
+      levelKey = "debug";
     }
     // eslint-disable-next-line no-console
     console[levelKey](

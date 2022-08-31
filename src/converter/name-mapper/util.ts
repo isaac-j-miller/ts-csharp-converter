@@ -27,3 +27,16 @@ export function toCasingConvention<T extends string | undefined>(
   }
   throw new Error(`Invalid Casing Convention (${t}). Must be one of ${casingConventions}`);
 }
+
+export function countOccurences(str: string, substr: string): number {
+  let count = 0;
+  const indexof = str.indexOf(substr);
+  if (indexof !== -1) {
+    count++;
+  } else {
+    return 0;
+  }
+  const newStr = str.slice(indexof + substr.length);
+  count += countOccurences(newStr, substr);
+  return count;
+}

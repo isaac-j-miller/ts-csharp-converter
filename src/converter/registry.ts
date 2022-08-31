@@ -29,7 +29,7 @@ type GetTypeReturn<
   : T extends ConstType | ConstKeyword
   ? TypeRegistryConstType
   : IRegistryType<NonPrimitiveType> | undefined;
-  
+
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
@@ -91,7 +91,7 @@ export class TypeRegistry {
     const namespaceAlreadyHasTypeWithName = this.declarations.has(name);
     if (namespaceAlreadyHasTypeWithName) {
       const refactoredName = getRefactorName(name);
-      if(type.isNonPrimitive() && isSyntheticSymbol(sym)) {
+      if (type.isNonPrimitive() && isSyntheticSymbol(sym)) {
         const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
         if (!this.declarations.has(refactoredName)) {
           this.logger.warn(
@@ -264,7 +264,7 @@ export class TypeRegistry {
       if (!regType.shouldBeRendered) {
         return;
       }
-      regType.registerRefs()
+      regType.registerRefs();
       const hash = regType.getHash();
       if (!hashMap[hash]) {
         hashMap[hash] = [idx];
@@ -276,63 +276,65 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      const sortedIndices = indices.filter(v => {
-        const entry = this.getWithKey(v);
-        return !!entry?.shouldBeRendered;
-      })
-      .sort((a, b) => {
-        const aEntry = this.getWithKey(a);
-        const bEntry = this.getWithKey(b);
-        const aValue = calculateValue(aEntry);
-        const bValue = calculateValue(bEntry);
-        return bValue - aValue;
-      });
-      const [firstIdx, ...rest] = sortedIndices
-        
-      const names: Array<string|undefined> = []
+      const sortedIndices = indices
+        .filter(v => {
+          const entry = this.getWithKey(v);
+          return !!entry?.shouldBeRendered;
+        })
+        .sort((a, b) => {
+          const aEntry = this.getWithKey(a);
+          const bEntry = this.getWithKey(b);
+          const aValue = calculateValue(aEntry);
+          const bValue = calculateValue(bEntry);
+          return bValue - aValue;
+        });
+      const [firstIdx, ...rest] = sortedIndices;
+
+      const names: Array<string | undefined> = [];
       rest.forEach(idx => {
-        const str = this.symbolMap[idx]
-        names.push(str?.getStructure().name)
+        const str = this.symbolMap[idx];
+        names.push(str?.getStructure().name);
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      const kept = this.symbolMap[firstIdx]?.getStructure().name
-      this.logger.debug(`Stripped ${rest.length} (${names} -> ${kept}), duplicate types with hash ${hash}`);
+      const kept = this.symbolMap[firstIdx]?.getStructure().name;
+      this.logger.debug(
+        `Stripped ${rest.length} (${names} -> ${kept}), duplicate types with hash ${hash}`
+      );
       this.redirects = { ...this.redirects, ...replacementMap };
-      
     });
   }
   private getElements(): ICSharpElement[] {
-    const symbolMapValues = Object.values(this.symbolMap)
-    const elemsToKeep: IRegistryType[] = []
-    const allNames = new Set<string>()
+    const symbolMapValues = Object.values(this.symbolMap);
+    const elemsToKeep: IRegistryType[] = [];
+    const allNames = new Set<string>();
     symbolMapValues.forEach(elem => {
-      if(!elem || !elem.shouldBeRendered) return;
-      const { name } = elem.getStructure()
-      if(this.ignoreClasses.has(name)) {
-        this.logger.trace(`Filtering out ${name} because it is marked to be ignored`)
-        return 
+      if (!elem || !elem.shouldBeRendered) return;
+      const { name } = elem.getStructure();
+      if (this.ignoreClasses.has(name)) {
+        this.logger.trace(`Filtering out ${name} because it is marked to be ignored`);
+        return;
       }
-      elemsToKeep.push(elem)
-      allNames.add(name)
+      elemsToKeep.push(elem);
+      allNames.add(name);
     });
     elemsToKeep.forEach(value => {
-      if(!value) {
-        return
+      if (!value) {
+        return;
       }
-      const {name} =value.getStructure()
+      const { name } = value.getStructure();
       const match = name.match(/\d+$/);
-      if(!match) return
-        const numStr = match[0];
-        const idx = name.lastIndexOf(numStr);
-        if(idx === -1) return;
-        const newName = name.slice(0, idx)
-        if(!newName) return
-        if(allNames.has(newName)) return;
-        this.logger.debug(`Renaming ${name}->${newName}`)
-        value.rename(newName)
-    })
-    const cSharpElems = elemsToKeep.map(e=>e.getCSharpElement())
+      if (!match) return;
+      const numStr = match[0];
+      const idx = name.lastIndexOf(numStr);
+      if (idx === -1) return;
+      const newName = name.slice(0, idx);
+      if (!newName) return;
+      if (allNames.has(newName)) return;
+      this.logger.debug(`Renaming ${name}->${newName}`);
+      value.rename(newName);
+    });
+    const cSharpElems = elemsToKeep.map(e => e.getCSharpElement());
     return cSharpElems;
   }
   toNamespace(name: string): CSharpNamespace {
@@ -358,7 +360,7 @@ function calculateValue(t: IRegistryType | undefined): number {
   if (match) {
     const numStr = match[0];
     const numParsed = Number.parseInt(numStr, 10);
-    v-=numParsed;
+    v -= numParsed;
   }
   return v;
 }

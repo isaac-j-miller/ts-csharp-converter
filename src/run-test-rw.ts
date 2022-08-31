@@ -115,7 +115,7 @@ const main = async () => {
       "ConfigResponse",
       "ReportTypeSwitch",
       "JobStoreDbMethods",
-      "RqcAppConfig", 
+      "RqcAppConfig",
       "RqcAppConfigGeneric",
       "ReportManifest",
       "ReportManifestGeneric",

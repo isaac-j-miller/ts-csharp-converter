@@ -1,8 +1,7 @@
 import { LoggerFactory } from "src/common/logging/factory";
 import { ILogger } from "src/common/logging/types";
 import { capitalize } from "src/common/util";
-import { Node, Symbol, Type } from "ts-morph";
-import { SyntaxKind } from "typescript";
+import { Node, Symbol, Type, SyntaxKind } from "ts-morph";
 import { getIndexAndValueType } from "./mapped-type";
 import { TypeRegistry } from "./registry";
 import {
@@ -60,21 +59,24 @@ type GenericConstraintOrDefaultOptions = {
 const MAX_DEPTH = 50;
 
 function getNonNullableType(type: Type) {
-  if(!type.isNullable()) {
-    return type
+  if (!type.isNullable()) {
+    return type;
   }
-  if(type.isUnion()) {
+  if (type.isUnion()) {
     const unionTypes = type.getUnionTypes();
-    const nonUndefinedTypes = unionTypes.filter(u=>!u.isUndefined());
-    if(nonUndefinedTypes.length === 1) {
-      return nonUndefinedTypes[0]
+    const nonUndefinedTypes = unionTypes.filter(u => !u.isUndefined());
+    if (nonUndefinedTypes.length === 1) {
+      return nonUndefinedTypes[0];
     }
   }
-  const nonNullable = type.getNonNullableType()
-  if(nonNullable.getSymbol()?.getName() === "NonNullable" && nonNullable.getAliasTypeArguments().length === 1) {
-    return nonNullable.getAliasTypeArguments()[0]
+  const nonNullable = type.getNonNullableType();
+  if (
+    nonNullable.getSymbol()?.getName() === "NonNullable" &&
+    nonNullable.getAliasTypeArguments().length === 1
+  ) {
+    return nonNullable.getAliasTypeArguments()[0];
   }
-  return type.getNonNullableType()
+  return type.getNonNullableType();
 }
 
 function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyInfo {
@@ -83,15 +85,15 @@ function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyI
   const dec = propertySymbol.getDeclarations()[0];
   const commentString = getComments(dec);
   const type = propertySymbol.getTypeAtLocation(parentNode);
-  const nonNullable = getNonNullableType(type)
+  const nonNullable = getNonNullableType(type);
   const isArray = nonNullable.isArray();
   const baseType = getFinalArrayType(nonNullable);
   const symbol = baseType.getSymbol();
   const arrayDepth = isArray ? getArrayDepth(nonNullable) : 0;
   const tags = propertySymbol.getJsDocTags();
   const primitiveType = asPrimitiveTypeName(baseType, [...(symbol?.getJsDocTags() ?? []), ...tags]);
-  let literalValue: string|number|boolean|undefined
-  if(type.isLiteral()) {
+  let literalValue: string | number | boolean | undefined;
+  if (type.isLiteral()) {
     literalValue = type.getLiteralValue() as string | number | boolean | undefined;
   }
   const options: PropertyOptions = {
@@ -99,14 +101,14 @@ function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyI
     isOptional,
     arrayDepth,
     commentString,
-    defaultLiteralValue: literalValue
+    defaultLiteralValue: literalValue,
   };
   return {
     propertyName,
     baseType,
     symbol,
     primitiveType,
-    options
+    options,
   };
 }
 function getGenericConstraintOrDefaultOptions(type: Type): GenericConstraintOrDefaultOptions {
@@ -134,7 +136,7 @@ export class TypeFactory {
     return;
   }
   private createUnionTypeFromUnion(options: TypeOptions): IRegistryType | undefined {
-    const { name, node, type, internal, descendsFromPublic, } = options;
+    const { name, node, type, internal, descendsFromPublic } = options;
     if (type.isEnum() || !type.isUnion()) {
       return;
     }
@@ -179,7 +181,11 @@ export class TypeFactory {
       const apparentNumberType = getJsDocNumberType(tags);
       return this.registry.getType(apparentNumberType ?? "number");
     }
-    if (nonUndefinedUnionTypes.every(unionType => unionType.isString() || asPrimitiveTypeName(unionType) === "string")) {
+    if (
+      nonUndefinedUnionTypes.every(
+        unionType => unionType.isString() || asPrimitiveTypeName(unionType) === "string"
+      )
+    ) {
       return this.registry.getType("string");
     }
     return this.registry.getType("object");
@@ -312,7 +318,14 @@ export class TypeFactory {
         arrayDepth,
       };
     }
-    const regType = this.getFromRegistryOrCreateAnon(node, typeToUse, name, level,descendsFromPublic, symbolToUse);
+    const regType = this.getFromRegistryOrCreateAnon(
+      node,
+      typeToUse,
+      name,
+      level,
+      descendsFromPublic,
+      symbolToUse
+    );
     // TODO: figure out how to get parent generic params
     const genericParameters = getGenericParametersFromType(this.registry, typeToUse, [], name);
     const sym = regType.getSymbol();
@@ -333,27 +346,27 @@ export class TypeFactory {
       const stringIndexType = type.getStringIndexType();
       const numberIndexType = type.getNumberIndexType();
       if ((!stringIndexType && !numberIndexType) || asMappedType) {
-        const [[index, indexNode], [value, valueNode]] = getIndexAndValueType(node);
-        if (index && value && indexNode && valueNode) {
+        const { index, value } = getIndexAndValueType(node) ?? {};
+        if (index?.type && value?.type && index?.node && value?.node) {
           const indexTypeRef = this.getReferenceOrGetFromRegistry(
-            indexNode,
-            index,
+            index.node,
+            index.type,
             `${capitalize(name)}Index`,
             level,
-            !internal,
+            !internal
           );
-          if (!isPrimitiveTypeName(index)) {
-            originalIndexType = index;
+          if (!isPrimitiveTypeName(index.type)) {
+            originalIndexType = index.type;
           }
           const valueTypeRef = this.getReferenceOrGetFromRegistry(
-            valueNode,
-            value,
+            value.node,
+            value.type,
             `${capitalize(name)}Value`,
             level,
-            !internal,
+            !internal
           );
-          if (!isPrimitiveTypeName(value)) {
-            originalValueType = value;
+          if (!isPrimitiveTypeName(value.type)) {
+            originalValueType = value.type;
           }
           return [indexTypeRef, valueTypeRef];
         }
@@ -381,10 +394,7 @@ export class TypeFactory {
         valueTypeToUse.getSymbol()
       );
       originalValueType = valueToUse;
-      return [
-        { ref: indexType, isArray: false, arrayDepth: 0 },
-        vType,
-      ];
+      return [{ ref: indexType, isArray: false, arrayDepth: 0 }, vType];
     };
 
     const indexAndValueTypes = getIndexAndValueTypeRefs();
@@ -412,6 +422,7 @@ export class TypeFactory {
     typeArgs.forEach(alias => {
       this.addGenericParameter(mappedType, options, alias);
     });
+    // TODO: fix inline property like x: Record<x, y<T,V>>
     if (!isGenericReference(indexType.ref) && originalIndexType) {
       const genericParams = getGenericParametersFromType(
         this.registry,
@@ -769,6 +780,12 @@ export class TypeFactory {
     if (asPrimitive) {
       return asPrimitive;
     }
+    if (options.type.isArray()) {
+      this.logger.warn(
+        `Unable to process plain array type: ${options.name} is being returned as a object for now`
+      );
+      return this.registry.getType("any");
+    }
     const asUnionFromUnion = this.createUnionTypeFromUnion(options);
     if (asUnionFromUnion) {
       return asUnionFromUnion;
@@ -794,7 +811,9 @@ export class TypeFactory {
   }
   createType(options: TypeOptions): IRegistryType {
     try {
-      this.logger.trace(`Creating ${options.internal ? "internal": "public"} type ${options.name}`)
+      this.logger.trace(
+        `Creating ${options.internal ? "internal" : "public"} type ${options.name}`
+      );
       const regType = this.createTypeInternal(options);
       this.registry.addType(regType);
       return regType;

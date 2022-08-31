@@ -21,7 +21,19 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     commentString?: string,
     genericParameters?: string[]
   ) {
-    super(registry, "Dictionary", name, sym, internal, isDescendantOfPublic, !internal, node, type, level, true);
+    super(
+      registry,
+      "Dictionary",
+      name,
+      sym,
+      internal,
+      isDescendantOfPublic,
+      !(internal || isDescendantOfPublic),
+      node,
+      type,
+      level,
+      true
+    );
     this.structure.genericParameters = genericParameters?.map(g => ({
       name: g,
     }));

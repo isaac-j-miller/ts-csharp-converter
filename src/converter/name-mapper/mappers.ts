@@ -1,6 +1,6 @@
 import { assertNever, capitalize } from "src/common/util";
 import { CasedString, CasingConvention, NameOutputMapper, ParsedWord } from "./types";
-import { isCSharpPrimitive } from "./util";
+import { countOccurences, isCSharpPrimitive } from "./util";
 
 export function parseNormalized(word: string): ParsedWord[] {
   const basicWords: string[] = [];
@@ -41,10 +41,30 @@ export function parseNormalized(word: string): ParsedWord[] {
       baseWord = baseWord.slice(0, genericStart);
       const lastAngleBracketIdx = genericPart.lastIndexOf(">");
       const genericPartToUse = genericPart.slice(1, lastAngleBracketIdx);
-      typeArguments = genericPartToUse.split(", ").map(s => {
-        const trimmed = s.trim();
-        return parseNormalized(trimmed);
+      const tempTypeArguments = genericPartToUse.split(",").map(s => s.trim());
+      const typeArgumentsInput: string[] = [];
+      let currentStrs: string[] = [];
+      let currentLeftAngleBrackets = 0;
+      let currentRightAngleBrackets = 0;
+      tempTypeArguments.forEach(arg => {
+        currentLeftAngleBrackets += countOccurences(arg, "<");
+        currentRightAngleBrackets += countOccurences(arg, ">");
+        if (currentLeftAngleBrackets > currentRightAngleBrackets) {
+          currentStrs.push(arg);
+        } else if (currentLeftAngleBrackets === currentRightAngleBrackets) {
+          if (currentStrs.length) {
+            currentStrs.push(arg);
+            const joined = currentStrs.join(", ");
+            typeArgumentsInput.push(joined);
+            currentStrs = [];
+          } else {
+            typeArgumentsInput.push(arg);
+          }
+        } else {
+          throw new Error(`More right brackets than left brackets in ${genericPartToUse}`);
+        }
       });
+      typeArguments = typeArgumentsInput.map(s => parseNormalized(s));
     }
     const parsed: ParsedWord = {
       base: baseWord,
@@ -96,7 +116,7 @@ export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = w
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
     const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = (i > 0 && !isPrimitive) ? capitalizeWithPeriods(base) : base;
+    const newBase = i > 0 && !isPrimitive ? capitalizeWithPeriods(base) : base;
     return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
   });
   const outputWord = formattedWords.join("");

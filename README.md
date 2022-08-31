@@ -84,7 +84,7 @@ const main = async () => {
       "DataFetchRequest",
       "DataBindingRequest",
       "ReportRequestDetails",
-      "SchemaType"
+      "SchemaType",
     ])
   );
 };
@@ -104,6 +104,11 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 - add JsonPropertyName to attributes
 
 # RW-Specific:
-- Figure out why some class names aren't being resolved/merged. For example, DataFetchRequest.Report should resolve to ReportRequestDetails, but it creates a new type. This might have something to do with default parameters
-- figure out why ReportRequestDetails.ReportSections is being rendered as `Dictionary<int, string>` instead of `string[]`
-- figure out why ReportRequestDetails.Options is being rendered as `Dictionary<object, object>` instead of `Dictionary<string, object>` (this is actually definitely because of the type in RW)
+
+- Figure out why some class names aren't being resolved/merged. For example, DataFetchRequest.Report
+  should resolve to ReportRequestDetails, but it creates a new type. This might have something to do
+  with default parameters
+- figure out why ReportRequestDetails.ReportSections is being rendered as `Dictionary<int, string>`
+  instead of `string[]`
+- figure out why ReportRequestDetails.Options is being rendered as `Dictionary<object, object>`
+  instead of `Dictionary<string, object>` (this is actually definitely because of the type in RW)

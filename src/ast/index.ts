@@ -36,20 +36,20 @@ type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclara
 
 function getExpr(node: AsExpression): string {
   const expr = node.getExpression();
-  if(expr.asKind(SyntaxKind.AsExpression)) {
+  if (expr.asKind(SyntaxKind.AsExpression)) {
     return getExpr(expr.asKindOrThrow(SyntaxKind.AsExpression));
   }
   return expr.getText(false);
 }
 
 function getFinalExpression(statement?: VariableStatement): string | undefined {
-  if(!statement) return;
+  if (!statement) return;
   const dec = statement.getDeclarations()[0];
-  if(!dec) return;
+  if (!dec) return;
   const init = dec.getInitializer();
-  if(!init) return;
+  if (!init) return;
   const asExpr = init.asKind(SyntaxKind.AsExpression);
-  if(asExpr) {
+  if (asExpr) {
     return getExpr(asExpr);
   }
   return init.getText(false);
@@ -85,7 +85,7 @@ export class AstTraverser {
   private processDeclaration<T extends DeclarationType>(node: T, internal: boolean) {
     const name = node.getName();
     const asType = node.getType();
-    this.logger.trace(`Processing declaration for ${name}`)
+    this.logger.trace(`Processing declaration for ${name}`);
     return this.createType(name, node, asType, internal);
   }
   private processVariableDeclaration(node: VariableDeclaration, isPublic: boolean) {
@@ -113,10 +113,10 @@ export class AstTraverser {
         }
       }
     }
-    if (!name || !literalType || !node.isExported() || !isPublic ) {
+    if (!name || !literalType || !node.isExported() || !isPublic) {
       return;
     }
-    this.logger.trace(`Processing variable declaration for ${name}`)
+    this.logger.trace(`Processing variable declaration for ${name}`);
     if (!literalType) {
       this.logger.warn(`Invalid literal type (${name})`);
       return;
@@ -133,12 +133,7 @@ export class AstTraverser {
     }
     constType.addConst(name, literalType, isArray, arrayDepth, literal, comments);
   }
-  private createType(
-    name: string,
-    node: Node,
-    asType: Type,
-    internal: boolean
-  ): IRegistryType {
+  private createType(name: string, node: Node, asType: Type, internal: boolean): IRegistryType {
     const options = { name, node, type: asType, internal, level: 0, descendsFromPublic: false };
     const regType = this.typeFactory.createType(options);
     return regType;
@@ -184,25 +179,34 @@ export class AstTraverser {
     }
     return specs.map((e: ExportSpecifier | ImportSpecifier) => e.getName());
   }
-  private traverseNode(node: Node, isFromRoot: boolean,  nodesToInclude?: string[]) {
-    this.logger.trace(`Traversing node ${node.getSymbol()?.getName()}${nodesToInclude?`, including ${nodesToInclude}`:""}`)
+  private traverseNode(node: Node, isFromRoot: boolean, nodesToInclude?: string[]) {
+    this.logger.trace(
+      `Traversing node ${node.getSymbol()?.getName()}${
+        nodesToInclude ? `, including ${nodesToInclude}` : ""
+      }`
+    );
     node.forEachDescendant(nd => {
       const kind = nd.getKind();
-      const isRoot =nd.getSourceFile() === this.entrySourceFile
-      const isRootOrFromRoot = isFromRoot || isRoot
+      const isRoot = nd.getSourceFile() === this.entrySourceFile;
+      const isRootOrFromRoot = isFromRoot || isRoot;
       switch (kind) {
         case SyntaxKind.VariableDeclaration:
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration: {
           const asKind = nd.asKindOrThrow(kind);
-          const explicitlyIncluded = isRootOrFromRoot || (nodesToInclude && nodesToInclude.includes(asKind.getName()));
-          const explicitlyExcluded = !!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded
-          if(explicitlyExcluded) return
-          if(kind === SyntaxKind.VariableDeclaration) {
+          const explicitlyIncluded =
+            isRootOrFromRoot || (nodesToInclude && nodesToInclude.includes(asKind.getName()));
+          const explicitlyExcluded =
+            !!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded;
+          if (explicitlyExcluded) return;
+          if (kind === SyntaxKind.VariableDeclaration) {
             this.processVariableDeclaration(nd.asKindOrThrow(kind), isRootOrFromRoot);
           } else {
-            this.processDeclaration(asKind as TypeAliasDeclaration | InterfaceDeclaration | EnumDeclaration, !explicitlyIncluded);
+            this.processDeclaration(
+              asKind as TypeAliasDeclaration | InterfaceDeclaration | EnumDeclaration,
+              !explicitlyIncluded
+            );
           }
           break;
         }
@@ -211,7 +215,11 @@ export class AstTraverser {
           const asKind = nd.asKindOrThrow(kind);
           const sourceFile = asKind.getModuleSpecifierSourceFile();
           if (!sourceFile) {
-            this.logger.trace(`Ignoring export/import declaration in ${nd.getSourceFile().getFilePath()} with text ${asKind.getText()} because source file was not found`)
+            this.logger.trace(
+              `Ignoring export/import declaration in ${nd
+                .getSourceFile()
+                .getFilePath()} with text ${asKind.getText()} because source file was not found`
+            );
             return;
           }
           const fp = sourceFile.getFilePath();
@@ -226,7 +234,7 @@ export class AstTraverser {
             const nodes = this.getNodesToInclude(asKind);
             this.traverseNode(sourceFile, isRoot, nodes);
           } else {
-            this.logger.trace(`Ignoring ${fp} because it has already been processed`)
+            this.logger.trace(`Ignoring ${fp} because it has already been processed`);
           }
           break;
         }

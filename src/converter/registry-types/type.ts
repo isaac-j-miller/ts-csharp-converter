@@ -10,7 +10,11 @@ import {
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { formatCSharpArrayString, getGenericTypeName, literalValueToCSharpLiteralValue } from "../util";
+import {
+  formatCSharpArrayString,
+  getGenericTypeName,
+  literalValueToCSharpLiteralValue,
+} from "../util";
 
 export type PropertyOptions = Omit<PropertyStructure, "propertyName" | "baseType">;
 
@@ -81,7 +85,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   }
 
   private generateCSharpProperty(propName: string, struct: PropertyStructure): CSharpProperty {
-    const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } = struct;
+    const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } =
+      struct;
     const kindType = this.propertySymbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
