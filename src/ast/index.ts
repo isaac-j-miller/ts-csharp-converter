@@ -195,9 +195,6 @@ export class AstTraverser {
         case SyntaxKind.TypeAliasDeclaration:
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration: {
-          if(isRoot) {
-            console.debug()
-          }
           const asKind = nd.asKindOrThrow(kind);
           const explicitlyIncluded = isRootOrFromRoot || (nodesToInclude && nodesToInclude.includes(asKind.getName()));
           const explicitlyExcluded = !!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded

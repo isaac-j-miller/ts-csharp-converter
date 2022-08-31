@@ -29,6 +29,7 @@ type GetTypeReturn<
   : T extends ConstType | ConstKeyword
   ? TypeRegistryConstType
   : IRegistryType<NonPrimitiveType> | undefined;
+  
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
@@ -305,17 +306,15 @@ export class TypeRegistry {
     const symbolMapValues = Object.values(this.symbolMap)
     const elemsToKeep: IRegistryType[] = []
     const allNames = new Set<string>()
-    symbolMapValues.forEach((elem, i) => {
+    symbolMapValues.forEach(elem => {
       if(!elem || !elem.shouldBeRendered) return;
       const { name } = elem.getStructure()
       if(this.ignoreClasses.has(name)) {
         this.logger.trace(`Filtering out ${name} because it is marked to be ignored`)
         return 
       }
-      if (elem.shouldBeRendered) {
-        elemsToKeep.push(elem)
-        allNames.add(name)
-      }
+      elemsToKeep.push(elem)
+      allNames.add(name)
     });
     elemsToKeep.forEach(value => {
       if(!value) {
