@@ -773,9 +773,6 @@ export class TypeFactory {
     if (type.getCallSignatures().length) {
       this.logger.warn(`Type ${name} has call signatures`);
     }
-    if (name === "InternalPdfGlobalOptions") {
-      console.debug();
-    }
     const regType = new TypeRegistryType(
       this.registry,
       name,
@@ -798,7 +795,7 @@ export class TypeFactory {
   }
   private createTypeInternal(options: TypeOptions): IRegistryType {
     const apparentType = options.type.getApparentType();
-    const symbol = apparentType.getAliasSymbol() ?? apparentType.getSymbol();
+    const symbol = getFinalSymbolOfType(apparentType);
     const symName = symbol?.getName();
     const nameToCheck = !!symName && symName !== "__type" ? symName : options.name;
     if (this.ignoreClasses.has(nameToCheck)) {

@@ -109,13 +109,6 @@ export class TypeRegistry {
     }
     this.declarations.add(name);
     this.symbolMap[idx] = type;
-    const underlyingSym = isSyntheticSymbol(sym) ? sym.getUnderlyingSymbol() : undefined;
-    if (underlyingSym) {
-      const symIdx = this.symbolToIndex(underlyingSym);
-      if (symIdx) {
-        this.redirects[symIdx] = idx;
-      }
-    }
   }
   has(sym: RegistryKey): boolean {
     return !!this.getType(sym);
@@ -236,13 +229,6 @@ export class TypeRegistry {
       const primitiveTypeName = asPrimitiveTypeName(sym.getDeclarations()[0]?.getType());
       if (primitiveTypeName) {
         return this.getType(primitiveTypeName) as GetTypeReturn<T>;
-      }
-    }
-    const underlyingSym = isSyntheticSymbol(sym) ? sym.getUnderlyingSymbol() : undefined;
-    if (underlyingSym) {
-      const fromSym = this.getType(underlyingSym) as GetTypeReturn<T>;
-      if (fromSym) {
-        return fromSym;
       }
     }
     const redirectedIdx = this.redirects[idx];
