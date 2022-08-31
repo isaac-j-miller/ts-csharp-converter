@@ -67,7 +67,7 @@ export class AstTraverser {
     entrypoint: string,
     tsconfigPath: string,
     private includeNodeModules: boolean = false,
-    ignoreClasses: Set<string>
+    private ignoreClasses: Set<string>
   ) {
     this.project = new Project({
       tsConfigFilePath: tsconfigPath,
@@ -170,12 +170,13 @@ export class AstTraverser {
   ): string[] | undefined {
     let specs: Array<ExportSpecifier | ImportSpecifier> = [];
     if (node.getKind() === SyntaxKind.ImportDeclaration) {
-      specs = node.asKindOrThrow(SyntaxKind.ImportDeclaration).getNamedImports();
+      specs = [];
     } else if (node.getKind() === SyntaxKind.ExportDeclaration) {
       specs = node.asKindOrThrow(SyntaxKind.ExportDeclaration).getNamedExports();
-    }
-    if (!specs.length) {
-      return undefined;
+      if (!specs.length) {
+        return undefined;
+      }
+      // TODO: handle wildcard export
     }
     return specs.map((e: ExportSpecifier | ImportSpecifier) => e.getName());
   }
@@ -195,17 +196,20 @@ export class AstTraverser {
         case SyntaxKind.InterfaceDeclaration:
         case SyntaxKind.EnumDeclaration: {
           const asKind = nd.asKindOrThrow(kind);
+          const isPublic =
+            isRootOrFromRoot && (!nodesToInclude || nodesToInclude.includes(asKind.getName()));
           const explicitlyIncluded =
             isRootOrFromRoot || (nodesToInclude && nodesToInclude.includes(asKind.getName()));
           const explicitlyExcluded =
-            !!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded;
+            (!!nodesToInclude && nodesToInclude.length > 0 && !explicitlyIncluded) ||
+            this.ignoreClasses.has(asKind.getName());
           if (explicitlyExcluded) return;
           if (kind === SyntaxKind.VariableDeclaration) {
             this.processVariableDeclaration(nd.asKindOrThrow(kind), isRootOrFromRoot);
           } else {
             this.processDeclaration(
               asKind as TypeAliasDeclaration | InterfaceDeclaration | EnumDeclaration,
-              !explicitlyIncluded
+              !isPublic
             );
           }
           break;

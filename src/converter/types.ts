@@ -101,9 +101,11 @@ export type UnderlyingType<T extends TokenType> = T extends "Primitive" | "Const
 export interface IRegistryType<T extends TokenType = TokenType> {
   readonly tokenType: T;
   readonly shouldBeRendered: boolean;
+  readonly isDescendantOfPublic: boolean;
+  readonly isPublic: boolean;
+  readonly isAnonymous: boolean;
   isGeneric(): this is TypeRegistryPossiblyGenericType<T>;
   addCommentString(commentString: string): void;
-  isPublic(): boolean;
   getLevel(): number;
   getStructure(): TypeStructure<T>;
   getHash(): string;

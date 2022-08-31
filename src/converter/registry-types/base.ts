@@ -6,6 +6,7 @@ import { ILogger } from "src/common/logging/types";
 import {
   BaseTypeReference,
   ConstType,
+  GenericParameter,
   GenericReference,
   IRegistryType,
   isConstType,
@@ -14,6 +15,8 @@ import {
   ISyntheticSymbol,
   NonPrimitiveType,
   PrimitiveType,
+  PropertyStringArg,
+  PropertyStringArgs,
   PropertyStructure,
   RegistryKey,
   TokenType,
@@ -26,6 +29,7 @@ import type { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 
 export abstract class RegistryType<T extends TokenType> implements IRegistryType<T> {
   protected refs: Set<string>;
+  private _hash?: string;
   private readonly originalName: string;
   public readonly tokenType: T;
   protected logger: ILogger;
@@ -36,7 +40,7 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
     private readonly symbol: Symbol | PrimitiveType | ISyntheticSymbol | ConstType,
     private readonly _shouldBeRendered: boolean,
     protected readonly internal: boolean,
-    protected readonly isDescendantOfPublic: boolean,
+    public readonly isDescendantOfPublic: boolean,
     protected readonly type: UnderlyingType<T>,
     private readonly level: number,
     protected isMappedType: boolean
@@ -56,11 +60,14 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
   getLevel(): number {
     return this.level;
   }
-  isPublic(): boolean {
+  get isPublic(): boolean {
     return !this.internal;
   }
   get shouldBeRendered() {
-    return this._shouldBeRendered && (this.isDescendantOfPublic || this.isPublic());
+    return !this.isAnonymous && (this.isDescendantOfPublic || this.isPublic);
+  }
+  get isAnonymous(): boolean {
+    return !this._shouldBeRendered;
   }
   rename(newName: string) {
     this.structure.name = newName;
@@ -128,15 +135,15 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
   }
   private hashTypeRef(ref: TypeReference | undefined): string {
     if (!ref) {
-      return "undefined";
+      return "_";
     }
-    const { arrayDepth, isArray, ref: typeRef } = ref;
+    const { arrayDepth, isArray, ref: typeRef, genericParameters } = ref;
     let baseTypeHash: string;
     if (isGenericReference(typeRef)) {
       baseTypeHash = typeRef.genericParamName;
     } else {
       const fromRegistry = this.registry.getType(typeRef);
-      let prefix = "undefined";
+      let prefix = "_";
       if (fromRegistry) {
         if (fromRegistry.getStructure().name === this.structure.name) {
           prefix = this.getStructure().name + "(this)";
@@ -144,7 +151,9 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
           prefix = fromRegistry.getHash();
         }
       }
-      baseTypeHash = prefix + `a:${isArray};d:${arrayDepth ?? 0}`;
+      baseTypeHash =
+        prefix +
+        `a:${isArray};d:${arrayDepth ?? 0}.${this.hashPropertyStringArgs(genericParameters)}`;
     }
     return createHash("md5").update(baseTypeHash).digest().toString("hex");
   }
@@ -152,9 +161,26 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
     const hashedArray = Object.entries(properties).map(
       ([key, p]) => `${key}:${this.hashProperty(p)}`
     );
-    return this.hash(hashedArray);
+    return this.hash(hashedArray.sort());
+  }
+  private hashGenericParams(params: GenericParameter[] | undefined) {
+    if (!params || params.length === 0) return "_";
+    const hashFn = (g: GenericParameter) =>
+      `${this.hashTypeRef(g.constraint)},${this.hashTypeRef(g.default)},${this.hashTypeRef(
+        g.apparent
+      )}`;
+    return params.map(hashFn).join(",");
+  }
+  private hashPropertyStringArgs(args: PropertyStringArgs | undefined) {
+    if (!args || args.length === 0) return "_";
+    const hashFn = (g: PropertyStringArg) => (typeof g === "string" ? g : this.hashTypeRef(g));
+    return args.map(hashFn).join(",");
+  }
+  private hashTupleMembers(members?: Array<TypeReference<BaseTypeReference>>) {
+    return members?.map(m => this.hashTypeRef(m)).join(",") ?? "_";
   }
   getHash() {
+    if (this._hash) return this._hash;
     const {
       name,
       tokenType,
@@ -165,31 +191,33 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
       mappedValueType,
       genericParameters,
     } = this.structure;
-    const unionHash = this.hash(unionMembers);
+    const unionHash = this.hash(
+      unionMembers?.sort((a, b) => {
+        if (a > b) {
+          return 1;
+        }
+        if (b > a) {
+          return -1;
+        }
+        return 0;
+      })
+    );
     const propertiesHash = properties ? this.hashProperties(properties) : "_";
-    const refs = createHash("md5")
-      .update(this.getRefHashes().sort().join("/"))
-      .digest()
-      .toString("hex");
+    // const refs =  createHash("md5").update(this.getRefHashes().sort().join("/")).digest().toString("hex")
     const hash = `${tokenType}#${
       tokenType === "Primitive" || tokenType === "Instance" ? `${name}#` : ""
-    }${unionHash}#${propertiesHash}#${genericParameters?.map(
-      g =>
-        `${this.hashTypeRef(g.constraint)},${this.hashTypeRef(g.default)},${this.hashTypeRef(
-          g.apparent
-        )}`
-    )}#${this.hashTypeRef(mappedIndexType)}#${mappedIndexType?.genericParameters
-      ?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g)))
-      .join(".")}#${this.hashTypeRef(mappedValueType)}#${mappedValueType?.genericParameters
-      ?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g)))
-      .join(".")}#${tupleMembers?.map(
-      t =>
-        this.hashTypeRef(t) +
-        "#" +
-        // eslint-disable-next-line no-unsafe-optional-chaining
-        t.genericParameters?.map(g => (typeof g === "string" ? g : this.hashTypeRef(g))).join(".")
-    )}+${refs}`;
-    return hash;
+    }${unionHash}#${propertiesHash}#${this.hashGenericParams(
+      genericParameters
+    )}#Index${this.hashTypeRef(mappedIndexType)}#${this.hashPropertyStringArgs(
+      mappedIndexType?.genericParameters
+    )}#Value${this.hashTypeRef(mappedValueType)}#${this.hashPropertyStringArgs(
+      mappedIndexType?.genericParameters
+    )}#T${this.hashTupleMembers(tupleMembers)}`;
+    // if(this._hash && hash!==this._hash) {
+    //   this.logger.warn(`Hash has changed for ${this.structure.name}`)
+    // }
+    this._hash = hash;
+    return this._hash;
   }
   getSymbol(): Exclude<BaseTypeReference, GenericReference> {
     return this.symbol;
@@ -238,7 +266,6 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
       p.baseType,
     ]);
     const refsFromGenericParams = (genericParameters ?? []).flatMap(g => [
-      ...this.extractRefs(g.apparent),
       ...this.extractRefs(g.constraint),
       ...this.extractRefs(g.default),
     ]);

@@ -104,7 +104,9 @@ export class TypeRegistry {
         return this.addType(type);
       }
     }
-    this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    if (!typeIsPrimitive) {
+      this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    }
     this.declarations.add(name);
     this.symbolMap[idx] = type;
     const underlyingSym = isSyntheticSymbol(sym) ? sym.getUnderlyingSymbol() : undefined;
@@ -261,9 +263,7 @@ export class TypeRegistry {
         delete this.symbolMap[idx];
         return;
       }
-      if (!regType.shouldBeRendered) {
-        return;
-      }
+      this.logger.trace(`Registering references of ${regType.getStructure().name}`);
       regType.registerRefs();
       const hash = regType.getHash();
       if (!hashMap[hash]) {
@@ -276,18 +276,13 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      const sortedIndices = indices
-        .filter(v => {
-          const entry = this.getWithKey(v);
-          return !!entry?.shouldBeRendered;
-        })
-        .sort((a, b) => {
-          const aEntry = this.getWithKey(a);
-          const bEntry = this.getWithKey(b);
-          const aValue = calculateValue(aEntry);
-          const bValue = calculateValue(bEntry);
-          return bValue - aValue;
-        });
+      const sortedIndices = indices.sort((a, b) => {
+        const aEntry = this.getWithKey(a);
+        const bEntry = this.getWithKey(b);
+        const aValue = calculateValue(aEntry);
+        const bValue = calculateValue(bEntry);
+        return bValue - aValue;
+      });
       const [firstIdx, ...rest] = sortedIndices;
 
       const names: Array<string | undefined> = [];
@@ -308,15 +303,32 @@ export class TypeRegistry {
     const symbolMapValues = Object.values(this.symbolMap);
     const elemsToKeep: IRegistryType[] = [];
     const allNames = new Set<string>();
-    symbolMapValues.forEach(elem => {
-      if (!elem || !elem.shouldBeRendered) return;
+    symbolMapValues.forEach((elem, i) => {
+      if (!elem || elem.isAnonymous) return;
       const { name } = elem.getStructure();
       if (this.ignoreClasses.has(name)) {
         this.logger.trace(`Filtering out ${name} because it is marked to be ignored`);
         return;
       }
-      elemsToKeep.push(elem);
-      allNames.add(name);
+      const elementIsUsed =
+        elem.shouldBeRendered ||
+        symbolMapValues.some(
+          (e, j) => e && i !== j && (e.isDescendantOfPublic || e.isPublic) && e.usesType(elem)
+        );
+      if (elementIsUsed) {
+        let reason = elem.isPublic ? "is public" : "";
+        if (!reason && elem.isDescendantOfPublic) {
+          reason = "is descendant of public";
+        }
+        if (!reason) {
+          reason = "is referenced by another public or publicly-descended type";
+        }
+        this.logger.trace(`Including ${name} because it ${reason}`);
+        elemsToKeep.push(elem);
+        allNames.add(name);
+      } else {
+        this.logger.trace(`Filtering out ${name} because it is unused`);
+      }
     });
     elemsToKeep.forEach(value => {
       if (!value) {
@@ -331,7 +343,7 @@ export class TypeRegistry {
       const newName = name.slice(0, idx);
       if (!newName) return;
       if (allNames.has(newName)) return;
-      this.logger.debug(`Renaming ${name}->${newName}`);
+      this.logger.trace(`Renaming ${name}->${newName}`);
       value.rename(newName);
     });
     const cSharpElems = elemsToKeep.map(e => e.getCSharpElement());
@@ -352,7 +364,10 @@ function calculateValue(t: IRegistryType | undefined): number {
     return -1000;
   }
   let v = 0;
-  if (t.isPublic()) {
+  if (t.shouldBeRendered) {
+    v += 100;
+  }
+  if (t.isPublic) {
     v += 100;
   }
   v -= t.getLevel();

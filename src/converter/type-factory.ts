@@ -88,7 +88,7 @@ function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyI
   const nonNullable = getNonNullableType(type);
   const isArray = nonNullable.isArray();
   const baseType = getFinalArrayType(nonNullable);
-  const symbol = baseType.getSymbol();
+  const symbol = nonNullable.getSymbol();
   const arrayDepth = isArray ? getArrayDepth(nonNullable) : 0;
   const tags = propertySymbol.getJsDocTags();
   const primitiveType = asPrimitiveTypeName(baseType, [...(symbol?.getJsDocTags() ?? []), ...tags]);
@@ -106,7 +106,7 @@ function getPropertyOptions(parentNode: Node, propertySymbol: Symbol): PropertyI
   return {
     propertyName,
     baseType,
-    symbol,
+    symbol: getFinalSymbolOfType(type),
     primitiveType,
     options,
   };
@@ -240,7 +240,13 @@ export class TypeFactory {
     const symbolToUse = createSymbol(name, type);
     const tupleElements = type.getTupleElements();
     const members = tupleElements.map((t, i) =>
-      this.getReferenceOrGetFromRegistry(node, t, `${name}Member${i}`, level, !internal)
+      this.getReferenceOrGetFromRegistry(
+        node,
+        t,
+        `${name}Member${i}`,
+        level,
+        descendsFromPublic || !internal
+      )
     );
     const tuple = new TypeRegistryTupleType(
       this.registry,
@@ -353,7 +359,7 @@ export class TypeFactory {
             index.type,
             `${capitalize(name)}Index`,
             level,
-            !internal
+            descendsFromPublic || !internal
           );
           if (!isPrimitiveTypeName(index.type)) {
             originalIndexType = index.type;
@@ -363,7 +369,7 @@ export class TypeFactory {
             value.type,
             `${capitalize(name)}Value`,
             level,
-            !internal
+            descendsFromPublic || !internal
           );
           if (!isPrimitiveTypeName(value.type)) {
             originalValueType = value.type;
@@ -390,7 +396,7 @@ export class TypeFactory {
         valueTypeToUse,
         valueTypeName,
         level,
-        !internal,
+        descendsFromPublic || !internal,
         valueTypeToUse.getSymbol()
       );
       originalValueType = valueToUse;
@@ -489,7 +495,7 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     propertyInfo: PropertyInfo
   ): IRegistryType {
-    const { node, name, level, internal } = parentOptions;
+    const { node, name, level, descendsFromPublic, internal } = parentOptions;
     const { propertyName, options, baseType, symbol: propertyTypeSymbol } = propertyInfo;
     const { isArray } = options;
     const internalClassName = `${name}${capitalize(propertyName)}`;
@@ -505,7 +511,7 @@ export class TypeFactory {
           baseType,
           internalClassName,
           level,
-          !internal,
+          descendsFromPublic || !internal,
           getFinalSymbolOfType(getFinalArrayType(baseType))
         );
       }
@@ -514,7 +520,7 @@ export class TypeFactory {
         baseType,
         internalClassName,
         level,
-        !internal,
+        descendsFromPublic || !internal,
         propertyTypeSymbol
       );
     };
@@ -569,7 +575,13 @@ export class TypeFactory {
     parentOptions: TypeOptions,
     property: Symbol
   ) {
-    const { node, type: parentType, name: parentName, internal } = parentOptions;
+    const {
+      node,
+      type: parentType,
+      name: parentName,
+      internal,
+      descendsFromPublic,
+    } = parentOptions;
     const propertyOptions = getPropertyOptions(node, property);
     const { propertyName, options, baseType, primitiveType } = propertyOptions;
     const handle = () => {
@@ -620,7 +632,7 @@ export class TypeFactory {
         type,
         `${parentName}${propertyName}Arg${i}`,
         parentOptions.level,
-        !internal,
+        descendsFromPublic || !internal,
         type.getSymbol()
       );
       registryType.addGenericParameterToProperty(propertyName, ref);
@@ -632,7 +644,7 @@ export class TypeFactory {
     constraintOptions: GenericConstraintOrDefaultOptions,
     type: "Constraint" | "Default"
   ): TypeReference {
-    const { node, name, level, internal } = parentOptions;
+    const { node, name, level, internal, descendsFromPublic } = parentOptions;
     const { baseType, symbol } = constraintOptions;
     const internalClassName = `${name}${capitalize(paramName)}${type}`;
     const isArray = baseType.isArray();
@@ -643,7 +655,7 @@ export class TypeFactory {
       typeToUse,
       internalClassName,
       level,
-      !internal,
+      descendsFromPublic || !internal,
       symbol
     );
     return {

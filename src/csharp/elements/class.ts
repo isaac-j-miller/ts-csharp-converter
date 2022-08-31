@@ -45,6 +45,10 @@ export class CSharpClass extends CSharpElement {
       commentString,
     } = property;
     let serialized = formatCommentString(commentString, indent);
+    if (!isConst) {
+      const serializationPropertyName = `${getIndentString(indent)}[JsonPropertyName("${name}")]\n`;
+      serialized += serializationPropertyName;
+    }
     serialized += `${getIndentString(indent)}${accessLevel} `;
     if (defaultValue) {
       serialized += "readonly ";
