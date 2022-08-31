@@ -773,7 +773,7 @@ export class TypeFactory {
     if (type.getCallSignatures().length) {
       this.logger.warn(`Type ${name} has call signatures`);
     }
-    if (name === "ProductCategory") {
+    if (name === "InternalPdfGlobalOptions") {
       console.debug();
     }
     const regType = new TypeRegistryType(
