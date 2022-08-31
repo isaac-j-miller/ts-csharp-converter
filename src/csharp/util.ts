@@ -15,6 +15,8 @@ export function formatCommentString(commentString: string | undefined, indent: n
         const startsWithEndMultilineComment = trimmed.match(/^\*+\//);
         const endsWithEndMultilineComment = trimmed.endsWith("*/");
         const startsWithSingleLineComment = trimmed.startsWith("//");
+        const isOneSingleLineMultilineComment =
+          startsWithBeginMultilineComment && endsWithEndMultilineComment;
         if (inComment) {
           if (startsWithEndMultilineComment) {
             inComment = false;
@@ -23,7 +25,12 @@ export function formatCommentString(commentString: string | undefined, indent: n
           inComment = true;
         }
 
-        if (!inComment && !startsWithSingleLineComment && !startsWithEndMultilineComment) {
+        if (
+          !inComment &&
+          !startsWithSingleLineComment &&
+          !startsWithEndMultilineComment &&
+          !isOneSingleLineMultilineComment
+        ) {
           trimmed = "// " + trimmed;
         }
         return indentString + trimmed;
