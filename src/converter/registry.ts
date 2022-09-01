@@ -94,7 +94,7 @@ export class TypeRegistry {
       if (type.isNonPrimitive() && isSyntheticSymbol(sym)) {
         const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
         if (!this.declarations.has(refactoredName)) {
-          this.logger.warn(
+          this.logger.debug(
             `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
               fpath ? ` (${fpath})` : ""
             }, refactoring output to rename new type as ${refactoredName}`
@@ -279,7 +279,7 @@ export class TypeRegistry {
         delete this.symbolMap[idx];
       });
       const kept = this.symbolMap[firstIdx]?.getStructure().name;
-      this.logger.debug(
+      this.logger.trace(
         `Stripped ${rest.length} (${names} -> ${kept}), duplicate types with hash ${hash}`
       );
       this.redirects = { ...this.redirects, ...replacementMap };

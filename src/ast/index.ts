@@ -8,6 +8,7 @@ import {
   EnumDeclaration,
   ExportDeclaration,
   ExportSpecifier,
+  Expression,
   ImportDeclaration,
   ImportSpecifier,
   InterfaceDeclaration,
@@ -34,15 +35,15 @@ import { LoggerFactory } from "src/common/logging/factory";
 
 type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclaration;
 
-function getExpr(node: AsExpression): string {
+function getExpr(node: AsExpression): Expression {
   const expr = node.getExpression();
   if (expr.asKind(SyntaxKind.AsExpression)) {
     return getExpr(expr.asKindOrThrow(SyntaxKind.AsExpression));
   }
-  return expr.getText(false);
+  return expr;
 }
 
-function getFinalExpression(statement?: VariableStatement): string | undefined {
+function getFinalExpression(statement?: VariableStatement): Expression | undefined {
   if (!statement) return;
   const dec = statement.getDeclarations()[0];
   if (!dec) return;
@@ -52,7 +53,7 @@ function getFinalExpression(statement?: VariableStatement): string | undefined {
   if (asExpr) {
     return getExpr(asExpr);
   }
-  return init.getText(false);
+  return init;
 }
 export class AstTraverser {
   private project: Project;
@@ -88,17 +89,24 @@ export class AstTraverser {
     this.logger.trace(`Processing declaration for ${name}`);
     return this.createType(name, node, asType, internal);
   }
-  private processVariableDeclaration(node: VariableDeclaration, isPublic: boolean) {
+  private processVariableDeclaration(node: VariableDeclaration) {
     const name = node.getName();
     const asType = node.getType();
     const isArray = asType.isArray();
     const constType = this.registry.getConstValueType();
-    const typeToUse = getFinalArrayType(asType).getApparentType();
-    const literalType = asPrimitiveTypeName(typeToUse);
     let literal = asType.getLiteralValue() as LiteralValue;
-    const structure = node.getStructure();
     const varStatement = node.getVariableStatement();
-    const initializer = getFinalExpression(varStatement) ?? structure.initializer;
+    const expr = getFinalExpression(varStatement);
+    if (!expr) {
+      return;
+    }
+    const typeToUse = getFinalArrayType(expr.getType()).getApparentType();
+    const literalType = asPrimitiveTypeName(typeToUse);
+    if (typeToUse.isUnion()) {
+      // if it is a union, TODO: create a type and make variable declaration that references that type
+      return;
+    }
+    const initializer = expr.getText(false);
     if (initializer && !literal) {
       try {
         // have to call eval like this because esbuild freaks out when I use eval the normal way
@@ -113,7 +121,7 @@ export class AstTraverser {
         }
       }
     }
-    if (!name || !literalType || !node.isExported() || !isPublic) {
+    if (!name || !(literalType || literal) || !node.isExported()) {
       return;
     }
     this.logger.trace(`Processing variable declaration for ${name}`);
@@ -205,7 +213,9 @@ export class AstTraverser {
             this.ignoreClasses.has(asKind.getName());
           if (explicitlyExcluded) return;
           if (kind === SyntaxKind.VariableDeclaration) {
-            this.processVariableDeclaration(nd.asKindOrThrow(kind), isRootOrFromRoot);
+            if (isRootOrFromRoot && asKind.isExported()) {
+              this.processVariableDeclaration(nd.asKindOrThrow(kind));
+            }
           } else {
             this.processDeclaration(
               asKind as TypeAliasDeclaration | InterfaceDeclaration | EnumDeclaration,
