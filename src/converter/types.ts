@@ -2,6 +2,7 @@ import { Symbol, Type } from "ts-morph";
 import { ICSharpElement } from "src/csharp/elements/types";
 import type { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
 import { primitiveTypeNames, jsDocNumberTypes, CONSTS_KEYWORD } from "./consts";
+import { NameMapper } from "./name-mapper";
 
 export type ConstKeyword = typeof CONSTS_KEYWORD;
 export type NonPrimitiveType = Exclude<TokenType, "Primitive" | "Const">;
@@ -17,7 +18,14 @@ export type TokenType =
 
 export type PrimitiveTypeName = typeof primitiveTypeNames[number];
 
-export type LiteralValue = string | boolean | number | undefined | null | LiteralValue[];
+export type LiteralValue =
+  | UnionTypeValueReference
+  | string
+  | boolean
+  | number
+  | undefined
+  | null
+  | LiteralValue[];
 export type JsDocNumberType = typeof jsDocNumberTypes[number];
 
 export type UnionMember = {
@@ -52,6 +60,12 @@ export type PropertyStructure = {
   defaultLiteralValue?: LiteralValue;
   jsDocNumberType?: JsDocNumberType;
   commentString?: string;
+};
+
+export type UnionTypeValueReference = {
+  isUnionTypeValueReference: boolean;
+  ref: Symbol | ISyntheticSymbol;
+  propertyName: string;
 };
 
 export type GenericParameter = {
@@ -104,14 +118,14 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   readonly isDescendantOfPublic: boolean;
   readonly isPublic: boolean;
   readonly isAnonymous: boolean;
-  isGeneric(): this is TypeRegistryPossiblyGenericType<T>;
+  isGeneric(): this is TypeRegistryPossiblyGenericType<Exclude<T, "Primitive" | "Const">>;
   addCommentString(commentString: string): void;
   getLevel(): number;
   getStructure(): TypeStructure<T>;
   getHash(): string;
   getPropertyString(genericParameterValues?: PropertyStringArgs): string;
   getSymbol(): Exclude<BaseTypeReference, GenericReference>;
-  getCSharpElement(): ICSharpElement;
+  getCSharpElement(nameMapper: NameMapper): ICSharpElement;
   getType(): UnderlyingType<T>;
   rename(name: string): void;
   getOriginalName(): string;
@@ -121,6 +135,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   equals(ref: IRegistryType): boolean;
   registerRefs(): void;
   getRefHashes(): string[];
+  updateDefaultValues(): void;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;
@@ -136,6 +151,9 @@ export function isPrimitiveTypeName(str: unknown): str is PrimitiveTypeName {
 }
 export function isGenericReference(t: unknown): t is GenericReference {
   return !!(t as GenericReference)?.isGenericReference;
+}
+export function isUnionTypeValueReference(t: unknown): t is UnionTypeValueReference {
+  return !!(t as UnionTypeValueReference)?.isUnionTypeValueReference;
 }
 
 export function isSyntheticSymbol(t: unknown): t is ISyntheticSymbol {

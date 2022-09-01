@@ -15,6 +15,7 @@ import {
   getGenericTypeName,
   literalValueToCSharpLiteralValue,
 } from "../util";
+import { NameMapper } from "../name-mapper";
 
 export type PropertyOptions = Omit<PropertyStructure, "propertyName" | "baseType">;
 
@@ -84,7 +85,11 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     }
   }
 
-  private generateCSharpProperty(propName: string, struct: PropertyStructure): CSharpProperty {
+  private generateCSharpProperty(
+    propName: string,
+    struct: PropertyStructure,
+    nameMapper: NameMapper
+  ): CSharpProperty {
     const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } =
       struct;
     const kindType = this.propertySymbolToString(propName, baseType);
@@ -96,20 +101,24 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       isConst: false,
       optional: isOptional,
       commentString,
-      defaultValue: literalValueToCSharpLiteralValue(defaultLiteralValue),
+      defaultValue: literalValueToCSharpLiteralValue(
+        defaultLiteralValue,
+        this.registry,
+        nameMapper
+      ),
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
   }
 
-  private generateCSharpProperties(): CSharpProperty[] {
+  private generateCSharpProperties(nameMapper: NameMapper): CSharpProperty[] {
     return Object.entries(this.structure.properties!).map(([propName, struct]) =>
-      this.generateCSharpProperty(propName, struct)
+      this.generateCSharpProperty(propName, struct, nameMapper)
     );
   }
 
-  getCSharpElement(): CSharpClass {
-    const props = this.generateCSharpProperties();
+  getCSharpElement(nameMapper: NameMapper): CSharpClass {
+    const props = this.generateCSharpProperties(nameMapper);
     const partial = this.isMappedType;
     if (
       (!this.structure.properties || Object.keys(this.structure.properties).length === 0) &&

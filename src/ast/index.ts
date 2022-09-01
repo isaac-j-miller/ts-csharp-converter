@@ -32,6 +32,7 @@ import {
 } from "src/converter/util";
 import { ILogger } from "src/common/logging/types";
 import { LoggerFactory } from "src/common/logging/factory";
+import { NameMapper } from "src/converter/name-mapper";
 
 type DeclarationType = EnumDeclaration | InterfaceDeclaration | TypeAliasDeclaration;
 
@@ -260,7 +261,7 @@ export class AstTraverser {
   traverse() {
     this.traverseNode(this.entrySourceFile, true);
   }
-  createNamespace(name: string) {
-    return this.registry.toNamespace(name);
+  createNamespace(name: string, mapper: NameMapper) {
+    return this.registry.toNamespace(name, mapper);
   }
 }

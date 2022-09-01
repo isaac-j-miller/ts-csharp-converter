@@ -12,6 +12,7 @@ import {
   isGenericReference,
   isPrimitiveType,
   isSyntheticSymbol,
+  isUnionTypeValueReference,
   ISyntheticSymbol,
   JsDocNumberType,
   LiteralValue,
@@ -23,6 +24,7 @@ import {
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
 import type { TypeRegistry } from "./registry";
+import { NameMapper, NameType } from "./name-mapper";
 
 // TODO: make this config-driven
 const DEFAULT_NUMBER_TYPE = "int" as const;
@@ -162,11 +164,26 @@ export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTy
   return;
 }
 
-export function literalValueToCSharpLiteralValue(v: LiteralValue): string | undefined {
+export function literalValueToCSharpLiteralValue(
+  v: LiteralValue,
+  registry: TypeRegistry,
+  mapper: NameMapper
+): string | undefined {
   if (v === undefined) return undefined;
   if (Array.isArray(v)) {
-    const values = v.map(val => literalValueToCSharpLiteralValue(val));
+    const values = v.map(val => literalValueToCSharpLiteralValue(val, registry, mapper));
     return `{ ${values.join(", ")} }`;
+  }
+  if (isUnionTypeValueReference(v)) {
+    const { ref, propertyName } = v;
+    const fromReg = registry.getType(ref);
+    if (!fromReg) {
+      throw new Error(`Couldn't find ${ref} in registry`);
+    }
+    return `${mapper.transform(
+      fromReg.getStructure().name,
+      NameType.DeclarationName
+    )}.${mapper.transform(propertyName, NameType.EnumMember)}`;
   }
   return JSON.stringify(v);
 }

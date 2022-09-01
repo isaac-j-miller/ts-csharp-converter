@@ -1,4 +1,4 @@
-import { Symbol } from "ts-morph";
+import { Symbol, Type } from "ts-morph";
 import { CSharpNamespace } from "src/csharp/elements";
 import { ICSharpElement } from "src/csharp/elements/types";
 import { LoggerFactory } from "src/common/logging/factory";
@@ -16,11 +16,13 @@ import {
   PrimitiveType,
   PrimitiveTypeName,
   RegistryKey,
+  UnionTypeValueReference,
 } from "./types";
 import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
 import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import { TypeRegistryConstType } from "./registry-types/consts";
 import { CONSTS_KEYWORD } from "./consts";
+import { NameMapper } from "./name-mapper";
 
 type GetTypeReturn<
   T extends RegistryKey | PrimitiveTypeName | PrimitiveType | ConstKeyword | ConstType
@@ -195,6 +197,60 @@ export class TypeRegistry {
       ? TypeRegistryPrimitiveType
       : IRegistryType | undefined;
   }
+  findUnionTypesWithMember(member: string, hint?: Type): UnionTypeValueReference | undefined {
+    if (hint) {
+      const text = hint.getApparentType().getText();
+      const fromText = this.findTypeBySymbolText(text);
+      if (fromText) {
+        const { unionMembers, tokenType } = fromText.getStructure();
+        if (
+          tokenType === "StringUnion" &&
+          unionMembers &&
+          unionMembers.some(u => u.name === member)
+        ) {
+          return {
+            propertyName: member,
+            ref: fromText.getSymbol() as Symbol | ISyntheticSymbol,
+            isUnionTypeValueReference: true,
+          };
+        }
+      }
+    }
+    const getUnion = (): IRegistryType | undefined => {
+      const matchingUnions = Object.values(this.symbolMap).filter(type => {
+        if (!type) return false;
+        const { tokenType, unionMembers } = type.getStructure();
+        if (tokenType !== "StringUnion") return false;
+        return !!unionMembers && unionMembers.some(u => u.name === member);
+      });
+      if (matchingUnions.length === 0) return;
+      if (matchingUnions.length > 1) {
+        const hashMap: Record<string, IRegistryType> = {};
+        matchingUnions.forEach(union => {
+          if (!union) return;
+          hashMap[union.getHash()] = union;
+        });
+        const remainingUnions = Object.values(hashMap);
+        if (remainingUnions.length > 1) {
+          this.logger.warn(
+            `Multiple union types with member ${member} found and no matching type found from type hint ${hint?.getText()}`
+          );
+          return;
+        }
+        const remainingUnion = remainingUnions[0];
+        return remainingUnion;
+      }
+      const matchingUnion = matchingUnions[0]!;
+      return matchingUnion;
+    };
+    const matchingUnion = getUnion();
+    if (!matchingUnion) return;
+    return {
+      propertyName: member,
+      ref: matchingUnion.getSymbol() as Symbol | ISyntheticSymbol,
+      isUnionTypeValueReference: true,
+    };
+  }
   getType<T extends RegistryKey | PrimitiveTypeName | PrimitiveType | ConstType | ConstKeyword>(
     sym: T
   ): GetTypeReturn<T> {
@@ -250,6 +306,7 @@ export class TypeRegistry {
         return;
       }
       this.logger.trace(`Registering references of ${regType.getStructure().name}`);
+      regType.updateDefaultValues();
       regType.registerRefs();
       const hash = regType.getHash();
       if (!hashMap[hash]) {
@@ -285,7 +342,7 @@ export class TypeRegistry {
       this.redirects = { ...this.redirects, ...replacementMap };
     });
   }
-  private getElements(): ICSharpElement[] {
+  private getElements(mapper: NameMapper): ICSharpElement[] {
     const symbolMapValues = Object.values(this.symbolMap);
     const elemsToKeep: IRegistryType[] = [];
     const allNames = new Set<string>();
@@ -332,14 +389,14 @@ export class TypeRegistry {
       this.logger.trace(`Renaming ${name}->${newName}`);
       value.rename(newName);
     });
-    const cSharpElems = elemsToKeep.map(e => e.getCSharpElement());
+    const cSharpElems = elemsToKeep.map(e => e.getCSharpElement(mapper));
     return cSharpElems;
   }
-  toNamespace(name: string): CSharpNamespace {
+  toNamespace(name: string, mapper: NameMapper): CSharpNamespace {
     this.logger.info("Preparing to create namespace...");
     this.consolidate();
     this.logger.info("Creating namespace...");
-    const ns = new CSharpNamespace(name, this.getElements());
+    const ns = new CSharpNamespace(name, this.getElements(mapper));
     this.logger.info(`Created namespace ${name}`);
     return ns;
   }

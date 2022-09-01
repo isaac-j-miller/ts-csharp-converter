@@ -5,6 +5,7 @@ import {
   BaseTypeReference,
   GenericParameter,
   isGenericReference,
+  isUnionTypeValueReference,
   ISyntheticSymbol,
   PropertyStringArgs,
   TokenType,
@@ -15,7 +16,9 @@ import {
 import { formatCSharpArrayString, resolveTypeName } from "../util";
 import { RegistryType } from "./base";
 
-export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> extends RegistryType<T> {
+export abstract class TypeRegistryPossiblyGenericType<
+  T extends Exclude<TokenType, "Primitive" | "Const">
+> extends RegistryType<T> {
   constructor(
     registry: TypeRegistry,
     tokenType: T,
@@ -120,7 +123,28 @@ export abstract class TypeRegistryPossiblyGenericType<T extends TokenType> exten
     }
     return namesToUse;
   }
-  override isGeneric(): this is TypeRegistryPossiblyGenericType<T> {
+  override isGeneric() {
     return true;
+  }
+  updateDefaultValues(): void {
+    Object.entries(this.structure.properties ?? {}).forEach(([propName, value]) => {
+      const { defaultLiteralValue } = value;
+      if (
+        !defaultLiteralValue ||
+        isUnionTypeValueReference(defaultLiteralValue) ||
+        typeof defaultLiteralValue !== "string"
+      ) {
+        return;
+      }
+      const propertyType = this.getType()
+        .getProperty(propName)
+        ?.getDeclarations()[0]
+        ?.getType()
+        ?.getConstraint();
+      const unionMember = this.registry.findUnionTypesWithMember(defaultLiteralValue, propertyType);
+      if (!unionMember) return;
+      value.defaultLiteralValue = unionMember;
+      value.baseType = unionMember.ref;
+    });
   }
 }

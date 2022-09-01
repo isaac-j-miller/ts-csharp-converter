@@ -1,5 +1,6 @@
 import { CSharpClass } from "src/csharp/elements";
 import { CSharpProperty } from "src/csharp/types";
+import { NameMapper } from "../name-mapper";
 import type { TypeRegistry } from "../registry";
 import {
   IRegistryType,
@@ -39,14 +40,22 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       false
     );
   }
-  private generateCSharpProperty(propName: string, struct: PropertyStructure): CSharpProperty {
+  private generateCSharpProperty(
+    propName: string,
+    struct: PropertyStructure,
+    mapper: NameMapper
+  ): CSharpProperty {
     const { baseType, defaultLiteralValue, isArray, arrayDepth, isOptional, commentString } =
       struct;
     if (!isPrimitiveType(baseType)) {
       throw new Error(`Const property ${this.structure.name}.${propName} is not a primitive type`);
     }
     const kindType = toCSharpPrimitive(baseType.primitiveType);
-    const literalValue = literalValueToCSharpLiteralValue(defaultLiteralValue);
+    const literalValue = literalValueToCSharpLiteralValue(
+      defaultLiteralValue,
+      this.registry,
+      mapper
+    );
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
@@ -83,13 +92,13 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
   }
 
-  private generateCSharpProperties(): CSharpProperty[] {
+  private generateCSharpProperties(mapper: NameMapper): CSharpProperty[] {
     return Object.entries(this.structure.properties!).map(([propName, struct]) =>
-      this.generateCSharpProperty(propName, struct)
+      this.generateCSharpProperty(propName, struct, mapper)
     );
   }
-  getCSharpElement(): CSharpClass {
-    const properties = this.generateCSharpProperties();
+  getCSharpElement(mapper: NameMapper): CSharpClass {
+    const properties = this.generateCSharpProperties(mapper);
     return new CSharpClass(this.structure.name, false, properties, true);
   }
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {

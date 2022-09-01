@@ -12,6 +12,7 @@ import {
   isConstType,
   isGenericReference,
   isPrimitiveType,
+  isUnionTypeValueReference,
   ISyntheticSymbol,
   NonPrimitiveType,
   PrimitiveType,
@@ -26,6 +27,7 @@ import {
 } from "../types";
 import type { TypeRegistry } from "../registry";
 import type { TypeRegistryPossiblyGenericType } from "./possibly-generic";
+import { NameMapper } from "../name-mapper";
 
 export abstract class RegistryType<T extends TokenType> implements IRegistryType<T> {
   protected refs: Set<string>;
@@ -223,8 +225,8 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
     return this.symbol;
   }
   abstract getPropertyString(genericParameterValues?: TypeReference[]): string;
-  abstract getCSharpElement(): CSharpElement;
-  isGeneric(): this is TypeRegistryPossiblyGenericType<T> {
+  abstract getCSharpElement(mapper: NameMapper): CSharpElement;
+  isGeneric(): this is TypeRegistryPossiblyGenericType<Exclude<T, "Primitive" | "Const">> {
     return false;
   }
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
@@ -264,6 +266,7 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
     const refsFromProperties = Object.values(properties ?? {}).flatMap(p => [
       ...(p.genericParameters ?? []).flatMap(g => this.extractRefs(g)),
       p.baseType,
+      isUnionTypeValueReference(p.defaultLiteralValue) ? p.defaultLiteralValue.ref : undefined,
     ]);
     const refsFromGenericParams = (genericParameters ?? []).flatMap(g => [
       ...this.extractRefs(g.constraint),
@@ -290,5 +293,8 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
       this.refs.add(hash);
       fromRegistry.getRefHashes().forEach(h => this.refs.add(h));
     });
+  }
+  updateDefaultValues() {
+    //
   }
 }

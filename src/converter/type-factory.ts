@@ -681,7 +681,7 @@ export class TypeFactory {
     };
   }
   private getGenericParameter<T extends TokenType>(
-    parentRegistryType: TypeRegistryPossiblyGenericType<T>,
+    parentRegistryType: TypeRegistryPossiblyGenericType<Exclude<T, "Const" | "Primitive">>,
     parentOptions: TypeOptions,
     parameterType: Type
   ): GenericParameter | undefined {
@@ -748,7 +748,7 @@ export class TypeFactory {
     return p;
   }
   private addGenericParameter<T extends TokenType>(
-    registryType: TypeRegistryPossiblyGenericType<T>,
+    registryType: TypeRegistryPossiblyGenericType<Exclude<T, "Const" | "Primitive">>,
     parentOptions: TypeOptions,
     parameterType: Type
   ) {

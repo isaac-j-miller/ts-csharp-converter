@@ -19,7 +19,7 @@ export async function convertTypescriptToCSharp(
   const mapper = new NameMapper(config);
   const traverser = new AstTraverser(entrypoint, tsconfigPath, includeNodeModules, ignoreClasses);
   traverser.traverse();
-  const ns = traverser.createNamespace(namespaceName);
+  const ns = traverser.createNamespace(namespaceName, mapper);
   const str = ns.serialize(mapper);
   const dir = dirname(outputPath);
   await mkdir(dir, {
