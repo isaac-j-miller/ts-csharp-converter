@@ -1,6 +1,6 @@
 import { Symbol, Type } from "ts-morph";
 import { CSharpEnum } from "src/csharp/elements";
-import { ISyntheticSymbol, TypeStructure, UnionMember } from "../types";
+import { ISyntheticSymbol, TypeStructure, UnionEnumMember } from "../types";
 import { RegistryType } from "./base";
 import { TypeRegistry } from "../registry";
 
@@ -9,7 +9,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
-    members: UnionMember[],
+    members: UnionEnumMember[],
     internal: boolean,
     isDescendantOfPublic: boolean,
     type: Type,
@@ -20,7 +20,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
     const structure: TypeStructure<"StringUnion"> = {
       tokenType: "StringUnion",
       name,
-      unionMembers: members,
+      members,
       commentString,
     };
     super(registry, structure, symbol, true, internal, isDescendantOfPublic, type, level, false);
@@ -34,7 +34,7 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
   getCSharpElement(): CSharpEnum {
     return new CSharpEnum(
       this.structure.name!,
-      this.structure.unionMembers!,
+      this.structure.members!,
       this.isStringEnum,
       this.internal
     );

@@ -14,7 +14,9 @@ export type TokenType =
   | "Dictionary"
   | "Const"
   | "Tuple"
-  | "Instance";
+  | "Instance"
+  | "ClassUnion"
+  | "ClassUnionInstance";
 
 export type PrimitiveTypeName = typeof primitiveTypeNames[number];
 
@@ -28,11 +30,10 @@ export type LiteralValue =
   | LiteralValue[];
 export type JsDocNumberType = typeof jsDocNumberTypes[number];
 
-export type UnionMember = {
+export type UnionEnumMember = {
   name: string;
   value?: number;
 };
-
 export type GenericReference = {
   isGenericReference: true;
   genericParamName: string;
@@ -78,14 +79,16 @@ export type GenericParameter = {
 export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
-  unionMembers?: UnionMember[];
-  tupleMembers?: TypeReference[];
+  members?: Array<MemberType<T>>;
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
   mappedIndexType?: TypeReference;
   mappedValueType?: TypeReference;
   commentString?: string;
 };
+export type MemberType<T extends TokenType> = T extends "StringUnion"
+  ? UnionEnumMember
+  : TypeReference;
 
 export type PrimitiveType = {
   isPrimitiveType: true;
@@ -101,15 +104,16 @@ export type PropertyStringArg = TypeReference | string;
 export type PropertyStringArgs = PropertyStringArg[];
 
 export interface ISyntheticSymbol {
-  getDeclaredType(): Type;
+  getDeclaredType(): Type | undefined;
   getName(): string;
   isAlias(): false;
   getUnderlyingSymbol(): Symbol | undefined;
   getSourceFilePath(): string | undefined;
   id: string;
+  isClassUnionBase: boolean;
   isSynthetic: true;
 }
-export type UnderlyingType<T extends TokenType> = T extends "Primitive" | "Const"
+export type UnderlyingType<T extends TokenType> = T extends "Primitive" | "Const" | "ClassUnion"
   ? undefined
   : Type;
 export interface IRegistryType<T extends TokenType = TokenType> {
@@ -122,7 +126,7 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   addCommentString(commentString: string): void;
   getLevel(): number;
   getStructure(): TypeStructure<T>;
-  getHash(): string;
+  getHash(namesToIgnore?: Set<string>): string;
   getPropertyString(genericParameterValues?: PropertyStringArgs): string;
   getSymbol(): Exclude<BaseTypeReference, GenericReference>;
   getCSharpElement(nameMapper: NameMapper): ICSharpElement;
@@ -136,6 +140,8 @@ export interface IRegistryType<T extends TokenType = TokenType> {
   registerRefs(): void;
   getRefHashes(): string[];
   updateDefaultValues(): void;
+  getBaseTypeRef(): Symbol | ISyntheticSymbol | undefined;
+  resetHash(): void;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;

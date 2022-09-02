@@ -4,12 +4,14 @@ import { ISyntheticSymbol } from "../types";
 
 export class SyntheticSymbol implements ISyntheticSymbol {
   public readonly id: string;
+  public readonly isClassUnionBase: boolean;
   constructor(
     private name: string,
-    private type: Type,
+    private type: Type | undefined,
     private readonly underlyingSymbol?: Symbol
   ) {
     this.id = v4();
+    this.isClassUnionBase = false;
   }
   isAlias(): false {
     return false;
@@ -21,7 +23,7 @@ export class SyntheticSymbol implements ISyntheticSymbol {
   getUnderlyingSymbol(): Symbol | undefined {
     return this.underlyingSymbol;
   }
-  getDeclaredType(): Type {
+  getDeclaredType(): Type | undefined {
     return this.type;
   }
   getSourceFilePath(): string | undefined {

@@ -16,6 +16,7 @@ import {
   PrimitiveType,
   PrimitiveTypeName,
   RegistryKey,
+  UnionEnumMember,
   UnionTypeValueReference,
 } from "./types";
 import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
@@ -89,11 +90,12 @@ export class TypeRegistry {
     if (!idx) {
       throw new Error(`Unable to construct unique identifier for type ${type.getStructure().name}`);
     }
+    const isClassUnionBase = isSyntheticSymbol(sym) && sym.isClassUnionBase;
     const { name } = type.getStructure();
     const namespaceAlreadyHasTypeWithName = this.declarations.has(name);
     if (namespaceAlreadyHasTypeWithName) {
       const refactoredName = getRefactorName(name);
-      if (type.isNonPrimitive() && isSyntheticSymbol(sym)) {
+      if (type.isNonPrimitive() && isSyntheticSymbol(sym) && !sym.isClassUnionBase) {
         const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
         if (!this.declarations.has(refactoredName)) {
           this.logger.debug(
@@ -106,8 +108,15 @@ export class TypeRegistry {
         return this.addType(type);
       }
     }
-    if (!typeIsPrimitive) {
+    if (!typeIsPrimitive && !isClassUnionBase) {
       this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    }
+    if (isClassUnionBase && this.symbolMap[idx]) {
+      const existing = this.symbolMap[idx];
+      const relativeValue = calculateValue(type) - calculateValue(existing);
+      if (relativeValue < 0) {
+        return;
+      }
     }
     this.declarations.add(name);
     this.symbolMap[idx] = type;
@@ -140,7 +149,7 @@ export class TypeRegistry {
         continue;
       }
       const final = getFinalSymbol(sym);
-      const symText = final.getDeclaredType().getText();
+      const symText = final.getDeclaredType()?.getText();
       if (symText === text) {
         this.textCache[text] = key;
         return value;
@@ -202,11 +211,11 @@ export class TypeRegistry {
       const text = hint.getApparentType().getText();
       const fromText = this.findTypeBySymbolText(text);
       if (fromText) {
-        const { unionMembers, tokenType } = fromText.getStructure();
+        const { members: unionMembers, tokenType } = fromText.getStructure();
         if (
           tokenType === "StringUnion" &&
           unionMembers &&
-          unionMembers.some(u => u.name === member)
+          unionMembers.some(u => (u as UnionEnumMember).name === member)
         ) {
           return {
             propertyName: member,
@@ -219,9 +228,9 @@ export class TypeRegistry {
     const getUnion = (): IRegistryType | undefined => {
       const matchingUnions = Object.values(this.symbolMap).filter(type => {
         if (!type) return false;
-        const { tokenType, unionMembers } = type.getStructure();
+        const { tokenType, members: unionMembers } = type.getStructure();
         if (tokenType !== "StringUnion") return false;
-        return !!unionMembers && unionMembers.some(u => u.name === member);
+        return !!unionMembers && unionMembers.some(u => (u as UnionEnumMember).name === member);
       });
       if (matchingUnions.length === 0) return;
       if (matchingUnions.length > 1) {
@@ -299,6 +308,7 @@ export class TypeRegistry {
   private consolidate() {
     const hashMap: Record<string, string[]> = {};
     const replacementMap: Record<string, string> = {};
+    Object.values(this.symbolMap).forEach(regType => regType?.resetHash());
     // Go through each type and hash them, replacing duplicates
     Object.entries(this.symbolMap).forEach(([idx, regType]) => {
       if (!regType) {
@@ -309,6 +319,9 @@ export class TypeRegistry {
       regType.updateDefaultValues();
       regType.registerRefs();
       const hash = regType.getHash();
+      if (regType.getOriginalName() === "CompoundConditional") {
+        console.debug();
+      }
       if (!hashMap[hash]) {
         hashMap[hash] = [idx];
       } else {
@@ -383,11 +396,14 @@ export class TypeRegistry {
       const numStr = match[0];
       const idx = name.lastIndexOf(numStr);
       if (idx === -1) return;
+      if (name === value.getOriginalName()) return;
+      if (!value.isPublic && name.endsWith(`Member${numStr}`)) return;
       const newName = name.slice(0, idx);
       if (!newName) return;
       if (allNames.has(newName)) return;
       this.logger.trace(`Renaming ${name}->${newName}`);
       value.rename(newName);
+      allNames.add(newName);
     });
     const cSharpElems = elemsToKeep.map(e => e.getCSharpElement(mapper));
     return cSharpElems;
@@ -414,11 +430,5 @@ function calculateValue(t: IRegistryType | undefined): number {
     v += 100;
   }
   v -= t.getLevel();
-  const match = t.getStructure().name.match(/\d+$/);
-  if (match) {
-    const numStr = match[0];
-    const numParsed = Number.parseInt(numStr, 10);
-    v -= numParsed;
-  }
   return v;
 }

@@ -27,7 +27,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     internal: boolean,
     isDescendantOfPublic: boolean,
     shouldBeRendered: boolean,
-    protected readonly node: Node,
+    protected readonly node: T extends "ClassUnion" ? undefined : Node,
     type: UnderlyingType<T>,
     level: number,
     isMappedType?: boolean
@@ -137,7 +137,7 @@ export abstract class TypeRegistryPossiblyGenericType<
         return;
       }
       const propertyType = this.getType()
-        .getProperty(propName)
+        ?.getProperty(propName)
         ?.getDeclarations()[0]
         ?.getType()
         ?.getConstraint();

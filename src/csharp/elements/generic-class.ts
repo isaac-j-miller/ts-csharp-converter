@@ -50,11 +50,6 @@ export class CSharpGenericClass extends CSharpClass {
   ): string {
     const indentString = getIndentString(indentation);
     let serialized = indentString + "public ";
-    // if (this.isPublic) {
-    //   serialized += "public ";
-    // } else {
-    //   serialized += "internal ";
-    // }
     if (this.isPartial) {
       serialized += "partial ";
     }

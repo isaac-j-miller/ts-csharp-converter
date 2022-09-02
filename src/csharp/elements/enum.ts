@@ -1,13 +1,13 @@
 import { NameType } from "src/converter/name-mapper";
 import { INameMapper } from "src/converter/name-mapper/types";
-import type { UnionMember } from "src/converter/types";
+import type { UnionEnumMember } from "src/converter/types";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
 
 export class CSharpEnum extends CSharpElement {
   constructor(
     name: string,
-    public readonly items: UnionMember[],
+    public readonly items: UnionEnumMember[],
     private readonly isStringEnum: boolean,
     isInternal?: boolean,
     commentString?: string

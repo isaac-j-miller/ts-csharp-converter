@@ -1,4 +1,5 @@
 import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
+import { createHash } from "crypto";
 import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/types";
 import { LoggerFactory } from "src/common/logging/factory";
@@ -19,6 +20,7 @@ import {
   NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
+  PropertyStringArg,
   PropertyStringArgs,
   TypeReference,
 } from "./types";
@@ -43,6 +45,8 @@ export function toCSharpPrimitive(primitive: PrimitiveTypeName): CSharpPrimitive
     case "any":
     case "object":
     case "unknown":
+    case "symbol":
+    case "Symbol":
       return "object";
     case "null":
     case "undefined":
@@ -93,8 +97,8 @@ export function getGenericTypeName(name: string, typeArgs?: string[]) {
   return `${name}<${typeArgs.join(", ")}>`;
 }
 
-export function createSymbol(name: string, t: Type): ISyntheticSymbol {
-  const symbolFromType = getFinalSymbolOfType(t);
+export function createSymbol(name: string, t?: Type): ISyntheticSymbol {
+  const symbolFromType = t ? getFinalSymbolOfType(t) : undefined;
   return new SyntheticSymbol(name, t, symbolFromType);
 }
 function getTypeFromTag(tag: JSDocTagInfo): JsDocNumberType | undefined {
@@ -146,22 +150,81 @@ export function asPrimitiveTypeName(t: Type, tags?: JSDocTagInfo[]): PrimitiveTy
   if (apparentType.isString() || baseTypeName === "string" || apparentTypeName === "string") {
     return "string";
   }
-  if (apparentType.isNumber() || baseTypeName === "number" || apparentTypeName === "number") {
+  if (
+    apparentType.isNumber() ||
+    apparentType.isNumberLiteral() ||
+    baseTypeName === "number" ||
+    apparentTypeName === "number"
+  ) {
     if (apparentNumberType) {
       return apparentNumberType;
     }
     return "number";
   }
-  if (apparentType.isBoolean() || baseTypeName === "boolean" || apparentTypeName === "boolean") {
+  if (
+    apparentType.isBoolean() ||
+    apparentType.isBooleanLiteral() ||
+    baseTypeName === "boolean" ||
+    apparentTypeName === "boolean"
+  ) {
     return "boolean";
   }
   if (baseTypeName === "object" || apparentTypeName === "object" || t.getText() === "object") {
     return "object";
   }
+  if (baseTypeName === "symbol" || apparentTypeName === "symbol" || t.getText() === "symbol") {
+    return "symbol";
+  }
   if (apparentType.isAny()) {
     return "any";
   }
   return;
+}
+
+export function hashPropertyStringArgs(
+  registry: TypeRegistry,
+  args: PropertyStringArgs | undefined,
+  baseNames: Set<string>
+) {
+  if (!args || args.length === 0) return "_";
+  const hashFn = (g: PropertyStringArg) =>
+    typeof g === "string" ? g : hashRef(registry, g, baseNames);
+  return args.map(hashFn).join(",");
+}
+export function hashRef(
+  registry: TypeRegistry,
+  ref: TypeReference<BaseTypeReference> | undefined,
+  baseNames: Set<string>
+) {
+  if (!ref) {
+    return "_";
+  }
+  const { arrayDepth, isArray, ref: typeRef, genericParameters } = ref;
+  let baseTypeHash: string;
+  if (isGenericReference(typeRef)) {
+    baseTypeHash = typeRef.genericParamName;
+  } else {
+    const fromRegistry = registry.getType(typeRef);
+    let prefix = "_";
+    if (fromRegistry) {
+      if (
+        baseNames.has(fromRegistry.getStructure().name) ||
+        baseNames.has(fromRegistry.getOriginalName())
+      ) {
+        prefix = fromRegistry.getOriginalName() + "(this)";
+      } else {
+        prefix = fromRegistry.getHash(baseNames);
+      }
+    }
+    baseTypeHash =
+      prefix +
+      `a:${isArray};d:${arrayDepth ?? 0}.${hashPropertyStringArgs(
+        registry,
+        genericParameters,
+        baseNames
+      )}`;
+  }
+  return createHash("md5").update(baseTypeHash).digest().toString("hex");
 }
 
 export function literalValueToCSharpLiteralValue(

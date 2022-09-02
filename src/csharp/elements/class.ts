@@ -142,10 +142,11 @@ export class CSharpClass extends CSharpElement {
     const indentString = getIndentString(indentation);
     let serialized = formatCommentString(this.commentString, indentation);
     const hasProperties = this.properties.length > 0;
+    const hasCotr = !(!this.baseClassArgs?.length || !this.constructorArgs?.length);
     serialized += this.serializeDeclaration(mapper, indentation, hasProperties);
     serialized += this.serializeConstructor(mapper, indentation + 1);
     serialized += this.serializeBody(mapper, indentation + 1);
-    serialized += (hasProperties ? "\n" + indentString : " ") + "}";
+    serialized += (hasProperties || hasCotr ? "\n" + indentString : " ") + "}";
     return serialized;
   }
 }

@@ -12,6 +12,8 @@ export const primitiveTypeNames = [
   "undefined",
   "null",
   "unknown",
+  "symbol",
+  "Symbol",
 ] as const;
 
 export const jsDocNumberTypes = ["int", "float"] as const;

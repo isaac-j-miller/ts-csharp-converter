@@ -42,3 +42,23 @@ export function formatCommentString(commentString: string | undefined, indent: n
 export function getIndentString(indent: number): string {
   return " ".repeat((indent ?? 0) * TAB_WIDTH);
 }
+
+export function getFirstNUppercaseLetters(n: number) {
+  const letters: string[] = [];
+  const minIdx = 65;
+  const maxIdx = 90;
+
+  for (let i = 0; i < n; i++) {
+    if (i <= maxIdx) {
+      letters.push(String.fromCharCode(minIdx + i));
+    } else {
+      // TODO: start adding numbers
+      throw new Error(
+        `n (${n}) > ${maxIdx - minIdx}, can't get letter with ASCII index of ${
+          minIdx + i
+        } because it is not a letter`
+      );
+    }
+  }
+  return letters;
+}
