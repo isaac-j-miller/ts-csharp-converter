@@ -43,11 +43,22 @@ export class CSharpClass extends CSharpElement {
       isConst,
       defaultValue,
       commentString,
+      isClassUnion,
+      numUnionMembers,
     } = property;
     let serialized = formatCommentString(commentString, indent);
     if (!isConst) {
       const serializationPropertyName = `${getIndentString(indent)}[JsonPropertyName("${name}")]\n`;
       serialized += serializationPropertyName;
+    }
+    if (isClassUnion && numUnionMembers !== undefined) {
+      const typeNameToReplace = `Union${numUnionMembers}`;
+      const typeName = `Union${numUnionMembers}Serializer`;
+      const nameToUse = kind.replace(typeNameToReplace, typeName);
+      const serializerDecorator = `${getIndentString(
+        indent
+      )}[JsonConverter(typeof(${nameToUse}))]\n`;
+      serialized += serializerDecorator;
     }
     serialized += `${getIndentString(indent)}${accessLevel} `;
     if (defaultValue) {

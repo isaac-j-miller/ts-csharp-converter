@@ -141,9 +141,6 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
     properties: Record<string, PropertyStructure>
   ): string {
     const indices = Object.keys(properties).sort();
-    if (this.getOriginalName() === "CompoundConditional") {
-      console.debug();
-    }
     const hashedArray = indices.map(
       key => `${key}:${this.hashProperty(namesToIgnore, properties[key])}`
     );

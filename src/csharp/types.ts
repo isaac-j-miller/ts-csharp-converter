@@ -28,6 +28,8 @@ export type CSharpProperty = {
   optional: boolean;
   isConst: boolean;
   defaultValue?: string;
+  isClassUnion: boolean;
+  numUnionMembers?: number;
   kind: CSharpPrimitiveType | string;
   commentString?: string;
 };

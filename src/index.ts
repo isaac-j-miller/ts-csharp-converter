@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "fs/promises";
-import { dirname } from "path";
+import { mkdir, writeFile, readFile } from "fs/promises";
+import { dirname, join } from "path";
 import { AstTraverser } from "./ast";
 import { CasingConvention, NameMapperConfig } from "./converter/name-mapper";
 import { NameMapper } from "./converter/name-mapper/mapper";
@@ -25,7 +25,13 @@ export async function convertTypescriptToCSharp(
   await mkdir(dir, {
     recursive: true,
   });
+  const serializationFilePath = join(__dirname, "csharp/Source/SerializationUtils.cs");
+  const serializationUtilsPath = join(dir, "SerializationUtils.cs");
+  const serializationUtils = await readFile(serializationFilePath, { encoding: "utf-8" });
   await writeFile(outputPath, str, {
+    encoding: "utf-8",
+  });
+  await writeFile(serializationUtilsPath, serializationUtils, {
     encoding: "utf-8",
   });
 }

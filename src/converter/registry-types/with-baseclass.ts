@@ -30,7 +30,8 @@ export abstract class TypeRegistryWithBaseClassType<
     level: number,
     node: Node,
     isMappedType: boolean,
-    commentString?: string
+    commentString?: string,
+    shouldBeRenderedOverride?: boolean
   ) {
     const structure: TypeStructure<T> = {
       tokenType,
@@ -45,7 +46,9 @@ export abstract class TypeRegistryWithBaseClassType<
       symbol,
       internal,
       isDescendantOfPublic,
-      !(internal || isDescendantOfPublic),
+      shouldBeRenderedOverride !== undefined
+        ? shouldBeRenderedOverride
+        : !(internal || isDescendantOfPublic),
       node as T extends "ClassUnion" ? undefined : Node,
       type as UnderlyingType<T>,
       level,

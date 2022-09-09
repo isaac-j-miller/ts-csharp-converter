@@ -4,7 +4,9 @@ import { CSharpProperty } from "src/csharp/types";
 import { TypeRegistry } from "../registry";
 import {
   BaseTypeReference,
+  isConstType,
   isGenericReference,
+  isPrimitiveType,
   ISyntheticSymbol,
   PropertyStructure,
   TypeReference,
@@ -92,6 +94,13 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   ): CSharpProperty {
     const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } =
       struct;
+    let isClassUnion = false;
+    let numUnionMembers: number | undefined;
+    if (!isGenericReference(baseType) && !isPrimitiveType(baseType) && !isConstType(baseType)) {
+      const fromReg = this.registry.getType(baseType);
+      isClassUnion = fromReg?.getStructure().tokenType === "ClassUnionInstance";
+      numUnionMembers = fromReg?.getStructure().members?.length;
+    }
     const kindType = this.propertySymbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
@@ -101,6 +110,8 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       isConst: false,
       optional: isOptional,
       commentString,
+      isClassUnion,
+      numUnionMembers,
       defaultValue: literalValueToCSharpLiteralValue(
         defaultLiteralValue,
         this.registry,

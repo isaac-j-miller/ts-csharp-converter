@@ -319,9 +319,6 @@ export class TypeRegistry {
       regType.updateDefaultValues();
       regType.registerRefs();
       const hash = regType.getHash();
-      if (regType.getOriginalName() === "CompoundConditional") {
-        console.debug();
-      }
       if (!hashMap[hash]) {
         hashMap[hash] = [idx];
       } else {
@@ -412,6 +409,7 @@ export class TypeRegistry {
     this.logger.info("Preparing to create namespace...");
     this.consolidate();
     this.logger.info("Creating namespace...");
+    // TODO: sort the elements
     const ns = new CSharpNamespace(name, this.getElements(mapper));
     this.logger.info(`Created namespace ${name}`);
     return ns;

@@ -63,6 +63,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       setter: false,
       isConst: true,
       defaultValue: literalValue,
+      isClassUnion: false,
       optional: isOptional || literalValue === "null",
       commentString,
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),

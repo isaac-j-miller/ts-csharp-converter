@@ -1,7 +1,7 @@
 import { Node, Symbol, Type } from "ts-morph";
+import { CSharpClass } from "src/csharp";
 import { BaseTypeReference, ISyntheticSymbol, TypeReference, TypeStructure } from "../types";
 import { TypeRegistry } from "../registry";
-import { getGenericTypeName } from "../util";
 import { UnionSymbol } from "./class-union";
 import { TypeRegistryWithBaseClassType } from "./with-baseclass";
 
@@ -33,6 +33,8 @@ export class TypeRegistryClassUnionInstanceType extends TypeRegistryWithBaseClas
       type,
       level,
       node,
+      false,
+      undefined,
       false
     );
     this.structure = structure;
@@ -53,5 +55,8 @@ export class TypeRegistryClassUnionInstanceType extends TypeRegistryWithBaseClas
       throw new Error(`Missing ${baseSym.getName()}`);
     }
     this.refs.add(baseUnionFromReg.getHash());
+  }
+  override getCSharpElement(): CSharpClass {
+    throw new Error("Should not render UnionClassInstance");
   }
 }

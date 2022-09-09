@@ -57,7 +57,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     this.structure.genericParameters!.push(p);
   }
 
-  private getGenericParametersOfProperty(propName: string): TypeReference[] {
+  protected getGenericParametersOfProperty(propName: string): TypeReference[] {
     const property = (this.structure.properties ?? {})[propName];
     if (!property) {
       throw new Error(`Property ${propName} does not exist on ${this.structure.name}`);
