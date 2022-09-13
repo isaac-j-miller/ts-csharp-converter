@@ -76,8 +76,8 @@ export abstract class TypeRegistryWithBaseClassType<
     ];
   }
   getPropertyString(genericParameterValues?: TypeReference[]): string {
-    if (this.internal) {
-      return this.getBaseClassName();
+    if (!this.shouldBeRendered) {
+      return this.getBaseClassName(genericParameterValues);
     }
     const { name } = this.structure;
     return getGenericTypeName(

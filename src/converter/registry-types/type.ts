@@ -67,9 +67,9 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     };
     if (isGenericReference(baseType)) {
       const paramName = baseType.genericParamName;
-      const { genericParameters } = this.structure;
-      const genericParameterNames = (genericParameters ?? []).map(g => g.name);
-      if (!genericParameters?.find(p => p.name === paramName)) {
+      const genericParameters = this.structure.genericParameters ?? [];
+      const genericParameterNames = genericParameters.map(g => g.name);
+      if (!genericParameters.find(p => p.name === paramName)) {
         if (!genericParameters || genericParameters.length === 0) {
           this.structure.genericParameters = [{ name: paramName }];
         } else if (genericParameterNames.includes("__type")) {
@@ -141,7 +141,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         `Warning: This class might not have been generated correctly. Source to check ${src}:${startLine}\nSource code: ${this.node.getFullText()}`
       );
     }
-    if ((this.structure.genericParameters ?? []).length > 0) {
+    if (this.getGenericParameters().length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
         partial,

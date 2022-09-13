@@ -45,6 +45,7 @@ type TypeOptions = {
   internal: boolean;
   descendsFromPublic: boolean;
   level: number;
+  additionalGenericParams?: GenericParameter[];
 };
 type PropertyInfo = {
   propertyName: string;
@@ -252,11 +253,7 @@ export class TypeFactory {
       const member = members[i];
       unionType.addMember(member);
       if (!isGenericReference(member.ref)) {
-        const genericParams = getGenericParametersFromType(
-          this.registry,
-          elem,
-          unionType.getStructure().genericParameters ?? []
-        );
+        const genericParams = getGenericParametersFromType(this.registry, elem, unionType);
         genericParams.forEach(g => unionType.addGenericParameterToMember(i, g));
       }
     });
@@ -340,11 +337,7 @@ export class TypeFactory {
       const member = members[i];
       tuple.addMember(member);
       if (!isGenericReference(member.ref)) {
-        const genericParams = getGenericParametersFromType(
-          this.registry,
-          elem,
-          tuple.getStructure().genericParameters ?? []
-        );
+        const genericParams = getGenericParametersFromType(this.registry, elem, tuple);
         genericParams.forEach(g => tuple.addGenericParameterToMember(i, g));
       }
     });
@@ -462,7 +455,12 @@ export class TypeFactory {
       symbolToUse
     );
     // TODO: figure out how to get parent generic params
-    const genericParameters = getGenericParametersFromType(this.registry, typeToUse, [], name);
+    const genericParameters = getGenericParametersFromType(
+      this.registry,
+      typeToUse,
+      registryParent,
+      name
+    );
     const sym = regType.getSymbol();
     return {
       ref: sym,
@@ -488,9 +486,6 @@ export class TypeFactory {
       level,
       getComments(node)
     );
-    if (name === "TokenMap") {
-      console.debug();
-    }
     const getIndexAndValueTypeRefs = (): [TypeReference, TypeReference] | undefined => {
       const stringIndexType = type.getStringIndexType();
       const numberIndexType = type.getNumberIndexType();
@@ -570,7 +565,7 @@ export class TypeFactory {
       const genericParams = getGenericParametersFromType(
         this.registry,
         originalIndexType,
-        mappedType.getStructure().genericParameters ?? []
+        mappedType
       );
       genericParams.forEach(g => mappedType.addGenericParameterToIndex(g));
     }
@@ -578,7 +573,7 @@ export class TypeFactory {
       const genericParams = getGenericParametersFromType(
         this.registry,
         originalValueType,
-        mappedType.getStructure().genericParameters ?? []
+        mappedType
       );
       genericParams.forEach(g => mappedType.addGenericParameterToValue(g));
     }
@@ -741,7 +736,6 @@ export class TypeFactory {
       }
       const isRecursiveUnion = unionTypeTexts.includes(parentTypeText);
       if (isRecursiveUnion) {
-        // TODO: create a union type, which includes the parent and short-circuits the recursion
         const unionType = this.createUnionTypeFromClassUnion(
           {
             name: `${parentName}${capitalize(propertyName)}`,
@@ -923,7 +917,8 @@ export class TypeFactory {
     return;
   }
   private createTypeOrInterfaceType(options: TypeOptions): IRegistryType {
-    const { name, node, type, internal, level, descendsFromPublic } = options;
+    const { name, node, type, internal, level, descendsFromPublic, additionalGenericParams } =
+      options;
     const symbolToUse = createSymbol(name, type);
     if (type.getCallSignatures().length) {
       this.logger.warn(`Type ${name} has call signatures`);
@@ -942,6 +937,16 @@ export class TypeFactory {
     type.getAliasTypeArguments().forEach(alias => {
       this.addGenericParameter(regType, options, alias);
     });
+    // if(additionalGenericParams?.length) {
+    //   additionalGenericParams.forEach(p=> {
+
+    //   if(!regType.getStructure().genericParameters?.some(g=>p.name === g.name) && regType.genericParamShouldBeRendered(p)) {
+    //     regType.addGenericParameter(p)
+
+    //   }
+    // }
+    //   )
+    // }
     const propertySignatures = type.getApparentProperties();
     propertySignatures.forEach(property =>
       this.handlePropertySignature(regType, options, property)

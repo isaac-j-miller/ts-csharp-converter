@@ -21,7 +21,7 @@ export class CSharpClassUnion extends CSharpElement {
       }(${param} item) : base() { this.Item = item; }`,
       `${getIndentString(indent + 1)}public override T Match<T>(${params
         .map(p => `Func<${p}, T> ${p.toLowerCase()}`)
-        .join(", ")}) { return ${param.toLowerCase()}(item); }`,
+        .join(", ")}) { return ${param.toLowerCase()}(Item); }`,
     ];
     const endBracket = `${getIndentString(indent)}}`;
     const serialized = [baseDec, ...properties, endBracket].join("\n");
@@ -64,7 +64,9 @@ class UnionSerializerGenerator {
     const className = `Union${numElements}<${params.join(", ")}>`;
     const bodyLines = [
       "JToken token = JToken.Load(reader);",
+      "#nullable enable",
       "NamingStrategy? namingStrategy = null;",
+      "#nullable disable",
       "var resolver = serializer.ContractResolver;",
       "try {",
       `${getIndentString(1)} var asDefault = (DefaultContractResolver)resolver;`,
@@ -104,6 +106,7 @@ class UnionSerializerGenerator {
     const params = getFirstNUppercaseLetters(numElements);
     const className = `Union${numElements}<${params.join(", ")}>`;
     const bodyLines = [
+      "#nullable enable",
       "value.Match<string?>(",
       ...params.flatMap((p, i) => [
         `${getIndentString(1)}${p.toLowerCase()} => {`,
@@ -112,6 +115,7 @@ class UnionSerializerGenerator {
         `${getIndentString(1)}}${i === numElements - 1 ? "" : ","}`,
       ]),
       ");",
+      "#nullable disable",
     ];
     const body = bodyLines.map(b => `${getIndentString(indentation + 1)}${b}`).join("\n");
     return `${getIndentString(

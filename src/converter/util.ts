@@ -22,11 +22,14 @@ import {
   PrimitiveTypeName,
   PropertyStringArg,
   PropertyStringArgs,
+  TokenType,
   TypeReference,
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
 import type { TypeRegistry } from "./registry";
 import { NameMapper, NameType } from "./name-mapper";
+import { RegistryType } from "./registry-types";
+import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
 
 // TODO: make this config-driven
 const DEFAULT_NUMBER_TYPE = "int" as const;
@@ -264,11 +267,28 @@ export function getRefactorName(name: string): string {
 export function resolveTypeName(
   registry: TypeRegistry,
   ref: BaseTypeReference,
-  parentGenericParameters: GenericParameter[],
+  parent: TypeRegistryPossiblyGenericType<Exclude<TokenType, "Primitive" | "Const">>,
   immediateGenericParameters?: PropertyStringArgs
 ): string {
   if (isGenericReference(ref)) {
-    return ref.genericParamName;
+    const p = parent.getStructure().genericParameters?.find(g => g.name == ref.genericParamName);
+    if (!p || parent.genericParamShouldBeRendered(p)) {
+      return ref.genericParamName;
+    }
+    if (p.apparent) {
+      return parent.resolveAndFormatTypeName(p.apparent);
+    }
+    if (p.constraint) {
+      return parent.resolveAndFormatTypeName(p.constraint);
+    }
+    if (p.default) {
+      return parent.resolveAndFormatTypeName(p.default);
+    }
+    throw new Error(
+      `Generic param ${p.name} for ${
+        parent.getStructure().name
+      } should not be rendered, but no fallback type found`
+    );
   }
   if (isPrimitiveType(ref)) {
     return toCSharpPrimitive(ref.primitiveType);
@@ -280,20 +300,21 @@ export function resolveTypeName(
   if (!registryType) {
     throw new Error(`Type not found in registry: ${ref}`);
   }
-  const genericParameterNames =
-    immediateGenericParameters ??
-    getGenericParameters(registry, registryType, parentGenericParameters);
+  const genericParameterNames = immediateGenericParameters?.length
+    ? immediateGenericParameters
+    : getGenericParameters(registry, registryType, parent);
   return registryType.getPropertyString(genericParameterNames);
 }
 
 export function getGenericParametersFromType(
   registry: TypeRegistry,
   type: Type,
-  parentGenericParameters: GenericParameter[],
+  parent: IRegistryType,
   typeName?: string
 ): PropertyStringArgs {
   const logger = LoggerFactory.getLogger("generic-resolver");
   const params: PropertyStringArgs = [];
+  const parentGenericParameters = parent.getStructure().genericParameters ?? [];
   const genericParameters = type.getAliasTypeArguments();
   if (!typeName) {
     typeName = (type.getAliasSymbol() ?? type.getSymbol())?.getName() ?? "<anonymous>";
@@ -303,6 +324,9 @@ export function getGenericParametersFromType(
     if (symName) {
       const inParentParams = parentGenericParameters.find(p => p.name === symName);
       if (inParentParams) {
+        if (parent.isGeneric() && !parent.genericParamShouldBeRendered(inParentParams)) {
+          return;
+        }
         const ref: GenericReference = {
           isGenericReference: true,
           genericParamName: inParentParams.name,
@@ -355,11 +379,7 @@ export function getGenericParametersFromType(
       fromRegistry = registry.getType("any");
     }
     if (fromRegistry.isNonPrimitive()) {
-      const genericParamGenericParameters = getGenericParameters(
-        registry,
-        fromRegistry,
-        parentGenericParameters
-      );
+      const genericParamGenericParameters = getGenericParameters(registry, fromRegistry, parent);
       const propString = fromRegistry.getPropertyString(genericParamGenericParameters);
       params.push(propString);
     } else {
@@ -372,14 +392,14 @@ export function getGenericParametersFromType(
 export function getGenericParameters(
   registry: TypeRegistry,
   registryType: IRegistryType<NonPrimitiveType>,
-  parentGenericParameters: GenericParameter[]
+  parent: IRegistryType
 ): PropertyStringArgs {
   const t = registryType.getType()?.getApparentType();
   if (!t) {
     return [];
   }
   const typeName = registryType.getStructure().name;
-  return getGenericParametersFromType(registry, t, parentGenericParameters, typeName);
+  return getGenericParametersFromType(registry, t, parent, typeName);
 }
 
 export function formatCSharpArrayString(
