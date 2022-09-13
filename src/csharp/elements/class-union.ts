@@ -16,8 +16,10 @@ export class CSharpClassUnion extends CSharpElement {
     } : ${getGenericTypeName(name, params)} {`;
     const properties = [
       `${getIndentString(indent + 1)}public readonly ${param} Item;`,
-      `${getIndentString(indent + 1)}Case${i + 1}(${param} item) : base() { this.Item = item; }`,
-      `${getIndentString(indent + 1)}override T Match<T>(${params
+      `${getIndentString(indent + 1)}public Case${
+        i + 1
+      }(${param} item) : base() { this.Item = item; }`,
+      `${getIndentString(indent + 1)}public override T Match<T>(${params
         .map(p => `Func<${p}, T> ${p.toLowerCase()}`)
         .join(", ")}) { return ${param.toLowerCase()}(item); }`,
     ];

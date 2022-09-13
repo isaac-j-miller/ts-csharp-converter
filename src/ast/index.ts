@@ -127,7 +127,6 @@ export class AstTraverser {
     }
     this.logger.trace(`Processing variable declaration for ${name}`);
     if (!literalType) {
-      this.logger.warn(`Invalid literal type (${name})`);
       return;
     }
     const arrayDepth = getArrayDepth(asType);

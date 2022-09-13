@@ -5,7 +5,7 @@ const main = async () => {
   await convertTypescriptToCSharp(
     "/Users/imiller/code/report-wrangler/packages/report-core/src/dotnet.index.ts",
     "/Users/imiller/code/report-wrangler/tsconfig-global.json",
-    "./tmp/ReportWrangler.cs",
+    "./tmp",
     "ReportWrangler",
     {
       transforms: {

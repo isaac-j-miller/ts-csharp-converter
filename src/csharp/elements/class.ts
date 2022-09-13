@@ -48,7 +48,7 @@ export class CSharpClass extends CSharpElement {
     } = property;
     let serialized = formatCommentString(commentString, indent);
     if (!isConst) {
-      const serializationPropertyName = `${getIndentString(indent)}[JsonPropertyName("${name}")]\n`;
+      const serializationPropertyName = `${getIndentString(indent)}[JsonProperty("${name}")]\n`;
       serialized += serializationPropertyName;
     }
     if (isClassUnion && numUnionMembers !== undefined) {
@@ -61,7 +61,7 @@ export class CSharpClass extends CSharpElement {
       serialized += serializerDecorator;
     }
     serialized += `${getIndentString(indent)}${accessLevel} `;
-    if (defaultValue) {
+    if (defaultValue && isConst) {
       serialized += "readonly ";
     }
     if (isConst) {

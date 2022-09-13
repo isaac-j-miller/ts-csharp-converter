@@ -60,11 +60,10 @@ export function getIndexAndValueType(node: Node): IndexAndValueTypeInfo | undefi
   let afterSemicolon = false;
   const keyItems: Node[] = [];
   const valueItems: Node[] = [];
-  const declarationDescendantToUse = declaration.getFirstDescendantByKind(SyntaxKind.MappedType);
-  if (!declarationDescendantToUse) {
+  if (!declaration) {
     return;
   }
-  const descendants = declarationDescendantToUse.getChildren();
+  const descendants = declaration.getChildren();
   for (const descendant of descendants) {
     const kind = descendant.getKind();
     switch (kind) {

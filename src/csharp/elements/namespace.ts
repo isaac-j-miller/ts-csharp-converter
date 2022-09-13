@@ -12,6 +12,7 @@ export class CSharpNamespace extends CSharpElement {
     let serialized = `namespace ${this.name} {\n`;
     serialized += indent + "using System;\n";
     serialized += indent + "using System.Collections.Generic;\n";
+    serialized += indent + "using System.Runtime.Serialization;\n";
     serialized += indent + "using Newtonsoft.Json;\n";
     serialized += indent + "using Serialization;\n";
     serialized += this.elements.map(element => element.serialize(mapper, 1)).join("\n");

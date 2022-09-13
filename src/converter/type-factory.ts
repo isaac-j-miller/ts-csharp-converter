@@ -228,7 +228,7 @@ export class TypeFactory {
         options.type,
         node,
         t,
-        `${name}Member${i}`,
+        `${name}Member${i + 1}`,
         level,
         descendsFromPublic || !internal
       );
@@ -331,7 +331,7 @@ export class TypeFactory {
         options.type,
         node,
         t,
-        `${name}Member${i}`,
+        `${name}Member${i + 1}`,
         level,
         descendsFromPublic || !internal
       )
@@ -488,7 +488,9 @@ export class TypeFactory {
       level,
       getComments(node)
     );
-
+    if (name === "TokenMap") {
+      console.debug();
+    }
     const getIndexAndValueTypeRefs = (): [TypeReference, TypeReference] | undefined => {
       const stringIndexType = type.getStringIndexType();
       const numberIndexType = type.getNumberIndexType();

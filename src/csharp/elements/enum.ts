@@ -31,12 +31,12 @@ export class CSharpEnum extends CSharpElement {
     const indentString = getIndentString(indentation);
     const bodyIndent = getIndentString(indentation + 1);
     const formattedCommentString = formatCommentString(this.commentString, indentation);
-    let serialized = formattedCommentString + indentString;
-    if (this.isPublic) {
-      serialized += "public ";
-    } else {
-      serialized += "internal ";
-    }
+    const enumConverterString = `\n${indentString}[JsonConverter(typeof(StringEnumConverter))]\n`;
+    let serialized =
+      formattedCommentString +
+      (this.isStringEnum ? enumConverterString : "") +
+      indentString +
+      "public ";
     const name = mapper.transform(this.name, NameType.DeclarationName);
     serialized += `enum ${name} {\n`;
     serialized += this.serializeUnionMembers(mapper, indentation + 1)

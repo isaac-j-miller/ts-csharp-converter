@@ -5,7 +5,7 @@ const main = async () => {
   await convertTypescriptToCSharp(
     "./src/test/index.ts",
     "./tsconfig.json",
-    "./tmp/Output.cs",
+    "./tmp",
     "TestNamespace",
     {
       transforms: {
