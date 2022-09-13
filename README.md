@@ -97,18 +97,11 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 # TODO:
 
 - make default number type config driven
-- write descriptive readme
 - clean up messy code (constructor args, etc)
 - evaluate const declarations to use local variables
-- more unit tests using generated code
-- add JsonPropertyName to attributes
-
-# RW-Specific:
-
-- Figure out why some class names aren't being resolved/merged. For example, DataFetchRequest.Report
-  should resolve to ReportRequestDetails, but it creates a new type. This might have something to do
-  with default parameters
-- figure out why ReportRequestDetails.ReportSections is being rendered as `Dictionary<int, string>`
-  instead of `string[]`
-- figure out why ReportRequestDetails.Options is being rendered as `Dictionary<object, object>`
-  instead of `Dictionary<string, object>` (this is actually definitely because of the type in RW)
+- move UnionX and UnionXSerializer classes to separate namespace
+- sort items in namespace
+- more unit tests using generated code (including:
+  - serialization/deserialization of union and template types
+  - serialization/deserialization of normal types
+  - usage of union types )
