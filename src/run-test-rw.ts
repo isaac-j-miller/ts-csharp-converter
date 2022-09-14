@@ -1,13 +1,14 @@
 import { NameType, CasingConvention } from "./converter/name-mapper";
 import { convertTypescriptToCSharp } from "./index";
+import { CSharpConverterConfig } from "./types";
 
 const main = async () => {
-  await convertTypescriptToCSharp(
-    "/Users/imiller/code/report-wrangler/packages/report-core/src/dotnet.index.ts",
-    "/Users/imiller/code/report-wrangler/tsconfig-global.json",
-    "./tmp",
-    "ReportWrangler",
-    {
+  const config: CSharpConverterConfig = {
+    entrypoint: "/Users/imiller/code/report-wrangler/packages/report-core/src/dotnet.index.ts",
+    tsconfigPath: "/Users/imiller/code/report-wrangler/tsconfig-global.json",
+    outputDir: "./tmp",
+    namespaceName: "ReportWrangler",
+    nameMappingConfig: {
       transforms: {
         [NameType.DeclarationName]: {
           output: CasingConvention.PascalCase,
@@ -20,9 +21,10 @@ const main = async () => {
         },
       },
     },
-    false,
+    includeNodeModules: false,
+    defaultNumericType: "int",
     // these types can be ignored because they aren't used anywhere and just take forever
-    new Set([
+    ignoreClasses: new Set([
       "JsonSchema",
       "DeepPartial",
       "RwContext",
@@ -170,8 +172,9 @@ const main = async () => {
       // "GenerateResponse",
       // "Cookies",
       // "FormFieldTypes",
-    ])
-  );
+    ]),
+  };
+  await convertTypescriptToCSharp(config);
 };
 
 void main();

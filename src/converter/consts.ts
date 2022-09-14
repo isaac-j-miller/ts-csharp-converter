@@ -1,10 +1,24 @@
+export const jsDocNumberTypes = [
+  "decimal",
+  "float",
+  "double",
+  "sbyte",
+  "byte",
+  "short",
+  "ushort",
+  "int",
+  "uint",
+  "long",
+  "ulong",
+  "nint",
+  "nuint",
+] as const;
+
 export const primitiveTypeNames = [
   "string",
   "String",
   "number",
   "Number",
-  "float",
-  "int",
   "boolean",
   "Boolean",
   "object",
@@ -14,8 +28,7 @@ export const primitiveTypeNames = [
   "unknown",
   "symbol",
   "Symbol",
+  ...jsDocNumberTypes,
 ] as const;
-
-export const jsDocNumberTypes = ["int", "float"] as const;
 
 export const CONSTS_KEYWORD = "__consts__" as const;

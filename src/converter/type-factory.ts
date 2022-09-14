@@ -28,6 +28,7 @@ import {
 } from "./types";
 import {
   asPrimitiveTypeName,
+  ConfigDependentUtils,
   createSymbol,
   getArrayDepth,
   getComments,
@@ -129,7 +130,11 @@ function getGenericConstraintOrDefaultOptions(type: Type): GenericConstraintOrDe
 
 export class TypeFactory {
   private logger: ILogger;
-  constructor(private registry: TypeRegistry, private ignoreClasses: Set<string>) {
+  constructor(
+    private utils: ConfigDependentUtils,
+    private registry: TypeRegistry,
+    private ignoreClasses: Set<string>
+  ) {
     this.logger = LoggerFactory.getLogger("type-factory");
   }
   private createPrimitiveType(options: TypeOptions): IRegistryType | undefined {
@@ -153,6 +158,7 @@ export class TypeFactory {
         member => member.getLiteralValue() ?? member.getApparentType().getLiteralValueOrThrow()
       );
       const unionRegType = new TypeRegistryUnionType(
+        this.utils,
         this.registry,
         name,
         symbolToUse,
@@ -207,6 +213,7 @@ export class TypeFactory {
     const symbolToUse = createSymbol(name, type);
 
     const unionType = new TypeRegistryClassUnionInstanceType(
+      this.utils,
       this.registry,
       name,
       symbolToUse,
@@ -242,6 +249,7 @@ export class TypeFactory {
       members.push(member);
     });
     const unionBaseType = new TypeRegistryClassUnionType(
+      this.utils,
       this.registry,
       internal,
       descendsFromPublic,
@@ -292,6 +300,7 @@ export class TypeFactory {
       })
       .filter(u => u !== undefined) as UnionEnumMember[];
     return new TypeRegistryUnionType(
+      this.utils,
       this.registry,
       name,
       symbolToUse,
@@ -311,6 +320,7 @@ export class TypeFactory {
     }
     const symbolToUse = createSymbol(name, type);
     const tuple = new TypeRegistryTupleType(
+      this.utils,
       this.registry,
       name,
       symbolToUse,
@@ -476,6 +486,7 @@ export class TypeFactory {
     let originalIndexType: Type | undefined;
     const symbolToUse = createSymbol(name, type);
     const mappedType = new TypeRegistryDictType(
+      this.utils,
       this.registry,
       name,
       symbolToUse,
@@ -924,6 +935,7 @@ export class TypeFactory {
       this.logger.warn(`Type ${name} has call signatures`);
     }
     const regType = new TypeRegistryType(
+      this.utils,
       this.registry,
       name,
       symbolToUse,

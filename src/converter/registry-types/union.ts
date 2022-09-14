@@ -3,9 +3,11 @@ import { CSharpEnum } from "src/csharp/elements";
 import { ISyntheticSymbol, TypeStructure, UnionEnumMember } from "../types";
 import { RegistryType } from "./base";
 import { TypeRegistry } from "../registry";
+import { ConfigDependentUtils } from "../util";
 
 export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
@@ -23,7 +25,18 @@ export class TypeRegistryUnionType extends RegistryType<"StringUnion"> {
       members,
       commentString,
     };
-    super(registry, structure, symbol, true, internal, isDescendantOfPublic, type, level, false);
+    super(
+      utils,
+      registry,
+      structure,
+      symbol,
+      true,
+      internal,
+      isDescendantOfPublic,
+      type,
+      level,
+      false
+    );
   }
   usesRef(): boolean {
     return false;

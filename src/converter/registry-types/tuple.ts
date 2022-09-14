@@ -2,9 +2,11 @@ import { Node, Symbol, Type } from "ts-morph";
 import { ISyntheticSymbol, TypeStructure } from "../types";
 import { TypeRegistry } from "../registry";
 import { TypeRegistryWithBaseClassType } from "./with-baseclass";
+import { ConfigDependentUtils } from "../util";
 
 export class TypeRegistryTupleType extends TypeRegistryWithBaseClassType<"Tuple"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
@@ -22,6 +24,7 @@ export class TypeRegistryTupleType extends TypeRegistryWithBaseClassType<"Tuple"
       commentString,
     };
     super(
+      utils,
       registry,
       "Tuple",
       name,

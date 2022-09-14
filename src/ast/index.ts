@@ -26,6 +26,7 @@ import { IRegistryType, LiteralValue } from "src/converter/types";
 import { TypeFactory } from "src/converter/type-factory";
 import {
   asPrimitiveTypeName,
+  ConfigDependentUtils,
   getArrayDepth,
   getComments,
   getFinalArrayType,
@@ -69,14 +70,15 @@ export class AstTraverser {
     entrypoint: string,
     tsconfigPath: string,
     private includeNodeModules: boolean = false,
-    private ignoreClasses: Set<string>
+    private ignoreClasses: Set<string>,
+    utils: ConfigDependentUtils
   ) {
     this.project = new Project({
       tsConfigFilePath: tsconfigPath,
     });
     this.entrySourceFile = this.project.getSourceFileOrThrow(entrypoint);
-    this.registry = new TypeRegistry(ignoreClasses);
-    this.typeFactory = new TypeFactory(this.registry, ignoreClasses);
+    this.registry = new TypeRegistry(utils, ignoreClasses);
+    this.typeFactory = new TypeFactory(utils, this.registry, ignoreClasses);
     this.sourceFilesProcessed = new Set<string>();
     this.tsconfig = this.getTsConfig(tsconfigPath);
     const rel = path.dirname(path.resolve(tsconfigPath));

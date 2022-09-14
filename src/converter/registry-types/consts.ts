@@ -13,20 +13,21 @@ import {
   TypeStructure,
 } from "../types";
 import {
+  ConfigDependentUtils,
   formatCSharpArrayString,
   literalValueToCSharpLiteralValue,
-  toCSharpPrimitive,
 } from "../util";
 import { RegistryType } from "./base";
 
 export class TypeRegistryConstType extends RegistryType<"Const"> {
-  constructor(registry: TypeRegistry) {
+  constructor(utils: ConfigDependentUtils, registry: TypeRegistry) {
     const structure: TypeStructure<"Const"> = {
       tokenType: "Const",
       name: "GlobalVars",
       properties: {},
     };
     super(
+      utils,
       registry,
       structure,
       {
@@ -50,7 +51,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     if (!isPrimitiveType(baseType)) {
       throw new Error(`Const property ${this.structure.name}.${propName} is not a primitive type`);
     }
-    const kindType = toCSharpPrimitive(baseType.primitiveType);
+    const kindType = this.utils.toCSharpPrimitive(baseType.primitiveType);
     const literalValue = literalValueToCSharpLiteralValue(
       defaultLiteralValue,
       this.registry,
@@ -90,7 +91,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     };
   }
   getPropertyString(): string {
-    return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
+    return this.utils.toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
   }
 
   private generateCSharpProperties(mapper: NameMapper): CSharpProperty[] {

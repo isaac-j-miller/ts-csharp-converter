@@ -1,12 +1,10 @@
 import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
 import { createHash } from "crypto";
-import { assertNever } from "src/common/util";
 import { CSharpPrimitiveType } from "src/csharp/types";
 import { LoggerFactory } from "src/common/logging/factory";
 import {
   BaseTypeReference,
   ConstType,
-  GenericParameter,
   GenericReference,
   IRegistryType,
   isConstType,
@@ -28,40 +26,84 @@ import {
 import { SyntheticSymbol } from "./synthetic/symbol";
 import type { TypeRegistry } from "./registry";
 import { NameMapper, NameType } from "./name-mapper";
-import { RegistryType } from "./registry-types";
 import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { jsDocNumberTypes } from "./consts";
+import { CSharpConverterConfig } from "src/types";
 
-// TODO: make this config-driven
-const DEFAULT_NUMBER_TYPE = "int" as const;
-
-export function toCSharpPrimitive(primitive: PrimitiveTypeName): CSharpPrimitiveType {
-  switch (primitive) {
-    case "Boolean":
-    case "boolean":
-      return "bool";
-    case "Number":
-    case "number":
-      return DEFAULT_NUMBER_TYPE;
-    case "String":
-    case "string":
-      return "string";
-    case "any":
-    case "object":
-    case "unknown":
-    case "symbol":
-    case "Symbol":
-      return "object";
-    case "null":
-    case "undefined":
-      return "null";
-    case "float":
-      return "double";
-    case "int":
-      return "int";
-    default:
-      assertNever(primitive);
+export class ConfigDependentUtils {
+  constructor(private config: CSharpConverterConfig) {}
+  toCSharpPrimitive(primitive: PrimitiveTypeName): CSharpPrimitiveType {
+    switch (primitive) {
+      case "Boolean":
+      case "boolean":
+        return "bool";
+      case "Number":
+      case "number":
+        return this.config.defaultNumericType;
+      case "String":
+      case "string":
+        return "string";
+      case "any":
+      case "object":
+      case "unknown":
+      case "symbol":
+      case "Symbol":
+        return "object";
+      case "null":
+      case "undefined":
+        return "null";
+      default:
+        if (jsDocNumberTypes.includes(primitive)) {
+          return primitive;
+        }
+        throw new Error(`Unexpected value: ${primitive}`);
+    }
   }
-  throw new Error("Somehow this fell through");
+  resolveTypeName(
+    registry: TypeRegistry,
+    ref: BaseTypeReference,
+    parent: TypeRegistryPossiblyGenericType<Exclude<TokenType, "Primitive" | "Const">>,
+    immediateGenericParameters?: PropertyStringArgs
+  ): string {
+    if (isGenericReference(ref)) {
+      const p = parent.getStructure().genericParameters?.find(g => g.name == ref.genericParamName);
+      if (!p || parent.genericParamShouldBeRendered(p)) {
+        return ref.genericParamName;
+      }
+      if (p.apparent) {
+        return parent.resolveAndFormatTypeName(p.apparent);
+      }
+      if (p.constraint) {
+        return parent.resolveAndFormatTypeName(p.constraint);
+      }
+      if (p.default) {
+        return parent.resolveAndFormatTypeName(p.default);
+      }
+      throw new Error(
+        `Generic param ${p.name} for ${
+          parent.getStructure().name
+        } should not be rendered, but no fallback type found`
+      );
+    }
+    if (isPrimitiveType(ref)) {
+      return this.toCSharpPrimitive(ref.primitiveType);
+    }
+    if (isConstType(ref)) {
+      throw new Error("__const__ should not be referenced");
+    }
+    const registryType = registry.getType(ref);
+    if (!registryType) {
+      throw new Error(`Type not found in registry: ${ref}`);
+    }
+    const genericParameterNames = immediateGenericParameters?.length
+      ? immediateGenericParameters
+      : getGenericParameters(registry, registryType, parent);
+    return registryType.getPropertyString(genericParameterNames);
+  }
+}
+
+export function isCSharpNumericType(t: string): t is JsDocNumberType {
+  return jsDocNumberTypes.includes(t as JsDocNumberType);
 }
 
 export function getFinalSymbol<T extends Symbol | ISyntheticSymbol>(sym: T): T {
@@ -104,16 +146,22 @@ export function createSymbol(name: string, t?: Type): ISyntheticSymbol {
   const symbolFromType = t ? getFinalSymbolOfType(t) : undefined;
   return new SyntheticSymbol(name, t, symbolFromType);
 }
+function extractTextFromJsDocTag(text: string): JsDocNumberType | undefined {
+  if (!(text.endsWith("}") && text.startsWith("{"))) {
+    return;
+  }
+  const insideBrackets = text.substring(1, text.length - 1);
+  if (isCSharpNumericType(insideBrackets)) {
+    return insideBrackets;
+  }
+  return;
+}
+
 function getTypeFromTag(tag: JSDocTagInfo): JsDocNumberType | undefined {
   const textInfos = tag.getText();
   for (const textInfo of textInfos) {
     const { text } = textInfo;
-    if (text === "{float}") {
-      return "float";
-    }
-    if (text === "{int}") {
-      return "int";
-    }
+    return extractTextFromJsDocTag(text);
   }
   return;
 }
@@ -262,48 +310,6 @@ export function getRefactorName(name: string): string {
     return name.replace(num, newNum.toString());
   }
   return name + "2";
-}
-
-export function resolveTypeName(
-  registry: TypeRegistry,
-  ref: BaseTypeReference,
-  parent: TypeRegistryPossiblyGenericType<Exclude<TokenType, "Primitive" | "Const">>,
-  immediateGenericParameters?: PropertyStringArgs
-): string {
-  if (isGenericReference(ref)) {
-    const p = parent.getStructure().genericParameters?.find(g => g.name == ref.genericParamName);
-    if (!p || parent.genericParamShouldBeRendered(p)) {
-      return ref.genericParamName;
-    }
-    if (p.apparent) {
-      return parent.resolveAndFormatTypeName(p.apparent);
-    }
-    if (p.constraint) {
-      return parent.resolveAndFormatTypeName(p.constraint);
-    }
-    if (p.default) {
-      return parent.resolveAndFormatTypeName(p.default);
-    }
-    throw new Error(
-      `Generic param ${p.name} for ${
-        parent.getStructure().name
-      } should not be rendered, but no fallback type found`
-    );
-  }
-  if (isPrimitiveType(ref)) {
-    return toCSharpPrimitive(ref.primitiveType);
-  }
-  if (isConstType(ref)) {
-    throw new Error("__const__ should not be referenced");
-  }
-  const registryType = registry.getType(ref);
-  if (!registryType) {
-    throw new Error(`Type not found in registry: ${ref}`);
-  }
-  const genericParameterNames = immediateGenericParameters?.length
-    ? immediateGenericParameters
-    : getGenericParameters(registry, registryType, parent);
-  return registryType.getPropertyString(genericParameterNames);
 }
 
 export function getGenericParametersFromType(

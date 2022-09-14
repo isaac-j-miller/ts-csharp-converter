@@ -13,6 +13,7 @@ import {
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import {
+  ConfigDependentUtils,
   formatCSharpArrayString,
   getGenericTypeName,
   literalValueToCSharpLiteralValue,
@@ -23,6 +24,7 @@ export type PropertyOptions = Omit<PropertyStructure, "propertyName" | "baseType
 
 export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
@@ -33,7 +35,19 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     level: number,
     commentString?: string
   ) {
-    super(registry, "Type", name, symbol, internal, isDescendantOfPublic, true, node, type, level);
+    super(
+      utils,
+      registry,
+      "Type",
+      name,
+      symbol,
+      internal,
+      isDescendantOfPublic,
+      true,
+      node,
+      type,
+      level
+    );
     this.structure.commentString = commentString;
   }
   addCommentStringToProperty(propertyName: string, newCommentString: string): void {

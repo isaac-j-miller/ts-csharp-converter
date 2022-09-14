@@ -4,21 +4,31 @@ import { join, resolve } from "path";
 import { AstTraverser } from "./ast";
 import { CasingConvention, NameMapperConfig } from "./converter/name-mapper";
 import { NameMapper } from "./converter/name-mapper/mapper";
+import { ConfigDependentUtils } from "./converter/util";
+import { CSharpConverterConfig } from "./types";
 
 export { NameType } from "./converter/name-mapper/types";
 export { CasingConvention, NameMapperConfig };
 
-export async function convertTypescriptToCSharp(
-  entrypoint: string,
-  tsconfigPath: string,
-  outputDir: string,
-  namespaceName: string,
-  config: NameMapperConfig,
-  includeNodeModules: boolean,
-  ignoreClasses: Set<string>
-): Promise<void> {
-  const mapper = new NameMapper(config);
-  const traverser = new AstTraverser(entrypoint, tsconfigPath, includeNodeModules, ignoreClasses);
+export async function convertTypescriptToCSharp(config: CSharpConverterConfig): Promise<void> {
+  const {
+    entrypoint,
+    tsconfigPath,
+    outputDir,
+    namespaceName,
+    nameMappingConfig,
+    includeNodeModules,
+    ignoreClasses,
+  } = config;
+  const mapper = new NameMapper(nameMappingConfig);
+  const utils = new ConfigDependentUtils(config);
+  const traverser = new AstTraverser(
+    entrypoint,
+    tsconfigPath,
+    includeNodeModules,
+    ignoreClasses,
+    utils
+  );
   traverser.traverse();
   const ns = traverser.createNamespace(namespaceName, mapper);
   const serializedNamespace = ns.serialize(mapper);

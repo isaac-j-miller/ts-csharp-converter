@@ -8,7 +8,6 @@ import {
   isGenericReference,
   isPrimitiveType,
   isPrimitiveTypeName,
-  isSyntheticSymbol,
   isUnionTypeValueReference,
   ISyntheticSymbol,
   PropertyStringArgs,
@@ -17,13 +16,14 @@ import {
   TypeStructure,
   UnderlyingType,
 } from "../types";
-import { formatCSharpArrayString, resolveTypeName } from "../util";
+import { ConfigDependentUtils, formatCSharpArrayString } from "../util";
 import { RegistryType } from "./base";
 
 export abstract class TypeRegistryPossiblyGenericType<
   T extends Exclude<TokenType, "Primitive" | "Const">
 > extends RegistryType<T> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     tokenType: T,
     name: string,
@@ -43,6 +43,7 @@ export abstract class TypeRegistryPossiblyGenericType<
       genericParameters: [],
     };
     super(
+      utils,
       registry,
       structure,
       sym,
@@ -151,7 +152,7 @@ export abstract class TypeRegistryPossiblyGenericType<
     if (isPrimitiveTypeName(t)) {
       return t;
     }
-    const resolved = resolveTypeName(
+    const resolved = this.utils.resolveTypeName(
       this.registry,
       t.ref,
       this,

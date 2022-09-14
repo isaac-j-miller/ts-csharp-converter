@@ -32,14 +32,19 @@ You can run `pnpm ts-csharp-converter --help` to view a list of available cli ar
 Example usage as a module:
 
 ```typescript
-import { NameType, CasingConvention, convertTypescriptToCSharp } from "@costar/ts-csharp-converter";
+import {
+  NameType,
+  CasingConvention,
+  convertTypescriptToCSharp,
+  CSharpConverterConfig,
+} from "@costar/ts-csharp-converter";
 const main = async () => {
-  await convertTypescriptToCSharp(
-    "/Users/imiller/code/report-wrangler/packages/report-core/src/dotnet.index.ts",
-    "/Users/imiller/code/report-wrangler/tsconfig-global.json",
-    "./tmp/ReportWrangler.cs",
-    "ReportWrangler",
-    {
+  const config: CSharpConverterConfig = {
+    entrypoint: "/Users/imiller/code/report-wrangler/packages/report-core/src/dotnet.index.ts",
+    tsconfigPath: "/Users/imiller/code/report-wrangler/tsconfig-global.json",
+    outputDir: "./tmp",
+    namespaceName: "ReportWrangler",
+    nameMappingConfig: {
       transforms: {
         [NameType.DeclarationName]: {
           output: CasingConvention.PascalCase,
@@ -52,12 +57,10 @@ const main = async () => {
         },
       },
     },
-    false,
-    /*
-    This is a set of classes/types/interfaces/etc to exclude from generation. The generator automatically registers and renders all classes/types/interfaces/etc which it encounters, so sometimes it will encounter tokens which don't really need to be
-    included. You can provide the converter with a set of tokens to ignore in order to clean up the output that you get.
-    */
-    new Set([
+    includeNodeModules: false,
+    defaultNumericType: "int",
+    // these types can be ignored because they aren't used anywhere and just take forever
+    ignoreClasses: new Set([
       "JsonSchema",
       "DeepPartial",
       "RwContext",
@@ -76,17 +79,80 @@ const main = async () => {
       "Timer",
       "WrapperData",
       "DbAdapter",
+      "DynamoDbAdapter",
+      "DynamoDbAdapterOptions",
       "Cache",
       "ConfigByEnv",
-      "S3Tree",
       "RuntimeConfig",
       "ParsedLoggable",
-      "DataFetchRequest",
-      "DataBindingRequest",
+      "Transform",
+      "TimerCotr",
+      "ReportCallback",
+      "FilterCallbackPredicate",
       "ReportRequestDetails",
       "SchemaType",
-    ])
-  );
+      "GetS3ObjectResponseHeaders",
+      "ValuePropOf",
+      "RuntimeConfig",
+      "TLambdaEvent",
+      "Loggable",
+      "JobQueryOptions",
+      "FunctionMap",
+      "AsProperties",
+      "Loggable",
+      "Logger",
+      "EventLogger",
+      "SyncLogWriter",
+      "AsyncLogWriter",
+      "LogFilter",
+      "ArrayOneOrMore",
+      "NonFunctionPropertyNames",
+      "PopulatedMap",
+      "BackoffConfig",
+      "SqsConsumerConfig",
+      "AwsHttpOptions",
+      "AwsServiceGlobalOptions",
+      "FunctionMap",
+      "BuildConfig",
+      "SecretsConfig",
+      "SecretsConfigPromise",
+      "RuntimeConfig",
+      "ServerWindow",
+      "ClientOptions",
+      "ReportWizardOptions",
+      "AdminOptions",
+      "I18nMessageType",
+      "SsrClientConfig",
+      "InvocationContextMenuOption",
+      "InvocationContextOptions",
+      "FeatureToggles",
+      "RandomStringOptions",
+      "Context",
+      "NodeVisited",
+      "S3Request",
+      "S3PutRequest",
+      "S3PutObjectRequest",
+      "S3DeleteObjectRequest",
+      "S3GetObjectRequest",
+      "S3HeadObjectRequest",
+      "S3TreeParams",
+      "S3ArtifactResponse",
+      "S3Tree",
+      "OpenApiSchemas",
+      "S3Options",
+      "SampleRequestBody",
+      "Services",
+      "RwCluster",
+      "ReportService",
+      "ConfigResponse",
+      "JobStoreDbMethods",
+      "JobStoreSdk",
+      "JobStoreOptions",
+      "DynamoItemInput",
+      "SchemaNameParam",
+    ]),
+  };
+  await convertTypescriptToCSharp(config);
 };
 void main();
 ```
@@ -97,6 +163,7 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 # TODO:
 
 - make default number type config driven
+- allow specifying c# numeric types better (decimal, int, long, etc)
 - clean up messy code (constructor args, etc)
 - evaluate const declarations to use local variables
 - move UnionX and UnionXSerializer classes to separate namespace

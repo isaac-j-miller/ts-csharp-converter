@@ -19,7 +19,7 @@ import {
   UnionEnumMember,
   UnionTypeValueReference,
 } from "./types";
-import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
+import { asPrimitiveTypeName, ConfigDependentUtils, getFinalSymbol, getRefactorName } from "./util";
 import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import { TypeRegistryConstType } from "./registry-types/consts";
 import { CONSTS_KEYWORD } from "./consts";
@@ -40,7 +40,7 @@ export class TypeRegistry {
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
   private logger: ILogger;
-  constructor(private ignoreClasses: Set<string>) {
+  constructor(private utils: ConfigDependentUtils, private ignoreClasses: Set<string>) {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
@@ -70,7 +70,7 @@ export class TypeRegistry {
   getConstValueType(): TypeRegistryConstType {
     const v = this.symbolMap[CONSTS_KEYWORD];
     if (!v) {
-      const constType = new TypeRegistryConstType(this);
+      const constType = new TypeRegistryConstType(this.utils, this);
       this.symbolMap[CONSTS_KEYWORD] = constType;
     }
     return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
@@ -269,7 +269,7 @@ export class TypeRegistry {
       const primIdx: PrimitiveTypeName = symIsPrimitiveName ? sym : sym.primitiveType;
       const prim = this.symbolMap[primIdx];
       if (!prim) {
-        const primitiveType = new TypeRegistryPrimitiveType(this, primIdx);
+        const primitiveType = new TypeRegistryPrimitiveType(this.utils, this, primIdx);
         this.addType(primitiveType);
       }
       return this.symbolMap[primIdx] as GetTypeReturn<T>;

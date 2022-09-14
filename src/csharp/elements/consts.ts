@@ -1,1 +1,3 @@
-export const cSharpPrimitives = ["string", "double", "bool", "object", "int", "null"] as const;
+import { jsDocNumberTypes } from "src/converter/consts";
+
+export const cSharpPrimitives = ["string", "bool", "object", "null", ...jsDocNumberTypes] as const;

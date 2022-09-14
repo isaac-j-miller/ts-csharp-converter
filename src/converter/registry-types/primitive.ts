@@ -7,16 +7,17 @@ import {
   PrimitiveTypeName,
   TypeStructure,
 } from "../types";
-import { toCSharpPrimitive } from "../util";
+import { ConfigDependentUtils } from "../util";
 import { RegistryType } from "./base";
 
 export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
-  constructor(registry: TypeRegistry, name: PrimitiveTypeName) {
+  constructor(utils: ConfigDependentUtils, registry: TypeRegistry, name: PrimitiveTypeName) {
     const structure: TypeStructure<"Primitive"> = {
       tokenType: "Primitive",
       name,
     };
     super(
+      utils,
       registry,
       structure,
       {
@@ -36,7 +37,7 @@ export class TypeRegistryPrimitiveType extends RegistryType<"Primitive"> {
     return false;
   }
   getPropertyString(): string {
-    return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
+    return this.utils.toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
   }
   getSymbol(): PrimitiveType {
     return super.getSymbol() as PrimitiveType;

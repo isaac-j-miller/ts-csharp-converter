@@ -3,26 +3,21 @@ import { ArgumentParser } from "argparse";
 import { convertTypescriptToCSharp } from ".";
 import { CasingConvention, NameMapperConfig, NameType } from "./converter/name-mapper";
 import { toCasingConvention } from "./converter/name-mapper/util";
+import { CSharpConverterConfig } from "./types";
+import { isCSharpNumericType } from "./converter/util";
+import { jsDocNumberTypes } from "./converter/consts";
 
-type RunConfigBase = {
+type CliRunConfig = {
+  defaultNumericType: string;
   entrypoint: string;
   tsconfigPath: string;
-  outputFile: string;
-  namespace: string;
-};
-
-type RunConfig = RunConfigBase & {
+  outputDir: string;
+  namespaceName: string;
   classNameTargetCasing?: string;
   propertyNameTargetCasing?: string;
   enumMemberTargetCasing?: string;
   includeNodeModules?: boolean;
   ignoreClasses?: string;
-};
-
-type CompleteConfig = RunConfigBase & {
-  nameMapperConfig: NameMapperConfig;
-  includeNodeModules: boolean;
-  ignoreClasses: Set<string>;
 };
 
 const argParser = new ArgumentParser();
@@ -34,13 +29,13 @@ argParser.add_argument("--tsconfig-path", {
   required: true,
   dest: "tsconfigPath",
 });
-argParser.add_argument("--output-file", {
+argParser.add_argument("--output-dir", {
   required: true,
-  dest: "outputFile",
+  dest: "outputDir",
 });
 argParser.add_argument("--output-namespace", {
   required: true,
-  dest: "namespace",
+  dest: "namespaceName",
 });
 argParser.add_argument("--class-name-target-casing", {
   required: false,
@@ -64,17 +59,18 @@ argParser.add_argument("--ignore", {
   required: false,
   dest: "ignoreClasses",
 });
-const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
+const runConfigToCompleteRunConfig = (c: CliRunConfig): CSharpConverterConfig => {
   const {
     classNameTargetCasing,
     propertyNameTargetCasing,
     enumMemberTargetCasing: enumNameTargetCasing,
     includeNodeModules,
     ignoreClasses,
+    defaultNumericType,
     ...rest
   } = c;
   const ignoreClassesSet = new Set(ignoreClasses ? ignoreClasses.split(",") : []);
-  const nameMapperConfig: NameMapperConfig = {
+  const nameMappingConfig: NameMapperConfig = {
     transforms: {
       [NameType.DeclarationName]: {
         output: toCasingConvention(classNameTargetCasing) ?? CasingConvention.PascalCase,
@@ -87,39 +83,32 @@ const runConfigToCompleteRunConfig = (c: RunConfig): CompleteConfig => {
       },
     },
   };
+  const numericTypeToUse = defaultNumericType ?? "int";
+  const isNumericTypeValid = isCSharpNumericType(numericTypeToUse);
+  const defaultNumericTypeValidated = isNumericTypeValid ? numericTypeToUse : undefined;
+  if (!defaultNumericTypeValidated) {
+    throw new Error(
+      `Invalid numeric type: ${defaultNumericType}. Expected one of ${jsDocNumberTypes}`
+    );
+  }
   return {
     ...rest,
-    nameMapperConfig,
+    nameMappingConfig,
+    defaultNumericType: defaultNumericTypeValidated,
     includeNodeModules: !!includeNodeModules,
     ignoreClasses: ignoreClassesSet,
   };
 };
 const getRunConfig = () => {
   const [knownArgs] = argParser.parse_known_args(process.argv);
-  const args: RunConfig = knownArgs;
+  const args: CliRunConfig = knownArgs;
 
   return runConfigToCompleteRunConfig(args);
 };
 
 async function main() {
-  const {
-    entrypoint,
-    tsconfigPath,
-    outputFile,
-    namespace,
-    nameMapperConfig,
-    includeNodeModules,
-    ignoreClasses,
-  } = getRunConfig();
-  await convertTypescriptToCSharp(
-    entrypoint,
-    tsconfigPath,
-    outputFile,
-    namespace,
-    nameMapperConfig,
-    includeNodeModules,
-    ignoreClasses
-  );
+  const config = getRunConfig();
+  await convertTypescriptToCSharp(config);
 }
 
 void main();

@@ -3,7 +3,7 @@ import { getFirstNUppercaseLetters } from "src/csharp/util";
 import { ISyntheticSymbol, TypeReference } from "../types";
 import { TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { getGenericTypeName } from "../util";
+import { ConfigDependentUtils, getGenericTypeName } from "../util";
 
 export class UnionSymbol implements ISyntheticSymbol {
   private readonly name: string;
@@ -36,6 +36,7 @@ export class UnionSymbol implements ISyntheticSymbol {
 export class TypeRegistryClassUnionType extends TypeRegistryPossiblyGenericType<"ClassUnion"> {
   private hasUpdatedHash?: boolean;
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     internal: boolean,
     isDescendantOfPublic: boolean,
@@ -45,6 +46,7 @@ export class TypeRegistryClassUnionType extends TypeRegistryPossiblyGenericType<
     const name = `Union${numElements}`;
     const symbol = new UnionSymbol(numElements);
     super(
+      utils,
       registry,
       "ClassUnion",
       name,

@@ -28,7 +28,7 @@ import {
 import type { TypeRegistry } from "../registry";
 import type { TypeRegistryPossiblyGenericType } from "./possibly-generic";
 import { NameMapper } from "../name-mapper";
-import { hashPropertyStringArgs, hashRef } from "../util";
+import { ConfigDependentUtils, hashPropertyStringArgs, hashRef } from "../util";
 
 export abstract class RegistryType<T extends TokenType> implements IRegistryType<T> {
   protected refs: Set<string>;
@@ -38,6 +38,7 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
   protected logger: ILogger;
   protected mappedTypeNode?: MappedTypeNode;
   constructor(
+    protected utils: ConfigDependentUtils,
     protected registry: TypeRegistry,
     protected structure: TypeStructure<T>,
     private readonly symbol: Symbol | PrimitiveType | ISyntheticSymbol | ConstType,

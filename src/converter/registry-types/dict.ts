@@ -1,11 +1,12 @@
 import { Symbol, Node, Type } from "ts-morph";
 import { TypeRegistry } from "../registry";
 import { ISyntheticSymbol, PropertyStringArg, PropertyStringArgs, TypeReference } from "../types";
-import { getGenericTypeName } from "../util";
+import { ConfigDependentUtils, getGenericTypeName } from "../util";
 import { TypeRegistryWithBaseClassType } from "./with-baseclass";
 
 export class TypeRegistryDictType extends TypeRegistryWithBaseClassType<"Dictionary"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     sym: Symbol | ISyntheticSymbol,
@@ -18,6 +19,7 @@ export class TypeRegistryDictType extends TypeRegistryWithBaseClassType<"Diction
     genericParameters?: string[]
   ) {
     super(
+      utils,
       registry,
       "Dictionary",
       name,

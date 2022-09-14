@@ -13,13 +13,14 @@ import {
 } from "../types";
 import { TypeRegistry } from "../registry";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { getGenericTypeName } from "../util";
+import { ConfigDependentUtils, getGenericTypeName } from "../util";
 
 export abstract class TypeRegistryWithBaseClassType<
   T extends Exclude<TokenType, "Const" | "Primitive" | "ClassUnion" | "StringUnion">
 > extends TypeRegistryPossiblyGenericType<T> {
   protected baseName!: string;
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     tokenType: T,
     name: string,
@@ -40,6 +41,7 @@ export abstract class TypeRegistryWithBaseClassType<
       commentString,
     };
     super(
+      utils,
       registry,
       tokenType,
       name,

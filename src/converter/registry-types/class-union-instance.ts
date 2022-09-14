@@ -4,9 +4,11 @@ import { BaseTypeReference, ISyntheticSymbol, TypeReference, TypeStructure } fro
 import { TypeRegistry } from "../registry";
 import { UnionSymbol } from "./class-union";
 import { TypeRegistryWithBaseClassType } from "./with-baseclass";
+import { ConfigDependentUtils } from "../util";
 
 export class TypeRegistryClassUnionInstanceType extends TypeRegistryWithBaseClassType<"ClassUnionInstance"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
@@ -24,6 +26,7 @@ export class TypeRegistryClassUnionInstanceType extends TypeRegistryWithBaseClas
       commentString,
     };
     super(
+      utils,
       registry,
       "ClassUnionInstance",
       name,
