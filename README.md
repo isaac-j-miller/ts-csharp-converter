@@ -162,8 +162,6 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 
 # TODO:
 
-- make default number type config driven
-- allow specifying c# numeric types better (decimal, int, long, etc)
 - clean up messy code (constructor args, etc)
 - evaluate const declarations to use local variables
 - move UnionX and UnionXSerializer classes to separate namespace
