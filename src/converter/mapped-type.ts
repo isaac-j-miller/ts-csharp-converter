@@ -134,7 +134,6 @@ export function getIndexAndValueType(node: Node): IndexAndValueTypeInfo | undefi
   } else if (keyItems.length > 0) {
     logger.warn(`More than one key item detected for ${finalSynbol}:`, keyItems);
   }
-  // TODO: this probably doesn't work correctly
   if (valueItems.length === 1) {
     const toUse = valueItems[0];
     detectedValue.type = toUse.getType();

@@ -409,8 +409,16 @@ export class TypeRegistry {
     this.logger.info("Preparing to create namespace...");
     this.consolidate();
     this.logger.info("Creating namespace...");
-    // TODO: sort the elements
-    const ns = new CSharpNamespace(name, this.getElements(mapper));
+    const elements = this.getElements(mapper);
+    elements.sort((a, b) => {
+      if (a.kind > b.kind) {
+        return 1;
+      } else if (b.kind > a.kind) {
+        return -1;
+      }
+      return a.name > b.name ? 1 : -1;
+    });
+    const ns = new CSharpNamespace(name, elements);
     this.logger.info(`Created namespace ${name}`);
     return ns;
   }

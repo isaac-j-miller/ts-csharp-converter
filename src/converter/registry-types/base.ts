@@ -244,7 +244,6 @@ export abstract class RegistryType<T extends TokenType> implements IRegistryType
         const refsFromGenericParams = this.extractRefs(g);
         refs.push(...refsFromGenericParams);
       }
-      // TODO: figure out what to do if string
     });
     if (!isGenericReference(ref.ref)) {
       const fromReg = this.registry.getType(ref.ref);

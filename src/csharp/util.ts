@@ -52,7 +52,6 @@ export function getFirstNUppercaseLetters(n: number) {
     if (i <= maxIdx) {
       letters.push(String.fromCharCode(minIdx + i));
     } else {
-      // TODO: start adding numbers
       throw new Error(
         `n (${n}) > ${maxIdx - minIdx}, can't get letter with ASCII index of ${
           minIdx + i

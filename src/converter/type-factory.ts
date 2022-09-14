@@ -571,7 +571,6 @@ export class TypeFactory {
     typeArgs.forEach(alias => {
       this.addGenericParameter(mappedType, options, alias);
     });
-    // TODO: fix inline property like x: Record<x, y<T,V>>
     if (!isGenericReference(indexType.ref) && originalIndexType) {
       const genericParams = getGenericParametersFromType(
         this.registry,

@@ -165,7 +165,8 @@ The log level is set by the `LOG_LEVEL` environment variable, which can be 0,1,2
 - clean up messy code (constructor args, etc)
 - evaluate const declarations to use local variables
 - move UnionX and UnionXSerializer classes to separate namespace
-- sort items in namespace
+- array types
+
 - more unit tests using generated code (including:
   - serialization/deserialization of union and template types
   - serialization/deserialization of normal types
