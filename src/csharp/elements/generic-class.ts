@@ -4,7 +4,7 @@ import { getGenericTypeName } from "src/converter/util";
 import { isCSharpPrimitive } from "src/converter/name-mapper/util";
 import { getIndentString } from "../util";
 import { CSharpClass } from "./class";
-import { ConstructorParam, CSharpProperty, GenericParam } from "../types";
+import type { ConstructorParam, CSharpProperty, GenericParam } from "../types";
 
 export class CSharpGenericClass extends CSharpClass {
   constructor(

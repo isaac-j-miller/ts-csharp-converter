@@ -2,7 +2,7 @@ import { NameType } from "src/converter/name-mapper";
 import { NameMapper } from "src/converter/name-mapper/mapper";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
-import { ConstructorParam, CSharpProperty } from "../types";
+import type { ConstructorParam, CSharpProperty } from "../types";
 
 const wrapInNullableContext = (str: string, indent: number): string => {
   const indentString = getIndentString(indent);

@@ -1,7 +1,8 @@
 import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
 import { createHash } from "crypto";
-import { CSharpPrimitiveType } from "src/csharp/types";
+import type { CSharpPrimitiveType } from "src/csharp/types";
 import { LoggerFactory } from "src/common/logging/factory";
+import type { CSharpConverterConfig } from "src/types";
 import {
   BaseTypeReference,
   ConstType,
@@ -25,10 +26,10 @@ import {
 } from "./types";
 import { SyntheticSymbol } from "./synthetic/symbol";
 import type { TypeRegistry } from "./registry";
-import { NameMapper, NameType } from "./name-mapper";
-import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { NameType } from "./name-mapper/types";
+import { NameMapper } from "./name-mapper/mapper";
+import type { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
 import { jsDocNumberTypes } from "./consts";
-import { CSharpConverterConfig } from "src/types";
 
 export class ConfigDependentUtils {
   constructor(private config: CSharpConverterConfig) {}
@@ -66,7 +67,7 @@ export class ConfigDependentUtils {
     immediateGenericParameters?: PropertyStringArgs
   ): string {
     if (isGenericReference(ref)) {
-      const p = parent.getStructure().genericParameters?.find(g => g.name == ref.genericParamName);
+      const p = parent.getStructure().genericParameters?.find(g => g.name === ref.genericParamName);
       if (!p || parent.genericParamShouldBeRendered(p)) {
         return ref.genericParamName;
       }
@@ -161,7 +162,10 @@ function getTypeFromTag(tag: JSDocTagInfo): JsDocNumberType | undefined {
   const textInfos = tag.getText();
   for (const textInfo of textInfos) {
     const { text } = textInfo;
-    return extractTextFromJsDocTag(text);
+    const extracted = extractTextFromJsDocTag(text);
+    if (extracted) {
+      return extracted;
+    }
   }
   return;
 }

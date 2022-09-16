@@ -1,7 +1,7 @@
-import { NameMapper } from "src/converter/name-mapper/mapper";
+import type { NameMapper } from "src/converter/name-mapper/mapper";
 import { CSharpElement } from "./base";
 import { TAB_WIDTH } from "../types";
-import { ICSharpElement } from "./types";
+import type { ICSharpElement } from "./types";
 
 export class CSharpNamespace extends CSharpElement {
   constructor(name: string, public readonly elements: ICSharpElement[], commentString?: string) {

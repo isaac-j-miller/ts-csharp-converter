@@ -1,8 +1,8 @@
 import { Symbol, Type } from "ts-morph";
 import { CSharpNamespace } from "src/csharp/elements";
-import { ICSharpElement } from "src/csharp/elements/types";
+import type { ICSharpElement } from "src/csharp/elements/types";
 import { LoggerFactory } from "src/common/logging/factory";
-import { ILogger } from "src/common/logging/types";
+import type { ILogger } from "src/common/logging/types";
 import {
   ConstKeyword,
   ConstType,
@@ -413,7 +413,8 @@ export class TypeRegistry {
     elements.sort((a, b) => {
       if (a.kind > b.kind) {
         return 1;
-      } else if (b.kind > a.kind) {
+      }
+      if (b.kind > a.kind) {
         return -1;
       }
       return a.name > b.name ? 1 : -1;

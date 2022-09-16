@@ -10,15 +10,103 @@ exports[`snapshot works 1`] = `
     using Newtonsoft.Json.Serialization;
     using Newtonsoft.Json.Linq;
     using Serialization;
-    public enum TestEnum1 {
-        FooBar,
-        Baz,
-        Fooooo
+    public class A {
+        [JsonProperty(\\"foo\\")]
+        public int Foo { get; set; }
     }
-    public enum TestEnum2 {
-        Value1 = 100,
-        Value2,
-        Value3
+    public class AAAAAAAA<T> {
+        [JsonProperty(\\"vvv\\")]
+        public T[] Vvv { get; set; }
+    }
+    public class ATuple : System.Tuple<string, int> {
+        public ATuple(string Arg0, int Arg1) : base(Arg0, Arg1) { }
+
+    }
+    public class AnotherType {
+        [JsonProperty(\\"x\\")]
+        public string[,,] X { get; set; }
+        [JsonProperty(\\"n\\")]
+        public int[,,,,] N { get; set; }
+    }
+    public class B {
+        [JsonProperty(\\"bar\\")]
+        public string Bar { get; set; }
+    }
+    public class BTuple : System.Tuple<float, float, float> {
+        public BTuple(float Arg0, float Arg1, float Arg2) : base(Arg0, Arg1, Arg2) { }
+
+    }
+    public class BlahBlah {
+        [JsonProperty(\\"x\\")]
+        public BlahBlahX[] X { get; set; }
+        [JsonProperty(\\"y\\")]
+        public SomeLargerType<GenericWithConstraints4TConstraintyArg1>[] Y { get; set; }
+    }
+    public class BlahBlahX {
+        // x is a number
+        [JsonProperty(\\"x\\")]
+        public int X { get; set; }
+        // comment comment comment
+        [JsonProperty(\\"y\\")]
+        public string Y { get; set; }
+        [JsonProperty(\\"foo\\")]
+        public string Foo { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public Abc Bar { get; set; }
+    }
+    public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> { }
+    public class CTuple : System.Tuple<string, float, UnionIndex2, Abc> {
+        public CTuple(string Arg0, float Arg1, UnionIndex2 Arg2, Abc Arg3) : base(Arg0, Arg1, Arg2, Arg3) { }
+
+    }
+    public class Composite {
+        [JsonProperty(\\"v\\")]
+        public int V { get; set; }
+        [JsonProperty(\\"foo\\")]
+        public Abc Foo { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public Abc Bar { get; set; }
+        // x is a number
+        [JsonProperty(\\"x\\")]
+        public int X { get; set; }
+        // comment comment comment
+        [JsonProperty(\\"y\\")]
+        public string Y { get; set; }
+    }
+    public class ConditionalMappedType<V> : System.Collections.Generic.Dictionary<string, ConditionalMappedTypeValue> { }
+    // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:17
+    // Source code:  V extends A ? Inverse<A> : ConsumesConditional
+    public class ConditionalMappedTypeValue { }
+    public class ConsumesConditional {
+        [JsonProperty(\\"prop1\\")]
+        public B Prop1 { get; set; }
+    }
+    public class ConsumesConditionalMappedType {
+        [JsonProperty(\\"x\\")]
+        public ConditionalMappedType<Abc, A> X { get; set; }
+        [JsonProperty(\\"y\\")]
+        public ConditionalMappedType<Abc, B> Y { get; set; }
+    }
+    public class ConsumesInterface {
+        [JsonProperty(\\"integer\\")]
+        public int Integer { get; set; }
+        [JsonProperty(\\"float\\")]
+        public float float { get; set; }
+    }
+    public class DefaultGeneric<Ta> {
+        [JsonProperty(\\"v\\")]
+        public Ta V { get; set; }
+    }
+    public class DumbType {
+        [JsonProperty(\\"num\\")]
+        public float Num { get; set; }
+        [JsonProperty(\\"dumber\\")]
+        public int Dumber { get; set; }
+        [JsonProperty(\\"un\\")]
+        public string Un { get; set; }
+        [JsonProperty(\\"absurd\\")]
+        [JsonConverter(typeof(Union2Serializer<int, string>))]
+        public Union2<int, string> Absurd { get; set; }
     }
     public class Foo {
         // x is a number
@@ -28,15 +116,65 @@ exports[`snapshot works 1`] = `
         [JsonProperty(\\"y\\")]
         public string Y { get; set; }
     }
+    public class FooBar {
+        #nullable enable
+        // This property is a function, and it was unable to be translated at this time
+        [JsonProperty(\\"f\\")]
+        public object? F { get; set; }
+        // This property is a function, and it was unable to be translated at this time
+        [JsonProperty(\\"g\\")]
+        public object? G { get; set; }
+        #nullable disable
+    }
+    public class GenericArrayType {
+        [JsonProperty(\\"j\\")]
+        public SomeGenericType<Composite>[] J { get; set; }
+        [JsonProperty(\\"k\\")]
+        public AnotherType[,] K { get; set; }
+    }
+    public class GenericArrayType2<V> {
+        [JsonProperty(\\"someProperty\\")]
+        public V[,] SomeProperty { get; set; }
+        [JsonProperty(\\"anotherProperty\\")]
+        public DefaultGeneric<V>[] AnotherProperty { get; set; }
+    }
+    public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> { }
+    // this is a comment that should show up on the GenericConsumerConsumer class
+    public class GenericConsumerConsumer {
+        // g comment
+        [JsonProperty(\\"g\\")]
+        public GenericConsumer G { get; set; }
+    }
+    public class GenericIndexType<T> where T: Bs<T> {
+        [JsonProperty(\\"i\\")]
+        public IndexType I { get; set; }
+        [JsonProperty(\\"v\\")]
+        public T V { get; set; }
+    }
+    public class GenericRecursive {
+        [JsonProperty(\\"t\\")]
+        public SomeGenericType<GenericRecursive> T { get; set; }
+    }
+    public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
+        public GenericTupleMap(T Arg0, U Arg1, V Arg2) : base(Arg0, Arg1, Arg2) { }
 
-    [JsonConverter(typeof(StringEnumConverter))]
-    public enum Abc {
-        [EnumMember(Value = \\"a\\")]
-        A,
-        [EnumMember(Value = \\"b\\")]
-        B,
-        [EnumMember(Value = \\"c\\")]
-        C
+    }
+    public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
+        public GenericTupleMap2(T Arg0, V[] Arg1) : base(Arg0, Arg1) { }
+
+    }
+    public class GenericUnionIndex<T, V> : System.Collections.Generic.Dictionary<T, V> where T: Union2<int, string> { }
+    public class GenericUnionIndex2<T> : System.Collections.Generic.Dictionary<T, string> where T: Union2<int, string> { }
+    public class GenericUnionIndex3<T> : System.Collections.Generic.Dictionary<T, Union2<string, UnionIndex>> where T: Union2<int, string> { }
+    public class GenericUnionIndex4<T> : System.Collections.Generic.Dictionary<T, GenericUnionIndex4Value> where T: Union2<int, string> { }
+    public class GenericUnionIndex4Value {
+        /**
+        * @type {float}
+        */
+        [JsonProperty(\\"foo\\")]
+        public float Foo { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public string Bar { get; set; }
     }
     public class GenericWithConstraints {
         [JsonProperty(\\"str\\")]
@@ -49,6 +187,203 @@ exports[`snapshot works 1`] = `
     public class GenericWithConstraints3 {
         [JsonProperty(\\"digit\\")]
         public int Digit { get; set; }
+    }
+    public class GenericWithConstraints4<T> where T: ZZZ {
+        [JsonProperty(\\"z\\")]
+        public T Z { get; set; }
+    }
+    public class GenericWithConstraints4TConstraintxArg1 {
+        [JsonProperty(\\"foo\\")]
+        public Abc Foo { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public Abc Bar { get; set; }
+    }
+    public class GenericWithConstraints4TConstraintyArg1 {
+        [JsonProperty(\\"v\\")]
+        public int V { get; set; }
+    }
+    public static class GlobalVars {
+        public readonly static int[] UsingRef = {  };
+        #nullable enable
+        // Unable to resolve value for type
+        public readonly static string? FRef = null;
+        #nullable disable
+        public readonly static string FOO = \\"some string\\";
+        public readonly static string BAR = \\"some string as const\\";
+        public readonly static int Whatever = 1;
+        /**
+        * an array of strings
+        */
+        public readonly static string[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
+        public readonly static int[] ANumberArray = { 1, 2, 3, 4 };
+        // a 2D int array
+        public readonly static int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
+    }
+    public class IndexType {
+        [JsonProperty(\\"abc\\")]
+        public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
+        [JsonProperty(\\"a\\")]
+        public IndexTypeA A { get; set; }
+    }
+    public class IndexTypeA {
+        [JsonProperty(\\"foo\\")]
+        public Abc Foo { get; set; }
+    }
+    // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:10
+    // Source code:
+    // 
+    // export type Inverse<T extends A | B> = T extends A ? B : A;
+    public class Inverse<T> where T: Union2<A, B> { }
+    public class NumbersWithJsDoc {
+        /**
+        * @type {int}
+        */
+        [JsonProperty(\\"intProperty\\")]
+        public int IntProperty { get; set; }
+        /**
+        * @type {float}
+        */
+        [JsonProperty(\\"floatProperty\\")]
+        public float FloatProperty { get; set; }
+    }
+    public class RecursiveType {
+        [JsonProperty(\\"t\\")]
+        public int T { get; set; }
+        [JsonProperty(\\"r\\")]
+        public RecursiveType R { get; set; }
+    }
+    public class RecursiveType2 {
+        [JsonProperty(\\"t\\")]
+        public int T { get; set; }
+        [JsonProperty(\\"r\\")]
+        public RecursiveType R { get; set; }
+    }
+    public class RecursiveType3 {
+        [JsonProperty(\\"t\\")]
+        public int T { get; set; }
+        #nullable enable
+        [JsonProperty(\\"r2\\")]
+        public RecursiveType? R2 { get; set; }
+        #nullable disable
+    }
+    public class SomeGenericType<T> {
+        [JsonProperty(\\"foo\\")]
+        public T Foo { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public Abc Bar { get; set; }
+    }
+    public class SomeInterface {
+        #nullable enable
+        [JsonProperty(\\"foo\\")]
+        public string? Foo { get; set; }
+        #nullable disable
+        [JsonProperty(\\"bar\\")]
+        public string Bar { get; set; }
+    }
+    public class SomeInterface6 {
+        [JsonProperty(\\"foo2\\")]
+        public string Foo2 { get; set; }
+        [JsonProperty(\\"bar\\")]
+        public string Bar { get; set; }
+        // whatever is a number property on X
+        [JsonProperty(\\"whatever\\")]
+        public int Whatever { get; set; }
+    }
+    public class SomeLargerType<U> {
+        [JsonProperty(\\"a\\")]
+        public string A { get; set; }
+        [JsonProperty(\\"y\\")]
+        public Abc Y { get; set; }
+        [JsonProperty(\\"v\\")]
+        public int V { get; set; }
+        [JsonProperty(\\"x\\")]
+        public SomeLargerTypeX<U> X { get; set; }
+    }
+    public class SomeLargerTypeX<U> {
+        [JsonProperty(\\"foo\\")]
+        public U Foo { get; set; }
+    }
+    public class Tuple1 : System.Tuple<string, float, SomeGenericType<float>, DefaultGeneric<float>, GenericWithConstraints4TConstraintxArg1> {
+        public Tuple1(string Arg0, float Arg1, SomeGenericType<float> Arg2, DefaultGeneric<float> Arg3, GenericWithConstraints4TConstraintxArg1 Arg4) : base(Arg0, Arg1, Arg2, Arg3, Arg4) { }
+
+    }
+    public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> { }
+    public class TupleMap2 : System.Tuple<string, string[], int[, , ]> {
+        public TupleMap2(string Arg0, string[] Arg1, int[,,] Arg2) : base(Arg0, Arg1, Arg2) { }
+
+    }
+    public class TupleMap3 : System.Tuple<ATuple[], BTuple[, ]> {
+        public TupleMap3(ATuple[] Arg0, BTuple[,] Arg1) : base(Arg0, Arg1) { }
+
+    }
+    public class TypeWithEnums {
+        [JsonProperty(\\"enum1\\")]
+        public TestEnum1 Enum1 { get; set; }
+        [JsonProperty(\\"enum2\\")]
+        public TestEnum2 Enum2 { get; set; }
+    }
+    public abstract class Union2<A, B> {
+        public abstract T Match<T>(Func<A, T> a, Func<B, T> b);
+        private Union2() { }
+        public sealed class Case1 : Union2<A, B> {
+            public readonly A Item;
+            public Case1(A item) : base() { this.Item = item; }
+            public override T Match<T>(Func<A, T> a, Func<B, T> b) { return a(Item); }
+        }
+        public sealed class Case2 : Union2<A, B> {
+            public readonly B Item;
+            public Case2(B item) : base() { this.Item = item; }
+            public override T Match<T>(Func<A, T> a, Func<B, T> b) { return b(Item); }
+        }
+    }
+    public class Union2Serializer<A, B> : JsonConverter<Union2<A, B>> {
+        public override Union2<A, B> ReadJson(JsonReader reader, Type objectType, Union2<A, B> existingValue, bool hasExistingValue, JsonSerializer serializer) {
+            JToken token = JToken.Load(reader);
+            #nullable enable
+            NamingStrategy? namingStrategy = null;
+            #nullable disable
+            var resolver = serializer.ContractResolver;
+            try {
+                 var asDefault = (DefaultContractResolver)resolver;
+                 namingStrategy = asDefault.NamingStrategy;
+            } catch (InvalidCastException) { }
+            var asA = SerializationUtils.FindType<A>(token, namingStrategy);
+            var asB = SerializationUtils.FindType<B>(token, namingStrategy);
+            double[] scores = { asA.Item2, asB.Item2 };
+            double maxScore = 0;
+            int maxIndex = 0;
+            for (int i = 0; i < scores.Length; i++) {
+                double score = scores[i];
+                if (score > maxScore) {
+                    maxIndex = i;
+                    maxScore = score;
+                }
+            }
+            #pragma warning disable CS8604 // Possible null reference argument.
+            switch(maxIndex) {
+                case 0:
+                    return new Union2<A, B>.Case1(asA.Item1);
+                case 1:
+                    return new Union2<A, B>.Case2(asB.Item1);
+                default:
+                    throw new Exception(\\"Should not be any other cases\\");
+            #pragma warning restore CS8604 // Possible null reference argument.
+            }
+        }
+        public override void WriteJson(JsonWriter writer, Union2<A, B> value, JsonSerializer serializer) {
+            #nullable enable
+            value.Match<string?>(
+                a => {
+                    serializer.Serialize(writer, a);
+                    return null;
+                },
+                b => {
+                    serializer.Serialize(writer, b);
+                    return null;
+                }
+            );
+            #nullable disable
+        }
     }
     public abstract class Union3<A, B, C> {
         public abstract T Match<T>(Func<A, T> a, Func<B, T> b, Func<C, T> c);
@@ -125,280 +460,6 @@ exports[`snapshot works 1`] = `
             #nullable disable
         }
     }
-    public class GenericWithConstraints4TConstraintyArg1 {
-        [JsonProperty(\\"v\\")]
-        public int V { get; set; }
-    }
-    public class GenericWithConstraints4TConstraintxArg1 {
-        [JsonProperty(\\"foo\\")]
-        public Abc Foo { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public Abc Bar { get; set; }
-    }
-    public class GenericWithConstraints4<T> where T: ZZZ {
-        [JsonProperty(\\"z\\")]
-        public T Z { get; set; }
-    }
-    public class SomeGenericType<T> {
-        [JsonProperty(\\"foo\\")]
-        public T Foo { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public Abc Bar { get; set; }
-    }
-    public class DefaultGeneric<Ta> {
-        [JsonProperty(\\"v\\")]
-        public Ta V { get; set; }
-    }
-    public class SomeLargerTypeX<U> {
-        [JsonProperty(\\"foo\\")]
-        public U Foo { get; set; }
-    }
-    public class SomeLargerType<U> {
-        [JsonProperty(\\"a\\")]
-        public string A { get; set; }
-        [JsonProperty(\\"y\\")]
-        public Abc Y { get; set; }
-        [JsonProperty(\\"v\\")]
-        public int V { get; set; }
-        [JsonProperty(\\"x\\")]
-        public SomeLargerTypeX<U> X { get; set; }
-    }
-    public class Composite {
-        [JsonProperty(\\"v\\")]
-        public int V { get; set; }
-        [JsonProperty(\\"foo\\")]
-        public Abc Foo { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public Abc Bar { get; set; }
-        // x is a number
-        [JsonProperty(\\"x\\")]
-        public int X { get; set; }
-        // comment comment comment
-        [JsonProperty(\\"y\\")]
-        public string Y { get; set; }
-    }
-    public class BlahBlahX {
-        // x is a number
-        [JsonProperty(\\"x\\")]
-        public int X { get; set; }
-        // comment comment comment
-        [JsonProperty(\\"y\\")]
-        public string Y { get; set; }
-        [JsonProperty(\\"foo\\")]
-        public string Foo { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public Abc Bar { get; set; }
-    }
-    public class BlahBlah {
-        [JsonProperty(\\"x\\")]
-        public BlahBlahX[] X { get; set; }
-        [JsonProperty(\\"y\\")]
-        public SomeLargerType<GenericWithConstraints4TConstraintyArg1>[] Y { get; set; }
-    }
-    public class ZZZ {
-        [JsonProperty(\\"z\\")]
-        public string Z { get; set; }
-        [JsonProperty(\\"v\\")]
-        public System.Collections.Generic.Dictionary<string, string> V { get; set; }
-        [JsonProperty(\\"y\\")]
-        public System.Collections.Generic.Dictionary<string, GenericWithConstraints4TConstraintyArg1> Y { get; set; }
-        [JsonProperty(\\"x\\")]
-        public System.Collections.Generic.Dictionary<string, GenericWithConstraints4TConstraintxArg1> X { get; set; }
-    }
-    public class Bs<T> : System.Collections.Generic.Dictionary<string, DefaultGeneric<T>> { }
-    public enum SomeStupidSubEnum {
-        FooBar,
-        Baz
-    }
-    public enum SomeStupidSubEnum2 {
-        Fooooo = 2,
-        Value2 = 101
-    }
-    public abstract class Union2<A, B> {
-        public abstract T Match<T>(Func<A, T> a, Func<B, T> b);
-        private Union2() { }
-        public sealed class Case1 : Union2<A, B> {
-            public readonly A Item;
-            public Case1(A item) : base() { this.Item = item; }
-            public override T Match<T>(Func<A, T> a, Func<B, T> b) { return a(Item); }
-        }
-        public sealed class Case2 : Union2<A, B> {
-            public readonly B Item;
-            public Case2(B item) : base() { this.Item = item; }
-            public override T Match<T>(Func<A, T> a, Func<B, T> b) { return b(Item); }
-        }
-    }
-    public class Union2Serializer<A, B> : JsonConverter<Union2<A, B>> {
-        public override Union2<A, B> ReadJson(JsonReader reader, Type objectType, Union2<A, B> existingValue, bool hasExistingValue, JsonSerializer serializer) {
-            JToken token = JToken.Load(reader);
-            #nullable enable
-            NamingStrategy? namingStrategy = null;
-            #nullable disable
-            var resolver = serializer.ContractResolver;
-            try {
-                 var asDefault = (DefaultContractResolver)resolver;
-                 namingStrategy = asDefault.NamingStrategy;
-            } catch (InvalidCastException) { }
-            var asA = SerializationUtils.FindType<A>(token, namingStrategy);
-            var asB = SerializationUtils.FindType<B>(token, namingStrategy);
-            double[] scores = { asA.Item2, asB.Item2 };
-            double maxScore = 0;
-            int maxIndex = 0;
-            for (int i = 0; i < scores.Length; i++) {
-                double score = scores[i];
-                if (score > maxScore) {
-                    maxIndex = i;
-                    maxScore = score;
-                }
-            }
-            #pragma warning disable CS8604 // Possible null reference argument.
-            switch(maxIndex) {
-                case 0:
-                    return new Union2<A, B>.Case1(asA.Item1);
-                case 1:
-                    return new Union2<A, B>.Case2(asB.Item1);
-                default:
-                    throw new Exception(\\"Should not be any other cases\\");
-            #pragma warning restore CS8604 // Possible null reference argument.
-            }
-        }
-        public override void WriteJson(JsonWriter writer, Union2<A, B> value, JsonSerializer serializer) {
-            #nullable enable
-            value.Match<string?>(
-                a => {
-                    serializer.Serialize(writer, a);
-                    return null;
-                },
-                b => {
-                    serializer.Serialize(writer, b);
-                    return null;
-                }
-            );
-            #nullable disable
-        }
-    }
-    public class DumbType {
-        [JsonProperty(\\"num\\")]
-        public float Num { get; set; }
-        [JsonProperty(\\"dumber\\")]
-        public int Dumber { get; set; }
-        [JsonProperty(\\"un\\")]
-        public string Un { get; set; }
-        [JsonProperty(\\"absurd\\")]
-        [JsonConverter(typeof(Union2Serializer<int, string>))]
-        public Union2<int, string> Absurd { get; set; }
-    }
-    public class IndexTypeA {
-        [JsonProperty(\\"foo\\")]
-        public Abc Foo { get; set; }
-    }
-    public class IndexType {
-        [JsonProperty(\\"abc\\")]
-        public System.Collections.Generic.Dictionary<string, string> Abc { get; set; }
-        [JsonProperty(\\"a\\")]
-        public IndexTypeA A { get; set; }
-    }
-    public class GenericIndexType<T> where T: Bs<T> {
-        [JsonProperty(\\"i\\")]
-        public IndexType I { get; set; }
-        [JsonProperty(\\"v\\")]
-        public T V { get; set; }
-    }
-    public class AnotherType {
-        [JsonProperty(\\"x\\")]
-        public string[,,] X { get; set; }
-        [JsonProperty(\\"n\\")]
-        public int[,,,,] N { get; set; }
-    }
-    public class GenericArrayType {
-        [JsonProperty(\\"j\\")]
-        public SomeGenericType<Composite>[] J { get; set; }
-        [JsonProperty(\\"k\\")]
-        public AnotherType[,] K { get; set; }
-    }
-    public class GenericArrayType2<V> {
-        [JsonProperty(\\"someProperty\\")]
-        public V[,] SomeProperty { get; set; }
-        [JsonProperty(\\"anotherProperty\\")]
-        public DefaultGeneric<V>[] AnotherProperty { get; set; }
-    }
-    public class NumbersWithJsDoc {
-        /**
-        * @type {int}
-        */
-        [JsonProperty(\\"intProperty\\")]
-        public int IntProperty { get; set; }
-        /**
-        * @type {float}
-        */
-        [JsonProperty(\\"floatProperty\\")]
-        public float FloatProperty { get; set; }
-    }
-    public class ConsumesInterface {
-        [JsonProperty(\\"integer\\")]
-        public int Integer { get; set; }
-        [JsonProperty(\\"float\\")]
-        public float float { get; set; }
-    }
-    public class SomeInterface {
-        #nullable enable
-        [JsonProperty(\\"foo\\")]
-        public string? Foo { get; set; }
-        #nullable disable
-        [JsonProperty(\\"bar\\")]
-        public string Bar { get; set; }
-    }
-    public static class GlobalVars {
-        public readonly static int[] UsingRef = {  };
-        #nullable enable
-        // Unable to resolve value for type
-        public readonly static string? FRef = null;
-        #nullable disable
-        public readonly static string FOO = \\"some string\\";
-        public readonly static string BAR = \\"some string as const\\";
-        public readonly static int Whatever = 1;
-        /**
-        * an array of strings
-        */
-        public readonly static string[] AStringArray = { \\"foo\\", \\"var\\", \\"aaaa\\" };
-        public readonly static int[] ANumberArray = { 1, 2, 3, 4 };
-        // a 2D int array
-        public readonly static int[,] A2dArray = { { 1, 2, 3 }, { 2, 3, 4 }, { 4, 5, 6 } };
-    }
-    public class X {
-        // whatever is a number property on X
-        [JsonProperty(\\"whatever\\")]
-        public int Whatever { get; set; }
-    }
-    public class SomeInterface6 {
-        [JsonProperty(\\"foo2\\")]
-        public string Foo2 { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public string Bar { get; set; }
-        // whatever is a number property on X
-        [JsonProperty(\\"whatever\\")]
-        public int Whatever { get; set; }
-    }
-    public class TypeWithEnums {
-        [JsonProperty(\\"enum1\\")]
-        public TestEnum1 Enum1 { get; set; }
-        [JsonProperty(\\"enum2\\")]
-        public TestEnum2 Enum2 { get; set; }
-    }
-    public class AAAAAAAA<T> {
-        [JsonProperty(\\"vvv\\")]
-        public T[] Vvv { get; set; }
-    }
-
-    [JsonConverter(typeof(StringEnumConverter))]
-    public enum TestEnum {
-        [EnumMember(Value = \\"x\\")]
-        X,
-        [EnumMember(Value = \\"y\\")]
-        Y,
-        [EnumMember(Value = \\"z\\")]
-        Z
-    }
     public class UnionIndex {
         #nullable enable
         [JsonProperty(\\"a\\")]
@@ -417,35 +478,9 @@ exports[`snapshot works 1`] = `
         [JsonProperty(\\"c\\")]
         public bool C { get; set; }
     }
-    public class GenericUnionIndex<T, V> : System.Collections.Generic.Dictionary<T, V> where T: Union2<int, string> { }
-    public class GenericUnionIndex2<T> : System.Collections.Generic.Dictionary<T, string> where T: Union2<int, string> { }
-    public class GenericUnionIndex3<T> : System.Collections.Generic.Dictionary<T, Union2<string, UnionIndex>> where T: Union2<int, string> { }
-    public class GenericUnionIndex4Value {
-        /**
-        * @type {float}
-        */
-        [JsonProperty(\\"foo\\")]
-        public float Foo { get; set; }
-        [JsonProperty(\\"bar\\")]
-        public string Bar { get; set; }
-    }
-    public class GenericUnionIndex4<T> : System.Collections.Generic.Dictionary<T, GenericUnionIndex4Value> where T: Union2<int, string> { }
-    public class GenericConsumer : System.Collections.Generic.Dictionary<string, int> { }
-    // this is a comment that should show up on the GenericConsumerConsumer class
-    public class GenericConsumerConsumer {
-        // g comment
-        [JsonProperty(\\"g\\")]
-        public GenericConsumer G { get; set; }
-    }
-    public class FooBar {
-        #nullable enable
-        // This property is a function, and it was unable to be translated at this time
-        [JsonProperty(\\"f\\")]
-        public object? F { get; set; }
-        // This property is a function, and it was unable to be translated at this time
-        [JsonProperty(\\"g\\")]
-        public object? G { get; set; }
-        #nullable disable
+    public class Whatever1 {
+        [JsonProperty(\\"w\\")]
+        public Whatever1W W { get; set; }
     }
     public class Whatever1W {
         [JsonProperty(\\"f\\")]
@@ -453,33 +488,30 @@ exports[`snapshot works 1`] = `
         [JsonProperty(\\"g\\")]
         public int G { get; set; }
     }
-    public class Whatever1 {
-        [JsonProperty(\\"w\\")]
-        public Whatever1W W { get; set; }
+    public class X {
+        // whatever is a number property on X
+        [JsonProperty(\\"whatever\\")]
+        public int Whatever { get; set; }
     }
-    public class RecursiveType {
-        [JsonProperty(\\"t\\")]
-        public int T { get; set; }
-        [JsonProperty(\\"r\\")]
-        public RecursiveType R { get; set; }
+    public class ZZZ {
+        [JsonProperty(\\"z\\")]
+        public string Z { get; set; }
+        [JsonProperty(\\"v\\")]
+        public System.Collections.Generic.Dictionary<string, string> V { get; set; }
+        [JsonProperty(\\"y\\")]
+        public System.Collections.Generic.Dictionary<string, GenericWithConstraints4TConstraintyArg1> Y { get; set; }
+        [JsonProperty(\\"x\\")]
+        public System.Collections.Generic.Dictionary<string, GenericWithConstraints4TConstraintxArg1> X { get; set; }
     }
-    public class RecursiveType2 {
-        [JsonProperty(\\"t\\")]
-        public int T { get; set; }
-        [JsonProperty(\\"r\\")]
-        public RecursiveType R { get; set; }
-    }
-    public class RecursiveType3 {
-        [JsonProperty(\\"t\\")]
-        public int T { get; set; }
-        #nullable enable
-        [JsonProperty(\\"r2\\")]
-        public RecursiveType? R2 { get; set; }
-        #nullable disable
-    }
-    public class GenericRecursive {
-        [JsonProperty(\\"t\\")]
-        public SomeGenericType<GenericRecursive> T { get; set; }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum Abc {
+        [EnumMember(Value = \\"a\\")]
+        A,
+        [EnumMember(Value = \\"b\\")]
+        B,
+        [EnumMember(Value = \\"c\\")]
+        C
     }
 
     [JsonConverter(typeof(StringEnumConverter))]
@@ -497,65 +529,33 @@ exports[`snapshot works 1`] = `
         [EnumMember(Value = \\"application/foooo.a-b-c.x\\")]
         ApplicationFooooABCX
     }
-    public class ATuple : System.Tuple<string, int> {
-        public ATuple(string Arg0, int Arg1) : base(Arg0, Arg1) { }
+    public enum SomeStupidSubEnum {
+        FooBar,
+        Baz
+    }
+    public enum SomeStupidSubEnum2 {
+        Fooooo = 2,
+        Value2 = 101
+    }
 
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum TestEnum {
+        [EnumMember(Value = \\"x\\")]
+        X,
+        [EnumMember(Value = \\"y\\")]
+        Y,
+        [EnumMember(Value = \\"z\\")]
+        Z
     }
-    public class BTuple : System.Tuple<float, float, float> {
-        public BTuple(float Arg0, float Arg1, float Arg2) : base(Arg0, Arg1, Arg2) { }
-
+    public enum TestEnum1 {
+        FooBar,
+        Baz,
+        Fooooo
     }
-    public class CTuple : System.Tuple<string, float, UnionIndex2, Abc> {
-        public CTuple(string Arg0, float Arg1, UnionIndex2 Arg2, Abc Arg3) : base(Arg0, Arg1, Arg2, Arg3) { }
-
-    }
-    public class TupleMap : System.Collections.Generic.Dictionary<string, BTuple> { }
-    public class GenericTupleMap<T, U, V> : System.Tuple<T, U, V> {
-        public GenericTupleMap(T Arg0, U Arg1, V Arg2) : base(Arg0, Arg1, Arg2) { }
-
-    }
-    public class GenericTupleMap2<T, V> : System.Tuple<T, V[]> {
-        public GenericTupleMap2(T Arg0, V[] Arg1) : base(Arg0, Arg1) { }
-
-    }
-    public class TupleMap2 : System.Tuple<string, string[], int[, , ]> {
-        public TupleMap2(string Arg0, string[] Arg1, int[,,] Arg2) : base(Arg0, Arg1, Arg2) { }
-
-    }
-    public class TupleMap3 : System.Tuple<ATuple[], BTuple[, ]> {
-        public TupleMap3(ATuple[] Arg0, BTuple[,] Arg1) : base(Arg0, Arg1) { }
-
-    }
-    public class Tuple1 : System.Tuple<string, float, SomeGenericType<float>, DefaultGeneric<float>, GenericWithConstraints4TConstraintxArg1> {
-        public Tuple1(string Arg0, float Arg1, SomeGenericType<float> Arg2, DefaultGeneric<float> Arg3, GenericWithConstraints4TConstraintxArg1 Arg4) : base(Arg0, Arg1, Arg2, Arg3, Arg4) { }
-
-    }
-    public class A {
-        [JsonProperty(\\"foo\\")]
-        public int Foo { get; set; }
-    }
-    public class B {
-        [JsonProperty(\\"bar\\")]
-        public string Bar { get; set; }
-    }
-    // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:10
-    // Source code:
-    // 
-    // export type Inverse<T extends A | B> = T extends A ? B : A;
-    public class Inverse<T> where T: Union2<A, B> { }
-    public class ConsumesConditional {
-        [JsonProperty(\\"prop1\\")]
-        public B Prop1 { get; set; }
-    }
-    // Warning: This class might not have been generated correctly. Source to check /Users/imiller/code/personal/csharp-converter/src/test/subfolder/conditional.ts:17
-    // Source code:  V extends A ? Inverse<A> : ConsumesConditional
-    public class ConditionalMappedTypeValue { }
-    public class ConditionalMappedType<V> : System.Collections.Generic.Dictionary<string, ConditionalMappedTypeValue> { }
-    public class ConsumesConditionalMappedType {
-        [JsonProperty(\\"x\\")]
-        public ConditionalMappedType<Abc, A> X { get; set; }
-        [JsonProperty(\\"y\\")]
-        public ConditionalMappedType<Abc, B> Y { get; set; }
+    public enum TestEnum2 {
+        Value1 = 100,
+        Value2,
+        Value3
     }
 }"
 `;

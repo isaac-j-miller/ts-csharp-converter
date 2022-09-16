@@ -1,6 +1,6 @@
-import { INameMapper } from "src/converter/name-mapper/types";
-import { CSharpElementKind } from "../types";
-import { ICSharpElement } from "./types";
+import type { INameMapper } from "src/converter/name-mapper/types";
+import type { CSharpElementKind } from "../types";
+import type { ICSharpElement } from "./types";
 
 export abstract class CSharpElement implements ICSharpElement {
   private _isInternal: boolean;

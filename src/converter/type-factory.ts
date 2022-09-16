@@ -46,7 +46,6 @@ type TypeOptions = {
   internal: boolean;
   descendsFromPublic: boolean;
   level: number;
-  additionalGenericParams?: GenericParameter[];
 };
 type PropertyInfo = {
   propertyName: string;
@@ -927,8 +926,7 @@ export class TypeFactory {
     return;
   }
   private createTypeOrInterfaceType(options: TypeOptions): IRegistryType {
-    const { name, node, type, internal, level, descendsFromPublic, additionalGenericParams } =
-      options;
+    const { name, node, type, internal, level, descendsFromPublic } = options;
     const symbolToUse = createSymbol(name, type);
     if (type.getCallSignatures().length) {
       this.logger.warn(`Type ${name} has call signatures`);
@@ -948,16 +946,6 @@ export class TypeFactory {
     type.getAliasTypeArguments().forEach(alias => {
       this.addGenericParameter(regType, options, alias);
     });
-    // if(additionalGenericParams?.length) {
-    //   additionalGenericParams.forEach(p=> {
-
-    //   if(!regType.getStructure().genericParameters?.some(g=>p.name === g.name) && regType.genericParamShouldBeRendered(p)) {
-    //     regType.addGenericParameter(p)
-
-    //   }
-    // }
-    //   )
-    // }
     const propertySignatures = type.getApparentProperties();
     propertySignatures.forEach(property =>
       this.handlePropertySignature(regType, options, property)

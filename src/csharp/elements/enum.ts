@@ -1,5 +1,5 @@
 import { NameType } from "src/converter/name-mapper";
-import { INameMapper } from "src/converter/name-mapper/types";
+import type { INameMapper } from "src/converter/name-mapper/types";
 import type { UnionEnumMember } from "src/converter/types";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
