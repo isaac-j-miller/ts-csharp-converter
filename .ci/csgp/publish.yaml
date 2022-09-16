@@ -7,6 +7,7 @@ pool:
   name: "linux"
 
 variables:
+  - group: vault-auth
   - group: aws-role-dataservices
 
 steps:
