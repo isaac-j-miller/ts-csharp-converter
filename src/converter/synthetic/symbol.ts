@@ -4,24 +4,26 @@ import { ISyntheticSymbol } from "../types";
 
 export class SyntheticSymbol implements ISyntheticSymbol {
   public readonly id: string;
+  public readonly isClassUnionBase: boolean;
   constructor(
     private name: string,
-    private type: Type,
+    private type: Type | undefined,
     private readonly underlyingSymbol?: Symbol
   ) {
     this.id = v4();
+    this.isClassUnionBase = false;
   }
   isAlias(): false {
     return false;
   }
   isSynthetic = true as const;
-  getName() {
+  getName(): string {
     return this.name;
   }
-  getUnderlyingSymbol() {
+  getUnderlyingSymbol(): Symbol | undefined {
     return this.underlyingSymbol;
   }
-  getDeclaredType() {
+  getDeclaredType(): Type | undefined {
     return this.type;
   }
   getSourceFilePath(): string | undefined {

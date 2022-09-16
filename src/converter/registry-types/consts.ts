@@ -1,37 +1,41 @@
-import { CSharpClass, CSharpProperty } from "src/csharp/elements";
-import { NameMapper } from "../name-mapper/mapper";
-import { NonPrimitiveType, TypeRegistry } from "../registry";
+import { CSharpClass } from "src/csharp/elements";
+import { CSharpProperty } from "src/csharp/types";
+import { NameMapper } from "../name-mapper";
+import type { TypeRegistry } from "../registry";
 import {
   IRegistryType,
   isPrimitiveType,
   LiteralValue,
+  NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
   PropertyStructure,
   TypeStructure,
 } from "../types";
 import {
+  ConfigDependentUtils,
   formatCSharpArrayString,
   literalValueToCSharpLiteralValue,
-  toCSharpPrimitive,
 } from "../util";
 import { RegistryType } from "./base";
 
 export class TypeRegistryConstType extends RegistryType<"Const"> {
-  constructor(registry: TypeRegistry) {
+  constructor(utils: ConfigDependentUtils, registry: TypeRegistry) {
     const structure: TypeStructure<"Const"> = {
       tokenType: "Const",
       name: "GlobalVars",
       properties: {},
     };
     super(
+      utils,
       registry,
       structure,
       {
         isConstType: true,
       },
       true,
-      true,
+      false,
+      false,
       undefined,
       0,
       false
@@ -39,23 +43,20 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
   }
   private generateCSharpProperty(
     propName: string,
-    struct: PropertyStructure
+    struct: PropertyStructure,
+    mapper: NameMapper
   ): CSharpProperty {
-    const {
-      baseType,
-      defaultLiteralValue,
-      isArray,
-      arrayDepth,
-      isOptional,
-      commentString,
-    } = struct;
+    const { baseType, defaultLiteralValue, isArray, arrayDepth, isOptional, commentString } =
+      struct;
     if (!isPrimitiveType(baseType)) {
-      throw new Error(
-        `Const property ${this.structure.name}.${propName} is not a primitive type`
-      );
+      throw new Error(`Const property ${this.structure.name}.${propName} is not a primitive type`);
     }
-    const kindType = toCSharpPrimitive(baseType.primitiveType);
-    const literalValue = literalValueToCSharpLiteralValue(defaultLiteralValue);
+    const kindType = this.utils.toCSharpPrimitive(baseType.primitiveType);
+    const literalValue = literalValueToCSharpLiteralValue(
+      defaultLiteralValue,
+      this.registry,
+      mapper
+    );
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
@@ -63,6 +64,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
       setter: false,
       isConst: true,
       defaultValue: literalValue,
+      isClassUnion: false,
       optional: isOptional || literalValue === "null",
       commentString,
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
@@ -77,9 +79,7 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     value: LiteralValue,
     commentString?: string
   ) {
-    const baseType = isPrimitiveType(type)
-      ? type
-      : this.registry.getType(type).getSymbol();
+    const baseType = isPrimitiveType(type) ? type : this.registry.getType(type).getSymbol();
     this.structure.properties![name] = {
       baseType,
       propertyName: name,
@@ -91,19 +91,22 @@ export class TypeRegistryConstType extends RegistryType<"Const"> {
     };
   }
   getPropertyString(): string {
-    return toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
+    return this.utils.toCSharpPrimitive(this.structure.name as PrimitiveTypeName);
   }
 
-  private generateCSharpProperties(): CSharpProperty[] {
-    return Object.entries(this.structure.properties!).map(
-      ([propName, struct]) => this.generateCSharpProperty(propName, struct)
+  private generateCSharpProperties(mapper: NameMapper): CSharpProperty[] {
+    return Object.entries(this.structure.properties!).map(([propName, struct]) =>
+      this.generateCSharpProperty(propName, struct, mapper)
     );
   }
-  getCSharpElement(): CSharpClass {
-    const properties = this.generateCSharpProperties();
+  getCSharpElement(mapper: NameMapper): CSharpClass {
+    const properties = this.generateCSharpProperties(mapper);
     return new CSharpClass(this.structure.name, false, properties, true);
   }
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType> {
+    return false;
+  }
+  usesRef(): boolean {
     return false;
   }
 }

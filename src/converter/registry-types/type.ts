@@ -1,71 +1,75 @@
 import { Symbol, Node, Type } from "ts-morph";
-import {
-  CSharpProperty,
-  CSharpClass,
-  CSharpGenericClass,
-} from "src/csharp/elements";
+import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
+import { CSharpProperty } from "src/csharp/types";
 import { TypeRegistry } from "../registry";
 import {
   BaseTypeReference,
-  GenericParameter,
+  isConstType,
   isGenericReference,
+  isPrimitiveType,
   ISyntheticSymbol,
   PropertyStructure,
   TypeReference,
 } from "../types";
 import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
-import { formatCSharpArrayString, getGenericTypeName } from "../util";
+import {
+  ConfigDependentUtils,
+  formatCSharpArrayString,
+  getGenericTypeName,
+  literalValueToCSharpLiteralValue,
+} from "../util";
+import { NameMapper } from "../name-mapper";
 
-export type PropertyOptions = Omit<
-  PropertyStructure,
-  "propertyName" | "baseType"
->;
+export type PropertyOptions = Omit<PropertyStructure, "propertyName" | "baseType">;
 
 export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     symbol: Symbol | ISyntheticSymbol,
     internal: boolean,
+    isDescendantOfPublic: boolean,
     node: Node,
     type: Type,
     level: number,
     commentString?: string
   ) {
-    super(registry, "Type", name, symbol, internal, true, node, type, level);
+    super(
+      utils,
+      registry,
+      "Type",
+      name,
+      symbol,
+      internal,
+      isDescendantOfPublic,
+      true,
+      node,
+      type,
+      level
+    );
     this.structure.commentString = commentString;
   }
-  addCommentStringToProperty(
-    propertyName: string,
-    newCommentString: string
-  ): void {
+  addCommentStringToProperty(propertyName: string, newCommentString: string): void {
     const prop = this.structure.properties![propertyName];
     if (!prop) {
-      throw new Error(
-        `Type ${this.structure.name} has no property "${propertyName}"`
-      );
+      throw new Error(`Type ${this.structure.name} has no property "${propertyName}"`);
     }
     const { commentString } = prop;
-    prop.commentString =
-      (commentString ? commentString + "\n" : "") + newCommentString;
+    prop.commentString = (commentString ? commentString + "\n" : "") + newCommentString;
   }
   addGenericParameterToProperty(
     propertyName: string,
-    ref: TypeReference<BaseTypeReference>
+    ref: TypeReference<BaseTypeReference>,
+    paramName: string
   ) {
     const prop = (this.structure.properties ?? {})[propertyName];
     if (!prop) {
-      throw new Error(
-        `Type ${this.structure.name} has no property "${propertyName}"`
-      );
+      throw new Error(`Type ${this.structure.name} has no property "${propertyName}"`);
     }
-    prop.genericParameters = [...(prop.genericParameters ?? []), ref];
+    prop.genericParameters = [...(prop.genericParameters ?? []), { name: paramName, ref }];
   }
-  addProperty(
-    propertyName: string,
-    baseType: BaseTypeReference,
-    options: PropertyOptions
-  ) {
+  addProperty(propertyName: string, baseType: BaseTypeReference, options: PropertyOptions) {
     const propertyStructure: PropertyStructure = {
       ...options,
       propertyName,
@@ -81,17 +85,13 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
     };
     if (isGenericReference(baseType)) {
       const paramName = baseType.genericParamName;
-      const { genericParameters } = this.structure;
-      const genericParameterNames = (genericParameters ?? []).map(
-        (g) => g.name
-      );
-      if (!genericParameters?.find((p) => p.name === paramName)) {
+      const genericParameters = this.structure.genericParameters ?? [];
+      const genericParameterNames = genericParameters.map(g => g.name);
+      if (!genericParameters.find(p => p.name === paramName)) {
         if (!genericParameters || genericParameters.length === 0) {
           this.structure.genericParameters = [{ name: paramName }];
         } else if (genericParameterNames.includes("__type")) {
-          const idx = genericParameters.findIndex(
-            (item) => item.name === "__type"
-          );
+          const idx = genericParameters.findIndex(item => item.name === "__type");
           this.structure.genericParameters![idx] = {
             ...(this.structure.genericParameters![idx] ?? {}),
             name: paramName,
@@ -107,35 +107,50 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
 
   private generateCSharpProperty(
     propName: string,
-    struct: PropertyStructure
+    struct: PropertyStructure,
+    nameMapper: NameMapper
   ): CSharpProperty {
-    const { baseType, isOptional, isArray, arrayDepth, commentString } = struct;
+    const { baseType, isOptional, isArray, arrayDepth, commentString, defaultLiteralValue } =
+      struct;
+    let isClassUnion = false;
+    let numUnionMembers: number | undefined;
+    if (!isGenericReference(baseType) && !isPrimitiveType(baseType) && !isConstType(baseType)) {
+      const fromReg = this.registry.getType(baseType);
+      isClassUnion = fromReg?.getStructure().tokenType === "ClassUnionInstance";
+      numUnionMembers = fromReg?.getStructure().members?.length;
+    }
     const kindType = this.propertySymbolToString(propName, baseType);
     const prop: CSharpProperty = {
       name: propName,
       accessLevel: "public",
       getter: true,
-      setter: true,
+      setter: !defaultLiteralValue,
       isConst: false,
       optional: isOptional,
       commentString,
+      isClassUnion,
+      numUnionMembers,
+      defaultValue: literalValueToCSharpLiteralValue(
+        defaultLiteralValue,
+        this.registry,
+        nameMapper
+      ),
       kind: formatCSharpArrayString(kindType, isArray, arrayDepth ?? 0),
     };
     return prop;
   }
 
-  private generateCSharpProperties(): CSharpProperty[] {
-    return Object.entries(this.structure.properties!).map(
-      ([propName, struct]) => this.generateCSharpProperty(propName, struct)
+  private generateCSharpProperties(nameMapper: NameMapper): CSharpProperty[] {
+    return Object.entries(this.structure.properties!).map(([propName, struct]) =>
+      this.generateCSharpProperty(propName, struct, nameMapper)
     );
   }
 
-  getCSharpElement(): CSharpClass {
-    const props = this.generateCSharpProperties();
+  getCSharpElement(nameMapper: NameMapper): CSharpClass {
+    const props = this.generateCSharpProperties(nameMapper);
     const partial = this.isMappedType;
     if (
-      (!this.structure.properties ||
-        Object.keys(this.structure.properties).length === 0) &&
+      (!this.structure.properties || Object.keys(this.structure.properties).length === 0) &&
       !partial
     ) {
       const src = this.node.getSourceFile().getFilePath();
@@ -144,7 +159,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
         `Warning: This class might not have been generated correctly. Source to check ${src}:${startLine}\nSource code: ${this.node.getFullText()}`
       );
     }
-    if ((this.structure.genericParameters ?? []).length > 0) {
+    if (this.getGenericParameters().length > 0) {
       return new CSharpGenericClass(
         this.structure.name,
         partial,
@@ -172,9 +187,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
 
   getPropertyString(genericParameterValues?: TypeReference[]): string {
     const { name } = this.structure;
-    const namesToUse = this.getGenericParametersForPropertyString(
-      genericParameterValues ?? []
-    );
+    const namesToUse = this.getGenericParametersForPropertyString(genericParameterValues ?? []);
     return getGenericTypeName(name, namesToUse);
   }
 }

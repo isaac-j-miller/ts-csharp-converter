@@ -1,11 +1,6 @@
-import { assertNever } from "src/common/util";
-import {
-  CasedString,
-  CasingConvention,
-  NameOutputMapper,
-  ParsedWord,
-} from "./types";
-import { capitalize, isCSharpPrimitive } from "./util";
+import { assertNever, capitalize } from "src/common/util";
+import { CasedString, CasingConvention, NameOutputMapper, NameType, ParsedWord } from "./types";
+import { countOccurences, isCSharpPrimitive } from "./util";
 
 export function parseNormalized(word: string): ParsedWord[] {
   const basicWords: string[] = [];
@@ -30,7 +25,7 @@ export function parseNormalized(word: string): ParsedWord[] {
     basicWords.push(currentWord);
     currentWord = "";
   }
-  const parsedWords = basicWords.map((basicWord) => {
+  const parsedWords = basicWords.map(basicWord => {
     let baseWord = basicWord;
     let arrayPart: string | undefined;
     let typeArguments: ParsedWord[][] | undefined;
@@ -46,10 +41,30 @@ export function parseNormalized(word: string): ParsedWord[] {
       baseWord = baseWord.slice(0, genericStart);
       const lastAngleBracketIdx = genericPart.lastIndexOf(">");
       const genericPartToUse = genericPart.slice(1, lastAngleBracketIdx);
-      typeArguments = genericPartToUse.split(", ").map((s) => {
-        const trimmed = s.trim();
-        return parseNormalized(trimmed);
+      const tempTypeArguments = genericPartToUse.split(",").map(s => s.trim());
+      const typeArgumentsInput: string[] = [];
+      let currentStrs: string[] = [];
+      let currentLeftAngleBrackets = 0;
+      let currentRightAngleBrackets = 0;
+      tempTypeArguments.forEach(arg => {
+        currentLeftAngleBrackets += countOccurences(arg, "<");
+        currentRightAngleBrackets += countOccurences(arg, ">");
+        if (currentLeftAngleBrackets > currentRightAngleBrackets) {
+          currentStrs.push(arg);
+        } else if (currentLeftAngleBrackets === currentRightAngleBrackets) {
+          if (currentStrs.length) {
+            currentStrs.push(arg);
+            const joined = currentStrs.join(", ");
+            typeArgumentsInput.push(joined);
+            currentStrs = [];
+          } else {
+            typeArgumentsInput.push(arg);
+          }
+        } else {
+          throw new Error(`More right brackets than left brackets in ${genericPartToUse}`);
+        }
       });
+      typeArguments = typeArgumentsInput.map(s => parseNormalized(s));
     }
     const parsed: ParsedWord = {
       base: baseWord,
@@ -69,59 +84,73 @@ function format<T extends CasingConvention>(
   base: string,
   typeArgs: ParsedWord[][] | undefined,
   arrayPart: string | undefined,
-  mapper: NameOutputMapper<T>
+  mapper: NameOutputMapper<T>,
+  nameType: NameType
 ): string {
-  const newTypeArgs = (typeArgs ?? []).map((t) => mapper(t));
+  const newTypeArgs = (typeArgs ?? []).map(t => mapper(t, nameType));
   const typeSection = newTypeArgs.length ? `<${newTypeArgs.join(", ")}>` : "";
   const formattedWord = `${base}${typeSection}${arrayPart ?? ""}`;
   return formattedWord;
 }
+const capitalizeWithPeriods = (str: string): string => {
+  if (!str.includes(".")) {
+    return capitalize(str);
+  }
+  const split = str.split(".");
+  return split.map(capitalize).join(".");
+};
 
-export const PascalOutputMapper: NameOutputMapper<
-  CasingConvention.PascalCase
-> = (words) => {
+export const PascalOutputMapper: NameOutputMapper<CasingConvention.PascalCase> = (
+  words,
+  nameType
+) => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
-    const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = isPrimitive ? base : capitalize(base);
-    return format(newBase, typeArguments, arrayPart, PascalOutputMapper);
+    const isPrimitive =
+      isPossiblyPrimitive && isCSharpPrimitive(base) && nameType === NameType.DeclarationName;
+    const newBase = isPrimitive ? base : capitalizeWithPeriods(base);
+    return format(newBase, typeArguments, arrayPart, PascalOutputMapper, nameType);
   });
   const outputWord = formattedWords.join("");
   return outputWord as unknown as CasedString<CasingConvention.PascalCase>;
 };
 
 export const CamelOutputMapper: NameOutputMapper<CasingConvention.CamelCase> = (
-  words
+  words,
+  nameType
 ) => {
   const formattedWords = words.map((word, i) => {
     const { base, typeArguments, arrayPart } = word;
     const isPossiblyPrimitive = i === 0 && words.length === 1;
-    const isPrimitive = isPossiblyPrimitive && isCSharpPrimitive(base);
-    const newBase = i > 0 && !isPrimitive ? capitalize(base) : base;
-    return format(newBase, typeArguments, arrayPart, CamelOutputMapper);
+    const isPrimitive =
+      isPossiblyPrimitive && isCSharpPrimitive(base) && nameType === NameType.DeclarationName;
+    const newBase = i > 0 && !isPrimitive ? capitalizeWithPeriods(base) : base;
+    return format(newBase, typeArguments, arrayPart, CamelOutputMapper, nameType);
   });
   const outputWord = formattedWords.join("");
   return outputWord as unknown as CasedString<CasingConvention.CamelCase>;
 };
 
 export const SnakeOutputMapper: NameOutputMapper<CasingConvention.SnakeCase> = (
-  words
+  words,
+  nameType
 ) => {
-  const formattedWords = words.map((word) => {
+  const formattedWords = words.map(word => {
     const { base, typeArguments, arrayPart } = word;
-    return format(base, typeArguments, arrayPart, SnakeOutputMapper);
+    return format(base, typeArguments, arrayPart, SnakeOutputMapper, nameType);
   });
   const outputWord = formattedWords.join("_");
   return outputWord as unknown as CasedString<CasingConvention.SnakeCase>;
 };
 
 export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = (
-  words
+  words,
+  nameType
 ) => {
-  const formattedWords = words.map((word) => {
+  const formattedWords = words.map(word => {
     const { base, typeArguments, arrayPart } = word;
-    return format(base, typeArguments, arrayPart, KebabOutputMapper);
+    return format(base, typeArguments, arrayPart, KebabOutputMapper, nameType);
   });
   const outputWord = formattedWords.join("-");
   return outputWord as unknown as CasedString<CasingConvention.KebabCase>;
@@ -129,7 +158,7 @@ export const KebabOutputMapper: NameOutputMapper<CasingConvention.KebabCase> = (
 
 export function normalize(str: string): string {
   let currentWord = "";
-  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_"]);
+  const ignoreChars = new Set<string>(["<", " ", ",", "-", "_", ".", ":", "/"]);
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     const lowerCase = char.toLocaleLowerCase();
@@ -138,7 +167,7 @@ export function normalize(str: string): string {
     }
     currentWord += lowerCase;
   }
-  const replaced = currentWord.replace(/-/g, "_");
+  const replaced = currentWord.replace(/-|:|\//g, "_");
   return replaced;
 }
 function isNumberOrLetterOrUnderscore(char: string): boolean {
@@ -156,13 +185,10 @@ export function formatForEnum(
 ): string {
   let word: string = "";
   let previousCharIsNumberOrLetter: boolean | undefined;
-  for (const char of str) {
+  Array.from(str).forEach(char => {
     const charIsNumberOrLetter = isNumberOrLetterOrUnderscore(char);
     if (charIsNumberOrLetter) {
-      if (
-        previousCharIsNumberOrLetter !== undefined &&
-        !previousCharIsNumberOrLetter
-      ) {
+      if (previousCharIsNumberOrLetter !== undefined && !previousCharIsNumberOrLetter) {
         switch (casing) {
           case CasingConvention.CamelCase:
           case CasingConvention.PascalCase:
@@ -182,6 +208,6 @@ export function formatForEnum(
       }
     }
     previousCharIsNumberOrLetter = charIsNumberOrLetter;
-  }
+  });
   return word;
 }

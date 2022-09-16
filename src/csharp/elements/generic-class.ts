@@ -1,10 +1,10 @@
 import { NameType } from "src/converter/name-mapper";
 import { NameMapper } from "src/converter/name-mapper/mapper";
 import { getGenericTypeName } from "src/converter/util";
+import { isCSharpPrimitive } from "src/converter/name-mapper/util";
 import { getIndentString } from "../util";
 import { CSharpClass } from "./class";
-import { ConstructorParam, CSharpProperty, GenericParam } from "../types";
-import { isCSharpPrimitive } from "src/converter/name-mapper/util";
+import type { ConstructorParam, CSharpProperty, GenericParam } from "../types";
 
 export class CSharpGenericClass extends CSharpClass {
   constructor(
@@ -50,11 +50,6 @@ export class CSharpGenericClass extends CSharpClass {
   ): string {
     const indentString = getIndentString(indentation);
     let serialized = indentString + "public ";
-    // if (this.isPublic) {
-    //   serialized += "public ";
-    // } else {
-    //   serialized += "internal ";
-    // }
     if (this.isPartial) {
       serialized += "partial ";
     }
@@ -62,11 +57,9 @@ export class CSharpGenericClass extends CSharpClass {
     const constraints = this.getConstraints(mapper);
     serialized += `class ${getGenericTypeName(
       mapper.transform(this.name, NameType.DeclarationName),
-      genericArgs.map((g) => mapper.transform(g, NameType.DeclarationName))
+      genericArgs.map(g => mapper.transform(g, NameType.DeclarationName))
     )} ${
-      this.inheritsFrom
-        ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
-        : ""
+      this.inheritsFrom ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} ` : ""
     }${constraints}{${addNewline ? "\n" : ""}`;
     return serialized;
   }

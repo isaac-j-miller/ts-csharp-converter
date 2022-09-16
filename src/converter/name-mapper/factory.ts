@@ -12,11 +12,10 @@ import {
   CasingConvention,
   NameOutputMapper,
   NameMapperFunction,
+  NameType,
 } from "./types";
 
-export function getOutputMapper<T extends CasingConvention>(
-  target: T
-): NameOutputMapper<T> {
+export function getOutputMapper<T extends CasingConvention>(target: T): NameOutputMapper<T> {
   switch (target) {
     case CasingConvention.SnakeCase:
       return SnakeOutputMapper as NameOutputMapper<T>;
@@ -36,10 +35,10 @@ export function getNameMapper<TTarget extends CasingConvention>(
   target: TTarget
 ): NameMapperFunction<TTarget> {
   const fromWords = getOutputMapper(target);
-  return (str: string): CasedString<TTarget> => {
+  return (str: string, nameType: NameType): CasedString<TTarget> => {
     const normalized = normalize(str);
     const parsed = parseNormalized(normalized);
-    const newName = fromWords(parsed);
+    const newName = fromWords(parsed, nameType);
     return newName;
   };
 }

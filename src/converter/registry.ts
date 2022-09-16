@@ -1,7 +1,10 @@
-import { MappedTypeNode, Symbol } from "ts-morph";
-import { CSharpElement, CSharpNamespace } from "src/csharp/elements";
-import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
+import { Symbol, Type } from "ts-morph";
+import { CSharpNamespace } from "src/csharp/elements";
+import type { ICSharpElement } from "src/csharp/elements/types";
+import { LoggerFactory } from "src/common/logging/factory";
+import type { ILogger } from "src/common/logging/types";
 import {
+  ConstKeyword,
   ConstType,
   IRegistryType,
   isConstType,
@@ -9,59 +12,53 @@ import {
   isPrimitiveTypeName,
   isSyntheticSymbol,
   ISyntheticSymbol,
+  NonPrimitiveType,
   PrimitiveType,
   PrimitiveTypeName,
   RegistryKey,
-  TokenType,
+  UnionEnumMember,
+  UnionTypeValueReference,
 } from "./types";
-import { asPrimitiveTypeName, getFinalSymbol, getRefactorName } from "./util";
+import { asPrimitiveTypeName, ConfigDependentUtils, getFinalSymbol, getRefactorName } from "./util";
+import { TypeRegistryPrimitiveType } from "./registry-types/primitive";
 import { TypeRegistryConstType } from "./registry-types/consts";
-import { NameMapper } from "./name-mapper/mapper";
+import { CONSTS_KEYWORD } from "./consts";
+import { NameMapper } from "./name-mapper";
 
-export const CONSTS_KEYWORD = "__consts__" as const;
-export type ConstKeyword = typeof CONSTS_KEYWORD;
-export type NonPrimitiveType = Exclude<TokenType, "Primitive" | "Const">;
 type GetTypeReturn<
-  T extends
-    | RegistryKey
-    | PrimitiveTypeName
-    | PrimitiveType
-    | ConstKeyword
-    | ConstType
+  T extends RegistryKey | PrimitiveTypeName | PrimitiveType | ConstKeyword | ConstType
 > = T extends PrimitiveType | PrimitiveTypeName
   ? TypeRegistryPrimitiveType
   : T extends ConstType | ConstKeyword
   ? TypeRegistryConstType
   : IRegistryType<NonPrimitiveType> | undefined;
+
 export class TypeRegistry {
   private symbolMap: Record<string, IRegistryType | undefined>;
   private redirects: Record<string, string | undefined>;
   private textCache: Record<string, string | undefined>;
   private declarations: Set<string>;
   private hashes: Record<string, string | undefined>;
-  private mappedTypes: MappedTypeNode[];
-  constructor() {
+  private logger: ILogger;
+  constructor(private utils: ConfigDependentUtils, private ignoreClasses: Set<string>) {
     this.symbolMap = {};
     this.redirects = {};
     this.textCache = {};
     this.declarations = new Set<string>();
     this.hashes = {};
-    this.mappedTypes = [];
+    this.logger = LoggerFactory.getLogger("registry");
   }
-  private symbolToIndex<T extends Symbol | ISyntheticSymbol>(
-    sym: T
-  ): string | undefined {
+  private symbolToIndex<T extends Symbol | ISyntheticSymbol>(sym: T): string | undefined {
     const finalSym = getFinalSymbol(sym);
     const name = sym.getName();
     if (isSyntheticSymbol(finalSym)) {
       return name + finalSym.id;
-    } else {
-      let id = (finalSym.compilerSymbol as any)?.id;
-      if (!id) {
-        return;
-      }
-      return name + id;
     }
+    const id = (finalSym.compilerSymbol as any)?.id;
+    if (!id) {
+      return;
+    }
+    return name + id;
   }
   private getWithKey(key: string): IRegistryType | undefined {
     const redirect = this.redirects[key];
@@ -73,13 +70,10 @@ export class TypeRegistry {
   getConstValueType(): TypeRegistryConstType {
     const v = this.symbolMap[CONSTS_KEYWORD];
     if (!v) {
-      const constType = new TypeRegistryConstType(this);
+      const constType = new TypeRegistryConstType(this.utils, this);
       this.symbolMap[CONSTS_KEYWORD] = constType;
     }
     return this.symbolMap[CONSTS_KEYWORD] as TypeRegistryConstType;
-  }
-  markMappedType(node: MappedTypeNode) {
-    this.mappedTypes.push(node);
   }
   addType(type: IRegistryType): void {
     const sym = type.getSymbol();
@@ -94,56 +88,45 @@ export class TypeRegistry {
       idx = this.symbolToIndex(sym);
     }
     if (!idx) {
-      throw new Error(
-        `Unable to construct unique identifier for type ${
-          type.getStructure().name
-        }`
-      );
+      throw new Error(`Unable to construct unique identifier for type ${type.getStructure().name}`);
     }
-    const hash = type.getHash();
-    const fromHashCache = this.hashes[hash];
-    const symbolRegistered = this.declarations.has(type.getOriginalName());
-    if (this.symbolMap[idx] || (fromHashCache && symbolRegistered)) {
-      if (fromHashCache) {
-        this.redirects[idx] = fromHashCache;
-      }
-      return;
-    }
+    const isClassUnionBase = isSyntheticSymbol(sym) && sym.isClassUnionBase;
     const { name } = type.getStructure();
     const namespaceAlreadyHasTypeWithName = this.declarations.has(name);
     if (namespaceAlreadyHasTypeWithName) {
       const refactoredName = getRefactorName(name);
-      const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
-      if (!this.declarations.has(refactoredName)) {
-        console.warn(
-          `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
-            fpath ? ` (${fpath})` : ""
-          }, refactoring output to rename new type as ${refactoredName}`
-        );
+      if (type.isNonPrimitive() && isSyntheticSymbol(sym) && !sym.isClassUnionBase) {
+        const fpath = (sym as ISyntheticSymbol).getSourceFilePath();
+        if (!this.declarations.has(refactoredName)) {
+          this.logger.debug(
+            `Conflict encountered: Namespace already has declaration for ${type.getOriginalName()}${
+              fpath ? ` (${fpath})` : ""
+            }, refactoring output to rename new type as ${refactoredName}`
+          );
+        }
+        type.rename(refactoredName);
+        return this.addType(type);
       }
-      type.rename(refactoredName);
-      return this.addType(type);
     }
-    console.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    if (!typeIsPrimitive && !isClassUnionBase) {
+      this.logger.debug(`Adding ${type.tokenType} type ${name} to registry`);
+    }
+    if (isClassUnionBase && this.symbolMap[idx]) {
+      const existing = this.symbolMap[idx];
+      const relativeValue = calculateValue(type) - calculateValue(existing);
+      if (relativeValue < 0) {
+        return;
+      }
+    }
     this.declarations.add(name);
     this.symbolMap[idx] = type;
-    this.hashes[hash] = idx;
-    const underlyingSym = isSyntheticSymbol(sym)
-      ? sym.getUnderlyingSymbol()
-      : undefined;
-    if (underlyingSym) {
-      const symIdx = this.symbolToIndex(underlyingSym);
-      if (symIdx) {
-        this.redirects[symIdx] = idx;
-      }
-    }
   }
   has(sym: RegistryKey): boolean {
     return !!this.getType(sym);
   }
   findTypeBySymbolText(text: string): IRegistryType | undefined {
     if (text === "__type") {
-      console.warn("Not returning __type");
+      this.logger.warn("Not returning __type");
       return;
     }
     const keyFromCache = this.textCache[text];
@@ -166,7 +149,7 @@ export class TypeRegistry {
         continue;
       }
       const final = getFinalSymbol(sym);
-      const symText = final.getDeclaredType().getText();
+      const symText = final.getDeclaredType()?.getText();
       if (symText === text) {
         this.textCache[text] = key;
         return value;
@@ -177,7 +160,7 @@ export class TypeRegistry {
   replace(old: ISyntheticSymbol, newType: IRegistryType) {
     const newSym = newType.getSymbol();
     if (isPrimitiveType(newSym) || isConstType(newSym)) {
-      throw new Error(`Cannot replace old type with primitive or const`);
+      throw new Error("Cannot replace old type with primitive or const");
     }
     const oldSymIdx = this.symbolToIndex(old);
     const newSymIdx = this.symbolToIndex(newSym);
@@ -196,10 +179,7 @@ export class TypeRegistry {
     }
     this.addType(newType);
     const resolvedOldSymbol = oldValue.getSymbol();
-    if (
-      !isPrimitiveType(resolvedOldSymbol) &&
-      !isConstType(resolvedOldSymbol)
-    ) {
+    if (!isPrimitiveType(resolvedOldSymbol) && !isConstType(resolvedOldSymbol)) {
       const resolvedOldSymIdx = this.symbolToIndex(resolvedOldSymbol);
       if (resolvedOldSymIdx) {
         this.redirects[resolvedOldSymIdx] = newSymIdx;
@@ -210,9 +190,7 @@ export class TypeRegistry {
   }
   findTypeByName<T extends string>(
     name: T
-  ): T extends PrimitiveTypeName
-    ? TypeRegistryPrimitiveType
-    : IRegistryType | undefined {
+  ): T extends PrimitiveTypeName ? TypeRegistryPrimitiveType : IRegistryType | undefined {
     if (isPrimitiveTypeName(name)) {
       return this.getType(name);
     }
@@ -228,23 +206,70 @@ export class TypeRegistry {
       ? TypeRegistryPrimitiveType
       : IRegistryType | undefined;
   }
-  getType<
-    T extends
-      | RegistryKey
-      | PrimitiveTypeName
-      | PrimitiveType
-      | ConstType
-      | ConstKeyword
-  >(sym: T): GetTypeReturn<T> {
+  findUnionTypesWithMember(member: string, hint?: Type): UnionTypeValueReference | undefined {
+    if (hint) {
+      const text = hint.getApparentType().getText();
+      const fromText = this.findTypeBySymbolText(text);
+      if (fromText) {
+        const { members: unionMembers, tokenType } = fromText.getStructure();
+        if (
+          tokenType === "StringUnion" &&
+          unionMembers &&
+          unionMembers.some(u => (u as UnionEnumMember).name === member)
+        ) {
+          return {
+            propertyName: member,
+            ref: fromText.getSymbol() as Symbol | ISyntheticSymbol,
+            isUnionTypeValueReference: true,
+          };
+        }
+      }
+    }
+    const getUnion = (): IRegistryType | undefined => {
+      const matchingUnions = Object.values(this.symbolMap).filter(type => {
+        if (!type) return false;
+        const { tokenType, members: unionMembers } = type.getStructure();
+        if (tokenType !== "StringUnion") return false;
+        return !!unionMembers && unionMembers.some(u => (u as UnionEnumMember).name === member);
+      });
+      if (matchingUnions.length === 0) return;
+      if (matchingUnions.length > 1) {
+        const hashMap: Record<string, IRegistryType> = {};
+        matchingUnions.forEach(union => {
+          if (!union) return;
+          hashMap[union.getHash()] = union;
+        });
+        const remainingUnions = Object.values(hashMap);
+        if (remainingUnions.length > 1) {
+          this.logger.warn(
+            `Multiple union types with member ${member} found and no matching type found from type hint ${hint?.getText()}`
+          );
+          return;
+        }
+        const remainingUnion = remainingUnions[0];
+        return remainingUnion;
+      }
+      const matchingUnion = matchingUnions[0]!;
+      return matchingUnion;
+    };
+    const matchingUnion = getUnion();
+    if (!matchingUnion) return;
+    return {
+      propertyName: member,
+      ref: matchingUnion.getSymbol() as Symbol | ISyntheticSymbol,
+      isUnionTypeValueReference: true,
+    };
+  }
+  getType<T extends RegistryKey | PrimitiveTypeName | PrimitiveType | ConstType | ConstKeyword>(
+    sym: T
+  ): GetTypeReturn<T> {
     const symIsPrimitiveName = isPrimitiveTypeName(sym);
     const symIsPrimitiveType = isPrimitiveType(sym);
     if (symIsPrimitiveName || symIsPrimitiveType) {
-      const primIdx: PrimitiveTypeName = symIsPrimitiveName
-        ? sym
-        : sym.primitiveType;
+      const primIdx: PrimitiveTypeName = symIsPrimitiveName ? sym : sym.primitiveType;
       const prim = this.symbolMap[primIdx];
       if (!prim) {
-        const primitiveType = new TypeRegistryPrimitiveType(this, primIdx);
+        const primitiveType = new TypeRegistryPrimitiveType(this.utils, this, primIdx);
         this.addType(primitiveType);
       }
       return this.symbolMap[primIdx] as GetTypeReturn<T>;
@@ -266,18 +291,9 @@ export class TypeRegistry {
       return fromMap as GetTypeReturn<T>;
     }
     if (!isSyntheticSymbol(sym)) {
-      const primitiveTypeName = asPrimitiveTypeName(sym.getDeclaredType());
+      const primitiveTypeName = asPrimitiveTypeName(sym.getDeclarations()[0]?.getType());
       if (primitiveTypeName) {
         return this.getType(primitiveTypeName) as GetTypeReturn<T>;
-      }
-    }
-    const underlyingSym = isSyntheticSymbol(sym)
-      ? sym.getUnderlyingSymbol()
-      : undefined;
-    if (underlyingSym) {
-      const fromSym = this.getType(underlyingSym) as GetTypeReturn<T>;
-      if (fromSym) {
-        return fromSym;
       }
     }
     const redirectedIdx = this.redirects[idx];
@@ -292,15 +308,16 @@ export class TypeRegistry {
   private consolidate() {
     const hashMap: Record<string, string[]> = {};
     const replacementMap: Record<string, string> = {};
+    Object.values(this.symbolMap).forEach(regType => regType?.resetHash());
     // Go through each type and hash them, replacing duplicates
     Object.entries(this.symbolMap).forEach(([idx, regType]) => {
       if (!regType) {
         delete this.symbolMap[idx];
         return;
       }
-      if (!regType.shouldBeRendered) {
-        return;
-      }
+      this.logger.trace(`Registering references of ${regType.getStructure().name}`);
+      regType.updateDefaultValues();
+      regType.registerRefs();
       const hash = regType.getHash();
       if (!hashMap[hash]) {
         hashMap[hash] = [idx];
@@ -312,43 +329,98 @@ export class TypeRegistry {
       if (indices.length === 1) {
         return;
       }
-      const [firstIdx, ...rest] = indices
-        .filter((v) => {
-          const entry = this.getWithKey(v);
-          return !!entry?.shouldBeRendered;
-        })
-        .sort((a, b) => {
-          const aEntry = this.getWithKey(a);
-          const bEntry = this.getWithKey(b);
-          const aValue = calculateValue(aEntry);
-          const bValue = calculateValue(bEntry);
-          return bValue - aValue;
-        });
-      rest.forEach((idx) => {
+      const sortedIndices = indices.sort((a, b) => {
+        const aEntry = this.getWithKey(a);
+        const bEntry = this.getWithKey(b);
+        const aValue = calculateValue(aEntry);
+        const bValue = calculateValue(bEntry);
+        return bValue - aValue;
+      });
+      const [firstIdx, ...rest] = sortedIndices;
+
+      const names: Array<string | undefined> = [];
+      rest.forEach(idx => {
+        const str = this.symbolMap[idx];
+        names.push(str?.getStructure().name);
         replacementMap[idx] = firstIdx;
         delete this.symbolMap[idx];
       });
-      console.debug(
-        `Stripped ${rest.length} duplicate types with hash ${hash}...`
+      const kept = this.symbolMap[firstIdx]?.getStructure().name;
+      this.logger.trace(
+        `Stripped ${rest.length} (${names} -> ${kept}), duplicate types with hash ${hash}`
       );
       this.redirects = { ...this.redirects, ...replacementMap };
     });
   }
-  private getElements(): CSharpElement[] {
-    const elements: CSharpElement[] = [];
-    Object.values(this.symbolMap).forEach((elem) => {
-      if (elem && elem.shouldBeRendered) {
-        elements.push(elem.getCSharpElement());
+  private getElements(mapper: NameMapper): ICSharpElement[] {
+    const symbolMapValues = Object.values(this.symbolMap);
+    const elemsToKeep: IRegistryType[] = [];
+    const allNames = new Set<string>();
+    symbolMapValues.forEach((elem, i) => {
+      if (!elem || elem.isAnonymous) return;
+      const { name } = elem.getStructure();
+      if (this.ignoreClasses.has(name)) {
+        this.logger.trace(`Filtering out ${name} because it is marked to be ignored`);
+        return;
+      }
+      const elementIsUsed =
+        elem.shouldBeRendered ||
+        symbolMapValues.some(
+          (e, j) => e && i !== j && (e.isDescendantOfPublic || e.isPublic) && e.usesType(elem)
+        );
+      if (elementIsUsed) {
+        let reason = elem.isPublic ? "is public" : "";
+        if (!reason && elem.isDescendantOfPublic) {
+          reason = "is descendant of public";
+        }
+        if (!reason) {
+          reason = "is referenced by another public or publicly-descended type";
+        }
+        this.logger.trace(`Including ${name} because it ${reason}`);
+        elemsToKeep.push(elem);
+        allNames.add(name);
+      } else {
+        this.logger.trace(`Filtering out ${name} because it is unused`);
       }
     });
-    return elements;
+    elemsToKeep.forEach(value => {
+      if (!value) {
+        return;
+      }
+      const { name } = value.getStructure();
+      const match = name.match(/\d+$/);
+      if (!match) return;
+      const numStr = match[0];
+      const idx = name.lastIndexOf(numStr);
+      if (idx === -1) return;
+      if (name === value.getOriginalName()) return;
+      if (!value.isPublic && name.endsWith(`Member${numStr}`)) return;
+      const newName = name.slice(0, idx);
+      if (!newName) return;
+      if (allNames.has(newName)) return;
+      this.logger.trace(`Renaming ${name}->${newName}`);
+      value.rename(newName);
+      allNames.add(newName);
+    });
+    const cSharpElems = elemsToKeep.map(e => e.getCSharpElement(mapper));
+    return cSharpElems;
   }
-  toNamespace(name: string): CSharpNamespace {
-    console.info("Preparing to create namespace...");
+  toNamespace(name: string, mapper: NameMapper): CSharpNamespace {
+    this.logger.info("Preparing to create namespace...");
     this.consolidate();
-    console.info("Creating namespace...");
-    const ns = new CSharpNamespace(name, this.getElements());
-    console.info(`Created namespace ${name}`);
+    this.logger.info("Creating namespace...");
+    const elements = this.getElements(mapper);
+    elements.sort((a, b) => {
+      if (a.kind > b.kind) {
+        return 1;
+      }
+      if (b.kind > a.kind) {
+        return -1;
+      }
+      return a.name > b.name ? 1 : -1;
+    });
+    const ns = new CSharpNamespace(name, elements);
+    this.logger.info(`Created namespace ${name}`);
     return ns;
   }
 }
@@ -358,8 +430,11 @@ function calculateValue(t: IRegistryType | undefined): number {
     return -1000;
   }
   let v = 0;
-  if (t.isPublic()) {
-    v += 1;
+  if (t.shouldBeRendered) {
+    v += 100;
+  }
+  if (t.isPublic) {
+    v += 100;
   }
   v -= t.getLevel();
   return v;

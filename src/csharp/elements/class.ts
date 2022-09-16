@@ -2,7 +2,7 @@ import { NameType } from "src/converter/name-mapper";
 import { NameMapper } from "src/converter/name-mapper/mapper";
 import { formatCommentString, getIndentString } from "../util";
 import { CSharpElement } from "./base";
-import { ConstructorParam, CSharpProperty } from "../types";
+import type { ConstructorParam, CSharpProperty } from "../types";
 
 const wrapInNullableContext = (str: string, indent: number): string => {
   const indentString = getIndentString(indent);
@@ -43,11 +43,29 @@ export class CSharpClass extends CSharpElement {
       isConst,
       defaultValue,
       commentString,
+      isClassUnion,
+      numUnionMembers,
     } = property;
     let serialized = formatCommentString(commentString, indent);
+    if (!isConst) {
+      const serializationPropertyName = `${getIndentString(indent)}[JsonProperty("${name}")]\n`;
+      serialized += serializationPropertyName;
+    }
+    if (isClassUnion && numUnionMembers !== undefined) {
+      const typeNameToReplace = `Union${numUnionMembers}`;
+      const typeName = `Union${numUnionMembers}Serializer`;
+      const nameToUse = kind.replace(typeNameToReplace, typeName);
+      const serializerDecorator = `${getIndentString(
+        indent
+      )}[JsonConverter(typeof(${nameToUse}))]\n`;
+      serialized += serializerDecorator;
+    }
     serialized += `${getIndentString(indent)}${accessLevel} `;
+    if (defaultValue && isConst) {
+      serialized += "readonly ";
+    }
     if (isConst) {
-      serialized += "readonly static ";
+      serialized += "static ";
     }
     serialized += `${mapper.transform(kind, NameType.DeclarationName)}`;
     if (optional) {
@@ -72,18 +90,9 @@ export class CSharpClass extends CSharpElement {
     }
     return serialized;
   }
-  protected serializeDeclaration(
-    mapper: NameMapper,
-    indentation: number,
-    addNewline: boolean
-  ) {
+  protected serializeDeclaration(mapper: NameMapper, indentation: number, addNewline: boolean) {
     const indentString = getIndentString(indentation);
     let serialized = indentString + "public ";
-    // if (this.isPublic) {
-    //   serialized += "public ";
-    // } else {
-    //   serialized += "internal ";
-    // }
     if (this.isStatic) {
       serialized += "static ";
     }
@@ -92,9 +101,7 @@ export class CSharpClass extends CSharpElement {
     }
     const name = mapper.transform(this.name, NameType.DeclarationName);
     serialized += `class ${name} ${
-      this.inheritsFrom
-        ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} `
-        : ""
+      this.inheritsFrom ? `: ${mapper.transform(this.inheritsFrom, NameType.DeclarationName)} ` : ""
     }{${addNewline ? "\n" : ""}`;
     return serialized;
   }
@@ -102,9 +109,7 @@ export class CSharpClass extends CSharpElement {
     const propertyIndent = indentation ?? 0;
     let serialized = "";
     const properties = this.properties
-      .map((property) =>
-        this.serializeProperty(mapper, property, propertyIndent)
-      )
+      .map(property => this.serializeProperty(mapper, property, propertyIndent))
       .join("\n");
     // chain nullable annotations contexts
     const propertyLines = properties.split("\n");
@@ -115,10 +120,8 @@ export class CSharpClass extends CSharpElement {
       const nextLineTrimmed = propertyLines[i + 1]?.trim();
       const previousLineTrimmed = previousLine?.trim();
       if (
-        (trimmed === "#nullable disable" &&
-          nextLineTrimmed === "#nullable enable") ||
-        (previousLineTrimmed === "#nullable disable" &&
-          trimmed === "#nullable enable")
+        (trimmed === "#nullable disable" && nextLineTrimmed === "#nullable enable") ||
+        (previousLineTrimmed === "#nullable disable" && trimmed === "#nullable enable")
       ) {
         return;
       }
@@ -135,14 +138,14 @@ export class CSharpClass extends CSharpElement {
       NameType.DeclarationName
     )}(${this.constructorArgs
       .map(
-        (a) =>
-          `${mapper.transform(
-            a.type,
-            NameType.DeclarationName
-          )} ${mapper.transform(a.name, NameType.PropertyName)}`
+        a =>
+          `${mapper.transform(a.type, NameType.DeclarationName)} ${mapper.transform(
+            a.name,
+            NameType.PropertyName
+          )}`
       )
       .join(", ")}) : base(${this.baseClassArgs
-      .map((a) => mapper.transform(a, NameType.PropertyName))
+      .map(a => mapper.transform(a, NameType.PropertyName))
       .join(", ")}) { }\n`;
     return serialized;
   }
@@ -150,10 +153,11 @@ export class CSharpClass extends CSharpElement {
     const indentString = getIndentString(indentation);
     let serialized = formatCommentString(this.commentString, indentation);
     const hasProperties = this.properties.length > 0;
+    const hasCotr = !(!this.baseClassArgs?.length || !this.constructorArgs?.length);
     serialized += this.serializeDeclaration(mapper, indentation, hasProperties);
     serialized += this.serializeConstructor(mapper, indentation + 1);
     serialized += this.serializeBody(mapper, indentation + 1);
-    serialized += (hasProperties ? "\n" + indentString : " ") + "}";
+    serialized += (hasProperties || hasCotr ? "\n" + indentString : " ") + "}";
     return serialized;
   }
 }

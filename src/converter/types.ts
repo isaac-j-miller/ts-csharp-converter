@@ -1,50 +1,39 @@
 import { Symbol, Type } from "ts-morph";
-import { CSharpElement } from "src/csharp/elements";
-import { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
-import { NonPrimitiveType } from "./registry";
+import { ICSharpElement } from "src/csharp/elements/types";
+import type { TypeRegistryPossiblyGenericType } from "./registry-types/possibly-generic";
+import { primitiveTypeNames, jsDocNumberTypes, CONSTS_KEYWORD } from "./consts";
+import { NameMapper } from "./name-mapper";
 
+export type ConstKeyword = typeof CONSTS_KEYWORD;
+export type NonPrimitiveType = Exclude<TokenType, "Primitive" | "Const">;
 export type TokenType =
   | "Type"
+  | "Array"
   | "StringUnion"
   | "Primitive"
   | "Dictionary"
   | "Const"
   | "Tuple"
-  | "Instance";
+  | "Instance"
+  | "ClassUnion"
+  | "ClassUnionInstance";
 
-const primitiveTypeNames = [
-  "string",
-  "String",
-  "number",
-  "Number",
-  "float",
-  "int",
-  "boolean",
-  "Boolean",
-  "object",
-  "any",
-  "undefined",
-  "null",
-  "unknown",
-] as const;
 export type PrimitiveTypeName = typeof primitiveTypeNames[number];
 
 export type LiteralValue =
+  | UnionTypeValueReference
   | string
   | boolean
   | number
   | undefined
   | null
   | LiteralValue[];
-
-export const jsDocNumberTypes = ["int", "float"] as const;
 export type JsDocNumberType = typeof jsDocNumberTypes[number];
 
-export type UnionMember = {
+export type UnionEnumMember = {
   name: string;
   value?: number;
 };
-
 export type GenericReference = {
   isGenericReference: true;
   genericParamName: string;
@@ -68,10 +57,21 @@ export type PropertyStructure = {
   isArray: boolean;
   arrayDepth?: number;
   isOptional: boolean;
-  genericParameters?: TypeReference[];
+  genericParameters?: PropertyGenericParameter[];
   defaultLiteralValue?: LiteralValue;
   jsDocNumberType?: JsDocNumberType;
   commentString?: string;
+};
+
+export type UnionTypeValueReference = {
+  isUnionTypeValueReference: boolean;
+  ref: Symbol | ISyntheticSymbol;
+  propertyName: string;
+};
+
+export type PropertyGenericParameter = {
+  name: string;
+  ref: TypeReference;
 };
 
 export type GenericParameter = {
@@ -84,14 +84,16 @@ export type GenericParameter = {
 export type TypeStructure<T extends TokenType> = {
   tokenType: T;
   name: string;
-  unionMembers?: UnionMember[];
-  tupleMembers?: TypeReference[];
+  members?: Array<MemberType<T>>;
   properties?: Record<string, PropertyStructure>;
   genericParameters?: GenericParameter[];
   mappedIndexType?: TypeReference;
   mappedValueType?: TypeReference;
   commentString?: string;
 };
+export type MemberType<T extends TokenType> = T extends "StringUnion"
+  ? UnionEnumMember
+  : TypeReference;
 
 export type PrimitiveType = {
   isPrimitiveType: true;
@@ -107,35 +109,44 @@ export type PropertyStringArg = TypeReference | string;
 export type PropertyStringArgs = PropertyStringArg[];
 
 export interface ISyntheticSymbol {
-  getDeclaredType(): Type;
+  getDeclaredType(): Type | undefined;
   getName(): string;
   isAlias(): false;
   getUnderlyingSymbol(): Symbol | undefined;
   getSourceFilePath(): string | undefined;
   id: string;
+  isClassUnionBase: boolean;
   isSynthetic: true;
 }
-export type UnderlyingType<T extends TokenType> = T extends
-  | "Primitive"
-  | "Const"
+export type UnderlyingType<T extends TokenType> = T extends "Primitive" | "Const" | "ClassUnion"
   ? undefined
   : Type;
 export interface IRegistryType<T extends TokenType = TokenType> {
   readonly tokenType: T;
   readonly shouldBeRendered: boolean;
-  isGeneric(): this is TypeRegistryPossiblyGenericType<T>;
+  readonly isDescendantOfPublic: boolean;
+  readonly isPublic: boolean;
+  readonly isAnonymous: boolean;
+  isGeneric(): this is TypeRegistryPossiblyGenericType<Exclude<T, "Primitive" | "Const">>;
   addCommentString(commentString: string): void;
-  isPublic(): boolean;
   getLevel(): number;
   getStructure(): TypeStructure<T>;
-  getHash(): string;
+  getHash(namesToIgnore?: Set<string>): string;
   getPropertyString(genericParameterValues?: PropertyStringArgs): string;
   getSymbol(): Exclude<BaseTypeReference, GenericReference>;
-  getCSharpElement(): CSharpElement;
+  getCSharpElement(nameMapper: NameMapper): ICSharpElement;
   getType(): UnderlyingType<T>;
   rename(name: string): void;
   getOriginalName(): string;
   isNonPrimitive(): this is IRegistryType<NonPrimitiveType>;
+  usesRef(ref: Exclude<BaseTypeReference, GenericReference>): boolean;
+  usesType(type: IRegistryType): boolean;
+  equals(ref: IRegistryType): boolean;
+  registerRefs(): void;
+  getRefHashes(): string[];
+  updateDefaultValues(): void;
+  getBaseTypeRef(): Symbol | ISyntheticSymbol | undefined;
+  resetHash(): void;
 }
 
 export type RegistryKey = Symbol | ISyntheticSymbol;
@@ -151,6 +162,9 @@ export function isPrimitiveTypeName(str: unknown): str is PrimitiveTypeName {
 }
 export function isGenericReference(t: unknown): t is GenericReference {
   return !!(t as GenericReference)?.isGenericReference;
+}
+export function isUnionTypeValueReference(t: unknown): t is UnionTypeValueReference {
+  return !!(t as UnionTypeValueReference)?.isUnionTypeValueReference;
 }
 
 export function isSyntheticSymbol(t: unknown): t is ISyntheticSymbol {

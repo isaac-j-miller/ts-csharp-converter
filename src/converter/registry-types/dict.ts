@@ -1,25 +1,24 @@
-import { CSharpClass, CSharpGenericClass } from "src/csharp/elements";
 import { Symbol, Node, Type } from "ts-morph";
-import { NameMapper } from "../name-mapper/mapper";
 import { TypeRegistry } from "../registry";
 import {
+  GenericParameter,
+  isPrimitiveType,
   ISyntheticSymbol,
   PropertyStringArg,
   PropertyStringArgs,
   TypeReference,
 } from "../types";
-import { getGenericTypeName } from "../util";
-import { TypeRegistryPossiblyGenericType } from "./possibly-generic";
+import { ConfigDependentUtils, getGenericTypeName } from "../util";
+import { TypeRegistryWithBaseClassType } from "./with-baseclass";
 
-export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dictionary"> {
-  private baseName: string;
+export class TypeRegistryDictType extends TypeRegistryWithBaseClassType<"Dictionary"> {
   constructor(
+    utils: ConfigDependentUtils,
     registry: TypeRegistry,
     name: string,
     sym: Symbol | ISyntheticSymbol,
-    public readonly indexType: TypeReference,
-    public readonly valueType: TypeReference,
     internal: boolean,
+    isDescendantOfPublic: boolean,
     node: Node,
     type: Type,
     level: number,
@@ -27,41 +26,40 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
     genericParameters?: string[]
   ) {
     super(
+      utils,
       registry,
       "Dictionary",
       name,
       sym,
       internal,
-      !internal,
-      node,
+      isDescendantOfPublic,
       type,
       level,
+      node,
       true
     );
-    this.structure.genericParameters = genericParameters?.map((g) => ({
+    this.structure.genericParameters = genericParameters?.map(g => ({
       name: g,
     }));
-    this.structure.mappedIndexType = indexType;
-    this.structure.mappedValueType = valueType;
     this.structure.commentString = commentString;
     this.baseName = "System.Collections.Generic.Dictionary";
   }
-  private getGenericParamName(
-    defaultRef: TypeReference,
-    override?: PropertyStringArg
-  ): string {
-    if (!override) {
-      return this.resolveAndFormatTypeName(defaultRef);
-    }
-    if (typeof override === "string") {
-      return override;
-    }
-    return this.resolveAndFormatTypeName(override);
+  addIndex(index: TypeReference) {
+    this.structure.mappedIndexType = index;
   }
-  private getBaseClassName(genericParameters?: PropertyStringArgs): string {
+  addValue(value: TypeReference) {
+    this.structure.mappedValueType = value;
+  }
+  public override genericParamShouldBeRendered(p: GenericParameter): boolean {
+    if (isPrimitiveType(p.constraint)) {
+      return true;
+    }
+    return super.genericParamShouldBeRendered(p);
+  }
+  protected override getBaseClassName(genericParameters?: PropertyStringArgs): string {
     const g = genericParameters ?? [];
-    const indexTypeName = this.getGenericParamName(this.indexType, g[0]);
-    const valueTypeName = this.getGenericParamName(this.valueType, g[1]);
+    const indexTypeName = this.getGenericParamName(this.structure.mappedIndexType!, g[0]);
+    const valueTypeName = this.getGenericParamName(this.structure.mappedValueType!, g[1]);
     return getGenericTypeName(this.baseName, [indexTypeName, valueTypeName]);
   }
   private addGenericParameterToIndexOrValue(
@@ -78,46 +76,5 @@ export class TypeRegistryDictType extends TypeRegistryPossiblyGenericType<"Dicti
   }
   addGenericParameterToValue(parameter: PropertyStringArg) {
     this.addGenericParameterToIndexOrValue("mappedValueType", parameter);
-  }
-  getPropertyString(genericParameterValues?: PropertyStringArgs): string {
-    if (this.internal) {
-      return this.getBaseClassName(genericParameterValues);
-    }
-    const { name } = this.structure;
-    const namesToUse = this.getGenericParametersForPropertyString(
-      genericParameterValues ?? []
-    );
-    return getGenericTypeName(name, namesToUse);
-  }
-  getCSharpElement(): CSharpClass {
-    if (!this.shouldBeRendered) {
-      throw new Error("Should not render dictionary");
-    }
-    const genericParams = this.generateCSharpGenericParams();
-    const baseClassName = this.getBaseClassName();
-    if (Object.keys(genericParams).length > 0) {
-      return new CSharpGenericClass(
-        this.structure.name,
-        false,
-        [],
-        genericParams,
-        baseClassName,
-        [],
-        [],
-        this.internal,
-        this.structure.commentString
-      );
-    }
-    return new CSharpClass(
-      this.structure.name,
-      false,
-      [],
-      false,
-      baseClassName,
-      [],
-      [],
-      this.internal,
-      this.structure.commentString
-    );
   }
 }
