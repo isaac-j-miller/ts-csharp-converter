@@ -4,7 +4,7 @@ trigger:
       - main
 
 pool:
-  name: "linux-01"
+  name: "linux"
 
 steps:
   - checkout: self
