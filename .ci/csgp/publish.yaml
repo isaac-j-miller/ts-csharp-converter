@@ -6,6 +6,9 @@ trigger:
 pool:
   name: "linux"
 
+variables:
+  - group: aws-role-dataservices
+
 steps:
   - checkout: self
 
