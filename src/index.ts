@@ -37,8 +37,10 @@ export async function convertTypescriptToCSharp(config: CSharpConverterConfig): 
     recursive: true,
   });
   const outputFile = join(dir, `${namespaceName}.cs`);
-  const serializationUtilsPath = join(__dirname, "csharp/Source/SerializationUtils.cs");
-  const csprojFilepath = join(__dirname, "csharp/Source/csproj.ejs");
+  const isBundled = __dirname.includes("node_modules");
+  const resourcesPath = isBundled ? join(__dirname, "resources") : join(__dirname, "../resources");
+  const serializationUtilsPath = join(resourcesPath, "SerializationUtils.cs");
+  const csprojFilepath = join(resourcesPath, "csproj.ejs");
   const serializationUtilsOutputPath = join(dir, "SerializationUtils.cs");
   const csprojOutputPath = join(dir, `${namespaceName}.csproj`);
   const serializationUtils = await readFile(serializationUtilsPath, { encoding: "utf-8" });

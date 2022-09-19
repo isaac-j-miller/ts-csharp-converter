@@ -1,9 +1,9 @@
 {
   "name": "@costar/ts-csharp-converter",
-  "version": "0.0.1",
+  "version": "0.0.8",
   "description": "Convert typescript to C# data classes",
-  "main": "./dist/index.js",
-  "types": "./dist/types/index.d.ts",
+  "main": "./index.js",
+  "types": "./types/index.d.ts",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "node node_modules/jest/bin/jest.js",
@@ -17,7 +17,7 @@
     "check-ts": "tsc --noEmit",
     "lint": "./node_modules/.bin/eslint ./src/**/*.ts",
     "generate-types": "rm -rf ./dist/types && tsc --declarationDir ./dist/types --outDir ./tmp/dist && rm -rf ./tmp/dist",
-    "build": "node -r ts-node/register -r tsconfig-paths/register ./esbuild.config.ts && pnpm generate-types",
+    "build": "node -r ts-node/register -r tsconfig-paths/register ./esbuild.config.ts && pnpm generate-types && cp ./package.json ./dist/package.json && mkdir -p ./dist/bin && cp ./bin/cli ./dist/bin/cli && cp .npmrc ./dist/.npmrc && cp -a ./resources/ ./dist/resources/",
     "check-all": "pnpm prettier-check && pnpm check-ts && pnpm lint && pnpm test"
   },
   "author": "Isaac Miller",

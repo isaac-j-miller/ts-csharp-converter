@@ -1,0 +1,11 @@
+.ci/
+.vscode/
+.eslintignore
+.eslintrc.json
+tmp/
+.prettierignore
+.prettierrc.js
+babel.config.js
+esbuild.config.js
+jest.config.js
+jest.setup.js

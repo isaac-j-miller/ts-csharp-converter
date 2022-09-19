@@ -5,6 +5,5 @@ esbuild.buildSync({
   entryPoints: ["./src/index.ts", "./src/cli.ts"],
   bundle: true,
   platform: "node",
-  external: ["./node_modules/*"],
   outdir: "./dist",
 });

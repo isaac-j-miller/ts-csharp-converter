@@ -9,6 +9,7 @@ pool:
 variables:
   - group: vault-auth
   - group: aws-role-dataservices
+  - group: env-prd
 
 steps:
   - checkout: self
@@ -29,5 +30,5 @@ steps:
   - script: "pnpm build"
     displayName: "build package"
 
-  - script: "yarn publish"
+  - script: "cd ./dist && yarn publish"
     displayName: "publish package"
