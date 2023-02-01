@@ -1,5 +1,6 @@
-import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
+import path from "path";
 import { createHash } from "crypto";
+import { JSDocTagInfo, Symbol, Type, Node } from "ts-morph";
 import type { CSharpPrimitiveType } from "src/csharp/types";
 import { LoggerFactory } from "src/common/logging/factory";
 import type { CSharpConverterConfig } from "src/types";
@@ -59,6 +60,9 @@ export class ConfigDependentUtils {
         }
         throw new Error(`Unexpected value: ${primitive}`);
     }
+  }
+  getRelativePath(abs: string): string {
+    return path.relative(path.dirname(this.config.tsconfigPath), abs);
   }
   resolveTypeName(
     registry: TypeRegistry,

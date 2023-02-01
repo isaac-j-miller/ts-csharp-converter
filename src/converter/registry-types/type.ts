@@ -147,6 +147,7 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
   }
 
   getCSharpElement(nameMapper: NameMapper): CSharpClass {
+    const { utils } = this;
     const props = this.generateCSharpProperties(nameMapper);
     const partial = this.isMappedType;
     if (
@@ -156,7 +157,9 @@ export class TypeRegistryType extends TypeRegistryPossiblyGenericType<"Type"> {
       const src = this.node.getSourceFile().getFilePath();
       const startLine = this.node.getStartLineNumber(false);
       this.addCommentString(
-        `Warning: This class might not have been generated correctly. Source to check ${src}:${startLine}\nSource code: ${this.node.getFullText()}`
+        `Warning: This class might not have been generated correctly. Source to check: ${utils.getRelativePath(
+          src
+        )}:${startLine}\nSource code: ${this.node.getFullText()}`
       );
     }
     if (this.getGenericParameters().length > 0) {

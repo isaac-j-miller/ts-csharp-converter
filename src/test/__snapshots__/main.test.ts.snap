@@ -74,7 +74,7 @@ exports[`snapshot works 1`] = `
         public string Y { get; set; }
     }
     public class ConditionalMappedType<V> : System.Collections.Generic.Dictionary<string, ConditionalMappedTypeValue> { }
-    // Warning: This class might not have been generated correctly. [REMOVED FOR SNAPSHOT]
+    // Warning: This class might not have been generated correctly. Source to check: src/test/subfolder/conditional.ts:17
     // Source code:  V extends A ? Inverse<A> : ConsumesConditional
     public class ConditionalMappedTypeValue { }
     public class ConsumesConditional {
@@ -229,7 +229,7 @@ exports[`snapshot works 1`] = `
         [JsonProperty(\\"foo\\")]
         public Abc Foo { get; set; }
     }
-    // Warning: This class might not have been generated correctly. [REMOVED FOR SNAPSHOT]
+    // Warning: This class might not have been generated correctly. Source to check: src/test/subfolder/conditional.ts:10
     // Source code:
     // 
     // export type Inverse<T extends A | B> = T extends A ? B : A;
