@@ -18,6 +18,8 @@ type CliRunConfig = {
   enumMemberTargetCasing?: string;
   includeNodeModules?: boolean;
   ignoreClasses?: string;
+  writeCsProjFile: boolean;
+  baseNamespace?: string;
 };
 
 const argParser = new ArgumentParser();
@@ -32,6 +34,10 @@ argParser.add_argument("--tsconfig-path", {
 argParser.add_argument("--output-dir", {
   required: true,
   dest: "outputDir",
+});
+argParser.add_argument("--output-namespace-base", {
+  required: false,
+  dest: "baseNamespace",
 });
 argParser.add_argument("--output-namespace", {
   required: true,
@@ -54,6 +60,12 @@ argParser.add_argument("--include-node-modules", {
   action: "store_true",
   default: false,
   dest: "includeNodeModules",
+});
+argParser.add_argument("--write-csproj", {
+  required: false,
+  action: "store_true",
+  default: false,
+  dest: "writeCsProjFile",
 });
 argParser.add_argument("--ignore", {
   required: false,

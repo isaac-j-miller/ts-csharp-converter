@@ -173,6 +173,7 @@ const main = async () => {
       // "Cookies",
       // "FormFieldTypes",
     ]),
+    writeCsProjFile: true,
   };
   await convertTypescriptToCSharp(config);
 };

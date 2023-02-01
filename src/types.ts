@@ -10,4 +10,6 @@ export type CSharpConverterConfig = {
   includeNodeModules: boolean;
   ignoreClasses: Set<string>;
   defaultNumericType: JsDocNumberType;
+  baseNamespace?: string;
+  writeCsProjFile: boolean;
 };

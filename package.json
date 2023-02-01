@@ -1,6 +1,6 @@
 {
   "name": "@costar/ts-csharp-converter",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "Convert typescript to C# data classes",
   "main": "./index.js",
   "types": "./types/index.d.ts",

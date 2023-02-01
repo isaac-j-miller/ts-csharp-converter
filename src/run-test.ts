@@ -21,6 +21,7 @@ const main = async () => {
         },
       },
     },
+    writeCsProjFile: true,
     includeNodeModules: false,
     ignoreClasses: new Set(),
     defaultNumericType: "int",

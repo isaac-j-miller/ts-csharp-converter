@@ -162,6 +162,9 @@ export function normalize(str: string): string {
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     const lowerCase = char.toLocaleLowerCase();
+    if(lowerCase === "$") {
+      continue;
+    }
     if (char !== lowerCase && i > 0 && !ignoreChars.has(str[i - 1])) {
       currentWord += "_";
     }

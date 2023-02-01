@@ -15,10 +15,12 @@ export async function convertTypescriptToCSharp(config: CSharpConverterConfig): 
     entrypoint,
     tsconfigPath,
     outputDir,
-    namespaceName,
+    namespaceName: finalNamespaceName,
     nameMappingConfig,
     includeNodeModules,
     ignoreClasses,
+    baseNamespace,
+    writeCsProjFile,
   } = config;
   const mapper = new NameMapper(nameMappingConfig);
   const utils = new ConfigDependentUtils(config);
@@ -30,6 +32,9 @@ export async function convertTypescriptToCSharp(config: CSharpConverterConfig): 
     utils
   );
   traverser.traverse();
+  const namespaceName = baseNamespace
+    ? `${baseNamespace}.${finalNamespaceName}`
+    : finalNamespaceName;
   const ns = traverser.createNamespace(namespaceName, mapper);
   const serializedNamespace = ns.serialize(mapper);
   const dir = join(resolve(outputDir), namespaceName);
@@ -40,19 +45,21 @@ export async function convertTypescriptToCSharp(config: CSharpConverterConfig): 
   const isBundled = __dirname.includes("node_modules");
   const resourcesPath = isBundled ? join(__dirname, "resources") : join(__dirname, "../resources");
   const serializationUtilsPath = join(resourcesPath, "SerializationUtils.cs");
-  const csprojFilepath = join(resourcesPath, "csproj.ejs");
-  const serializationUtilsOutputPath = join(dir, "SerializationUtils.cs");
-  const csprojOutputPath = join(dir, `${namespaceName}.csproj`);
+  if (writeCsProjFile) {
+    const csprojFilepath = join(resourcesPath, "csproj.ejs");
+    const csprojOutputPath = join(dir, `${namespaceName}.csproj`);
+    const csproj = await readFile(csprojFilepath, { encoding: "utf-8" });
+    const templated = await ejs.render(csproj, { namespaceName }, { async: true });
+    await writeFile(csprojOutputPath, templated, {
+      encoding: "utf-8",
+    });
+  }
+  const serializationUtilsOutputPath = join(dir, "Serialization.cs");
   const serializationUtils = await readFile(serializationUtilsPath, { encoding: "utf-8" });
   await writeFile(outputFile, serializedNamespace, {
     encoding: "utf-8",
   });
   await writeFile(serializationUtilsOutputPath, serializationUtils, {
-    encoding: "utf-8",
-  });
-  const csproj = await readFile(csprojFilepath, { encoding: "utf-8" });
-  const templated = await ejs.render(csproj, { namespaceName }, { async: true });
-  await writeFile(csprojOutputPath, templated, {
     encoding: "utf-8",
   });
 }
